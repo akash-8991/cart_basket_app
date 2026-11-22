@@ -41,11 +41,11 @@ data class ProviderCapabilities(
 )
 
 @Serializable
-enum class ProviderStatus(val label: String) {
-    @SerialName("enabled") ENABLED("Available"),
-    @SerialName("disabled") DISABLED("Not available"),
-    @SerialName("kill_switched") KILL_SWITCHED("Temporarily paused"),
-    @SerialName("pending_approval") PENDING_APPROVAL("Coming soon"),
+enum class ProviderStatus {
+    @SerialName("enabled") ENABLED,
+    @SerialName("disabled") DISABLED,
+    @SerialName("kill_switched") KILL_SWITCHED,
+    @SerialName("pending_approval") PENDING_APPROVAL,
 }
 
 @Serializable

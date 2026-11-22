@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-HOME-01 -->
+    <string name="home_title">SmartCart</string>
+    <string name="home_cd_history">Conversation history</string>
+    <string name="home_cd_settings">Settings</string>
+    <string name="home_signed_in_as">Signed in as %1$s · Session protected on this device</string>
+    <string name="home_session_protected">Session protected on this device</string>
+    <string name="home_paused">All automation is paused. Resume it in Settings → Help.</string>
+    <string name="home_summary_error">Your summary couldn\'t load. Categories still work.</string>
+    <string name="home_what_do_you_need">What do you need?</string>
+    <string name="home_suggested">Suggested for you</string>
+    <string name="home_recent_comparisons">Recent comparisons</string>
+    <string name="home_no_recommendation">No recommendation</string>
+    <string name="home_recent_line">%1$s · %2$s</string>
+    <string name="home_recent_line_total">%1$s · est. %2$s · %3$s</string>
+    <string name="home_chat_entry">Tell me what you need… pick a category above or start with groceries</string>
+    <string name="home_empty_title">No orders yet</string>
+    <string name="home_empty_body">Connect your order history to see monthly totals and frequency. You choose which apps and fields.</string>
+    <string name="home_connect_history">Connect order history</string>
+    <string name="kpi_total_orders">Total orders</string>
+    <string name="kpi_total_spent">Total spent</string>
+    <string name="kpi_orders_per_week">Orders / week</string>
+    <string name="kpi_delta_vs">%1$s vs %2$s</string>
+    <string name="kpi_avg_order">Avg order %1$s</string>
+    <string name="kpi_avg_order_interval">Avg order %1$s · every %2$s days</string>
+    <string name="home_stale_banner">Your order history was last imported %1$s. Totals may be out of date.</string>
+    <string name="home_refresh_history">Refresh history</string>
+    <plurals name="split_cd">
+        <item quantity="one">%1$s: %2$d order, %3$s</item>
+        <item quantity="other">%1$s: %2$d orders, %3$s</item>
+    </plurals>
+    <string name="freshness_fresh">Up to date · last imported %1$s</string>
+    <string name="freshness_stale">Out of date · last imported %1$s</string>
+    <string name="freshness_never">No history imported</string>
+    <string name="category_cd">%1$s. %2$s</string>
+    <string name="category_set_up">Set up</string>
+    <string name="category_unavailable">Unavailable</string>
+
+    <!-- S-HOME-02 -->
+    <string name="month_empty_title">No data for this month</string>
+    <string name="month_empty_body">Import order history to see details.</string>
+    <string name="month_orders">Orders</string>
+    <string name="month_total_spent">Total spent</string>
+    <string name="month_average_order">Average order</string>
+    <string name="month_orders_per_week">Orders per week</string>
+    <string name="month_days_between">Days between orders</string>
+    <string name="month_by_category">By category</string>
+    <string name="month_all">All</string>
+    <string name="month_by_app">By app</string>
+    <string name="month_on_month">Month on month</string>
+    <plurals name="month_row">
+        <item quantity="one">%1$d order · %2$s</item>
+        <item quantity="other">%1$d orders · %2$s</item>
+    </plurals>
+    <string name="month_footnote">Totals are calculated from your imported orders, including fees and discounts. Refunded and cancelled orders are excluded.</string>
+</resources>

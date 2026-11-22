@@ -24,6 +24,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.smartcart.designsystem.DangerButton
+import com.smartcart.app.R
+import androidx.compose.ui.res.stringResource
 import com.smartcart.designsystem.Spacing
 import com.smartcart.model.CartTask
 import com.smartcart.model.TaskStatus
@@ -54,14 +56,15 @@ fun ActiveTaskBar(task: CartTask?, onOpen: (String) -> Unit, onStop: (String) ->
                     Spacer(Modifier.width(Spacing.sm))
                 }
                 Text(
-                    "${task.provider.displayName}: ${task.status.label}",
+                    stringResource(R.string.task_bar_status, task.provider.displayName, stringResource(task.status.labelRes())),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f),
                 )
+                val stopCd = stringResource(R.string.task_bar_stop_cd)
                 DangerButton(
-                    "Stop",
+                    stringResource(R.string.task_bar_stop),
                     onClick = { onStop(task.taskId) },
-                    modifier = Modifier.semantics { contentDescription = "Emergency stop automation" },
+                    modifier = Modifier.semantics { contentDescription = stopCd },
                 )
             }
         }

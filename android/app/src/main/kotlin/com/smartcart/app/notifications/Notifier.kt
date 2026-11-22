@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.smartcart.app.MainActivity
 import com.smartcart.app.R
 import com.smartcart.model.CartTask
+import com.smartcart.app.ui.common.labelRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -61,10 +62,10 @@ class Notifier(private val context: Context, private val prefs: NotificationPref
         post(
             id = task.taskId.hashCode(),
             channel = CH_TASKS,
-            genericTitle = "Your cart is ready",
-            genericBody = "Tap to review and pay in the app.",
-            detailTitle = "${task.provider.displayName} cart is ready",
-            detailBody = "Review it and pay in ${task.provider.displayName}. SmartCart never pays for you.",
+            genericTitle = context.getString(R.string.notif_cart_ready_generic_title),
+            genericBody = context.getString(R.string.notif_cart_ready_generic_body),
+            detailTitle = context.getString(R.string.notif_cart_ready_title, task.provider.displayName),
+            detailBody = context.getString(R.string.notif_cart_ready_body, task.provider.displayName),
             uri = "smartcart://task/${task.taskId}",
         )
     }
@@ -74,17 +75,17 @@ class Notifier(private val context: Context, private val prefs: NotificationPref
         post(
             id = task.taskId.hashCode() + 1,
             channel = CH_TASKS,
-            genericTitle = "A task needs you",
-            genericBody = "Tap to continue.",
-            detailTitle = "${task.provider.displayName} needs you",
-            detailBody = task.needsUserAction?.reason?.title ?: "Open the app to continue.",
+            genericTitle = context.getString(R.string.notif_needs_you_generic_title),
+            genericBody = context.getString(R.string.notif_needs_you_generic_body),
+            detailTitle = context.getString(R.string.notif_needs_you_title, task.provider.displayName),
+            detailBody = task.needsUserAction?.reason?.let { context.getString(it.labelRes()) } ?: context.getString(R.string.notif_needs_you_fallback),
             uri = "smartcart://task/${task.taskId}",
         )
     }
 
     fun importComplete(sessionId: String) {
         if (!prefs.values.value.importComplete) return
-        post(sessionId.hashCode(), CH_IMPORTS, "Order history imported", "Tap to review.", null, null, "smartcart://history/import/$sessionId")
+        post(sessionId.hashCode(), CH_IMPORTS, context.getString(R.string.notif_import_title), context.getString(R.string.notif_import_body), null, null, "smartcart://history/import/$sessionId")
     }
 
     private fun post(id: Int, channel: String, genericTitle: String, genericBody: String, detailTitle: String?, detailBody: String?, uri: String) {

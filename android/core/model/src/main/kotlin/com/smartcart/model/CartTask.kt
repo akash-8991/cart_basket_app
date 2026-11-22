@@ -5,19 +5,19 @@ import kotlinx.serialization.Serializable
 
 /** Canonical task states (D-002). */
 @Serializable
-enum class TaskStatus(val label: String) {
-    DRAFT("Draft"),
-    AWAITING_APPROVAL("Waiting for your approval"),
-    APPROVED("Approved"),
-    RUNNING("Preparing your cart"),
-    CHECKPOINT("Needs your confirmation"),
-    NEEDS_USER_ACTION("Needs you in the app"),
-    CART_READY("Cart ready"),
-    HANDED_OFF("Opened in app"),
-    CANCELLED("Stopped"),
-    EXPIRED("Expired"),
-    FAILED_SAFE("Stopped safely"),
-    BLOCKED_POLICY("Blocked for your safety");
+enum class TaskStatus {
+    DRAFT,
+    AWAITING_APPROVAL,
+    APPROVED,
+    RUNNING,
+    CHECKPOINT,
+    NEEDS_USER_ACTION,
+    CART_READY,
+    HANDED_OFF,
+    CANCELLED,
+    EXPIRED,
+    FAILED_SAFE,
+    BLOCKED_POLICY;
 
     val isTerminal: Boolean get() = this in TERMINAL
     /** States during which the global Stop control must be visible. */
@@ -30,11 +30,11 @@ enum class TaskStatus(val label: String) {
 }
 
 @Serializable
-enum class ActionRisk(val label: String) {
-    @SerialName("low") LOW("Low"),
-    @SerialName("medium") MEDIUM("Medium"),
-    @SerialName("high") HIGH("High — asks you first"),
-    @SerialName("prohibited") PROHIBITED("Never automated"),
+enum class ActionRisk {
+    @SerialName("low") LOW,
+    @SerialName("medium") MEDIUM,
+    @SerialName("high") HIGH,
+    @SerialName("prohibited") PROHIBITED,
 }
 
 @Serializable
@@ -85,16 +85,16 @@ data class TaskLimits(val maxActions: Int, val maxRuntimeSeconds: Int, val inact
 data class Checkpoint(val checkpointId: String, val prompt: String, val risk: ActionRisk)
 
 @Serializable
-enum class UserActionReason(val title: String) {
-    @SerialName("login_required") LOGIN_REQUIRED("Sign-in needed"),
-    @SerialName("otp_required") OTP_REQUIRED("OTP needed"),
-    @SerialName("captcha") CAPTCHA("Verification needed"),
-    @SerialName("biometric") BIOMETRIC("Fingerprint or face needed"),
-    @SerialName("password_prompt") PASSWORD_PROMPT("Password needed"),
-    @SerialName("unexpected_dialog") UNEXPECTED_DIALOG("Unexpected pop-up"),
-    @SerialName("location_permission") LOCATION_PERMISSION("Location permission needed"),
-    @SerialName("app_update_required") APP_UPDATE_REQUIRED("App update needed"),
-    @SerialName("item_unavailable") ITEM_UNAVAILABLE("Item unavailable"),
+enum class UserActionReason {
+    @SerialName("login_required") LOGIN_REQUIRED,
+    @SerialName("otp_required") OTP_REQUIRED,
+    @SerialName("captcha") CAPTCHA,
+    @SerialName("biometric") BIOMETRIC,
+    @SerialName("password_prompt") PASSWORD_PROMPT,
+    @SerialName("unexpected_dialog") UNEXPECTED_DIALOG,
+    @SerialName("location_permission") LOCATION_PERMISSION,
+    @SerialName("app_update_required") APP_UPDATE_REQUIRED,
+    @SerialName("item_unavailable") ITEM_UNAVAILABLE,
 }
 
 @Serializable

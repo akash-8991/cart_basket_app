@@ -21,6 +21,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.smartcart.app.AppContainer
 import com.smartcart.app.feature.home.confidenceTone
+import com.smartcart.app.R
+import com.smartcart.app.ui.common.label
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.ErrorCopy
 import com.smartcart.app.ui.common.Load
 import com.smartcart.app.ui.common.LoadContent
@@ -82,11 +85,11 @@ fun SuggestionsScreen(onBack: () -> Unit, onComparison: (String) -> Unit, onConn
     val state by vm.state.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
     val starting by vm.starting.collectAsStateWithLifecycle()
-    ScreenScaffold("Suggestions", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.sug_title), onBack) { padding ->
         LoadContent(state, onRetry = vm::load) {
             val list = (state as Load.Ready).value
             if (list.recommendations.isEmpty()) {
-                EmptyState("No suggestions yet", "Suggestions appear once there's enough order history to spot patterns.", Modifier.padding(padding), actionLabel = "Connect order history", onAction = onConnectHistory)
+                EmptyState(stringResource(R.string.sug_empty_title), stringResource(R.string.sug_empty_body), Modifier.padding(padding), actionLabel = stringResource(R.string.home_connect_history), onAction = onConnectHistory)
                 return@LoadContent
             }
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -95,16 +98,16 @@ fun SuggestionsScreen(onBack: () -> Unit, onComparison: (String) -> Unit, onConn
                     AppCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(r.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                            Pill("${r.confidence.name.lowercase().replaceFirstChar { it.uppercase() }} confidence", tone = confidenceTone(r.confidence))
+                            Pill(r.confidence.label(), tone = confidenceTone(r.confidence))
                         }
                         Spacer(Modifier.size(Spacing.xs))
-                        Text("Why: ${r.explanation}", style = MaterialTheme.typography.bodyMedium)
-                        if (r.prefillLines.isNotEmpty()) Text(r.prefillLines.joinToString { "${it.label} × ${it.quantity}" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        r.usualProvider?.let { Text("Usually from ${it.displayName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Text(stringResource(R.string.sug_why, r.explanation), style = MaterialTheme.typography.bodyMedium)
+                        if (r.prefillLines.isNotEmpty()) Text(r.prefillLines.map { stringResource(R.string.order_item, it.label, it.quantity) }.joinToString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        r.usualProvider?.let { Text(stringResource(R.string.sug_usually_from, it.displayName), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Row {
-                            TextButton(onClick = { vm.notUseful(r) }) { Text("Not useful") }
+                            TextButton(onClick = { vm.notUseful(r) }) { Text(stringResource(R.string.sug_not_useful)) }
                             Spacer(Modifier.weight(1f))
-                            TextButton(onClick = { vm.start(r, onComparison) }, enabled = starting == null) { Text(if (starting == r.recommendationId) "Checking prices…" else "Compare prices") }
+                            TextButton(onClick = { vm.start(r, onComparison) }, enabled = starting == null) { Text(stringResource(if (starting == r.recommendationId) R.string.sug_checking else R.string.sug_compare)) }
                         }
                     }
                 }

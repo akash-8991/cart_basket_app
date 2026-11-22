@@ -20,6 +20,9 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.smartcart.app.AppContainer
+import com.smartcart.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.smartcart.data.ApiResult
 import com.smartcart.designsystem.ErrorState
 import com.smartcart.designsystem.LoadingState
@@ -46,52 +49,61 @@ fun <T> ApiResult<T>.toLoad(): Load<T> = when (this) {
 }
 
 /**
- * User-facing copy per error code (contracts/error-codes.yaml). Server messages are not shown
- * verbatim so wording stays frozen and never leaks internal detail.
+ * User-facing copy per error code (contracts/error-codes.yaml), from string resources. Server
+ * messages are never shown verbatim, so wording stays frozen and never leaks internal detail.
  */
 object ErrorCopy {
-    fun title(e: ApiError): String = when (e.code) {
-        ErrorCode.OFFLINE -> "You're offline"
-        ErrorCode.RATE_LIMITED, ErrorCode.ACCOUNT_LOCKED -> "Please wait a moment"
-        ErrorCode.INVALID_CREDENTIALS -> "Couldn't sign you in"
-        ErrorCode.SESSION_EXPIRED, ErrorCode.UNAUTHENTICATED -> "Please sign in again"
-        ErrorCode.PROVIDER_DISABLED -> "This app is paused"
-        ErrorCode.CONSENT_REQUIRED -> "Permission needed"
-        ErrorCode.AI_UNAVAILABLE -> "Assistant is limited right now"
-        ErrorCode.POLICY_BLOCKED -> "Blocked for your safety"
-        ErrorCode.TASK_EXPIRED, ErrorCode.QUOTE_EXPIRED, ErrorCode.CHALLENGE_EXPIRED -> "This has expired"
-        else -> "Something went wrong"
-    }
+    @Composable
+    fun title(e: ApiError): String = stringResource(
+        when (e.code) {
+            ErrorCode.OFFLINE -> R.string.err_title_offline
+            ErrorCode.RATE_LIMITED, ErrorCode.ACCOUNT_LOCKED -> R.string.err_title_wait
+            ErrorCode.INVALID_CREDENTIALS -> R.string.err_title_sign_in_failed
+            ErrorCode.SESSION_EXPIRED, ErrorCode.UNAUTHENTICATED -> R.string.err_title_sign_in_again
+            ErrorCode.PROVIDER_DISABLED -> R.string.err_title_provider_paused
+            ErrorCode.CONSENT_REQUIRED -> R.string.err_title_permission
+            ErrorCode.AI_UNAVAILABLE -> R.string.err_title_ai_limited
+            ErrorCode.POLICY_BLOCKED -> R.string.err_title_policy
+            ErrorCode.TASK_EXPIRED, ErrorCode.QUOTE_EXPIRED, ErrorCode.CHALLENGE_EXPIRED -> R.string.err_title_expired
+            else -> R.string.err_title_generic
+        },
+    )
 
+    @Composable
     fun body(e: ApiError): String = when (e.code) {
-        ErrorCode.OFFLINE -> "Check your connection and try again."
-        ErrorCode.RATE_LIMITED -> waitText(e, "You're going a bit fast.")
-        ErrorCode.ACCOUNT_LOCKED -> waitText(e, "Too many attempts.")
-        ErrorCode.INVALID_CREDENTIALS -> "User ID or password is incorrect."
-        ErrorCode.SESSION_EXPIRED, ErrorCode.UNAUTHENTICATED -> "For your security, your session ended."
-        ErrorCode.USER_ID_UNAVAILABLE -> "That user ID is taken. Try another."
-        ErrorCode.WEAK_PASSWORD -> "Choose a longer, less common password."
-        ErrorCode.CHALLENGE_EXPIRED -> "That code has expired or was already used. Start again."
-        ErrorCode.PROVIDER_DISABLED -> "Automation for this app is temporarily unavailable. You can continue manually."
-        ErrorCode.CONSENT_REQUIRED -> "Allow automation or history access for this app first."
-        ErrorCode.AI_UNAVAILABLE -> "You can still type items and quantities, one per line."
-        ErrorCode.POLICY_BLOCKED -> e.message
-        ErrorCode.TASK_EXPIRED -> "This request expired. Start again."
-        ErrorCode.QUOTE_EXPIRED -> "Prices need to be checked again."
-        ErrorCode.TASK_STATE_CONFLICT, ErrorCode.CONFLICT -> "This changed in the meantime. Refreshing."
-        ErrorCode.VALIDATION_FAILED -> e.message
-        else -> "Please try again in a moment."
+        ErrorCode.RATE_LIMITED -> waitText(e, stringResource(R.string.err_body_rate_limited))
+        ErrorCode.ACCOUNT_LOCKED -> waitText(e, stringResource(R.string.err_body_locked))
+        else -> stringResource(
+            when (e.code) {
+                ErrorCode.OFFLINE -> R.string.err_body_offline
+                ErrorCode.INVALID_CREDENTIALS -> R.string.err_body_invalid_credentials
+                ErrorCode.SESSION_EXPIRED, ErrorCode.UNAUTHENTICATED -> R.string.err_body_session
+                ErrorCode.USER_ID_UNAVAILABLE -> R.string.err_body_user_id_taken
+                ErrorCode.WEAK_PASSWORD -> R.string.err_body_weak_password
+                ErrorCode.CHALLENGE_EXPIRED -> R.string.err_body_challenge_expired
+                ErrorCode.PROVIDER_DISABLED -> R.string.err_body_provider_disabled
+                ErrorCode.CONSENT_REQUIRED -> R.string.err_body_consent
+                ErrorCode.AI_UNAVAILABLE -> R.string.err_body_ai
+                ErrorCode.POLICY_BLOCKED -> R.string.err_body_policy
+                ErrorCode.TASK_EXPIRED -> R.string.err_body_task_expired
+                ErrorCode.QUOTE_EXPIRED -> R.string.err_body_quote_expired
+                ErrorCode.TASK_STATE_CONFLICT, ErrorCode.CONFLICT -> R.string.err_body_conflict
+                ErrorCode.VALIDATION_FAILED -> R.string.err_body_validation
+                else -> R.string.err_body_generic
+            },
+        )
     }
 
+    @Composable
     private fun waitText(e: ApiError, lead: String): String {
-        val s = e.retryAfterSeconds ?: return "$lead Try again later."
+        val s = e.retryAfterSeconds ?: return stringResource(R.string.err_body_try_later, lead)
         val mins = (s + 59) / 60
-        return "$lead Try again in $mins minute${if (mins == 1) "" else "s"}."
+        return pluralStringResource(R.plurals.err_body_try_in_minutes, mins, lead, mins)
     }
 }
 
 @Composable
-fun LoadContent(state: Load<*>, onRetry: () -> Unit, loadingLabel: String = "Loading", content: @Composable () -> Unit) {
+fun LoadContent(state: Load<*>, onRetry: () -> Unit, loadingLabel: String = stringResource(R.string.common_loading), content: @Composable () -> Unit) {
     when (state) {
         Load.Loading -> LoadingState(label = loadingLabel)
         is Load.Failed -> ErrorState(ErrorCopy.title(state.error), ErrorCopy.body(state.error), onRetry = onRetry, offline = state.error.code == ErrorCode.OFFLINE)
@@ -117,7 +129,7 @@ fun ScreenScaffold(
                 title = { Text(title) },
                 navigationIcon = {
                     if (onBack != null) {
-                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back)) }
                     }
                 },
                 actions = { actions() },

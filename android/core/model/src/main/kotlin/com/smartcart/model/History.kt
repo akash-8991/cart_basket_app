@@ -4,23 +4,23 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ImportStatus(val label: String) {
-    @SerialName("awaiting_permission") AWAITING_PERMISSION("Waiting for permission"),
-    @SerialName("running") RUNNING("Importing"),
-    @SerialName("paused") PAUSED("Paused"),
-    @SerialName("awaiting_review") AWAITING_REVIEW("Ready for review"),
-    @SerialName("completed") COMPLETED("Completed"),
-    @SerialName("cancelled") CANCELLED("Cancelled"),
-    @SerialName("failed") FAILED("Failed"),
+enum class ImportStatus {
+    @SerialName("awaiting_permission") AWAITING_PERMISSION,
+    @SerialName("running") RUNNING,
+    @SerialName("paused") PAUSED,
+    @SerialName("awaiting_review") AWAITING_REVIEW,
+    @SerialName("completed") COMPLETED,
+    @SerialName("cancelled") CANCELLED,
+    @SerialName("failed") FAILED,
 }
 
 @Serializable
-enum class ProviderImportStatus(val label: String) {
-    @SerialName("pending") PENDING("Waiting"),
-    @SerialName("running") RUNNING("Reading orders"),
-    @SerialName("completed") COMPLETED("Done"),
-    @SerialName("failed") FAILED("Skipped safely"),
-    @SerialName("skipped") SKIPPED("Skipped"),
+enum class ProviderImportStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("running") RUNNING,
+    @SerialName("completed") COMPLETED,
+    @SerialName("failed") FAILED,
+    @SerialName("skipped") SKIPPED,
 }
 
 @Serializable
@@ -42,16 +42,16 @@ data class ImportSession(
 )
 
 @Serializable
-enum class OrderStatus(val label: String) {
-    PLACED("Placed"),
-    CONFIRMED("Confirmed"),
-    PREPARING("Preparing"),
-    OUT_FOR_DELIVERY("Out for delivery"),
-    DELIVERED("Delivered"),
-    CANCELLED("Cancelled"),
-    REFUNDED("Refunded"),
-    PARTIALLY_REFUNDED("Partially refunded"),
-    UNKNOWN("Unknown"),
+enum class OrderStatus {
+    PLACED,
+    CONFIRMED,
+    PREPARING,
+    OUT_FOR_DELIVERY,
+    DELIVERED,
+    CANCELLED,
+    REFUNDED,
+    PARTIALLY_REFUNDED,
+    UNKNOWN,
 }
 
 @Serializable
@@ -74,11 +74,11 @@ data class Order(
 data class OrderPage(val orders: List<Order>, val nextCursor: String? = null)
 
 /** Fields the user may allow during import (FR-6). */
-enum class ImportField(val key: String, val label: String) {
-    ORDER_DATE("order_date", "Order date and time"),
-    ITEMS("items", "Item names"),
-    QUANTITY("quantity", "Quantities"),
-    AMOUNTS("amounts", "Amounts, fees and discounts"),
-    STATUS("status", "Order status"),
-    LOCATION_LABEL("location_label", "Location label (e.g. Home)"),
+enum class ImportField(val key: String) {
+    ORDER_DATE("order_date"),
+    ITEMS("items"),
+    QUANTITY("quantity"),
+    AMOUNTS("amounts"),
+    STATUS("status"),
+    LOCATION_LABEL("location_label"),
 }

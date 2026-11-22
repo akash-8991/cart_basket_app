@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-CHAT-01 -->
+    <string name="chat_placeholder_travel">e.g. Auto from home to the airport now</string>
+    <string name="chat_placeholder_food">e.g. Two masala dosas from my usual place</string>
+    <string name="chat_placeholder_grocery">e.g. Milk, brown bread, eggs and bananas</string>
+    <string name="chat_placeholder_shopping">e.g. A phone charger</string>
+    <string name="chat_intro">Tell me what you need. I\'ll check prices across your %1$s apps before anything is added to a cart.</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_degraded">The assistant is temporarily limited, so I\'m using simple rules.</string>
+    <string name="chat_your_ride">Your ride</string>
+    <string name="chat_your_cart">Your cart</string>
+    <string name="chat_pickup">Pickup</string>
+    <string name="chat_drop">Drop</string>
+    <string name="chat_ride_type">Ride type</string>
+    <string name="chat_when">When</string>
+    <string name="chat_now">Now</string>
+    <string name="chat_decrease">Decrease %1$s</string>
+    <string name="chat_increase">Increase %1$s</string>
+    <string name="chat_remove">Remove %1$s</string>
+    <string name="chat_quantity_cd">Quantity %1$d</string>
+    <string name="chat_compare_by">Compare by</string>
+    <string name="chat_compare_fares">Compare fares</string>
+    <string name="chat_compare_cart">Compare full cart</string>
+    <string name="chat_nothing_until_approved">Nothing is added to any app until you approve it.</string>
+
+    <!-- S-CHAT-02 -->
+    <string name="chat_history_title">Conversations</string>
+    <string name="chat_history_empty_title">No conversations yet</string>
+    <string name="chat_history_empty_body">Start from a category on the home screen.</string>
+    <string name="chat_history_delete">Delete conversation %1$s</string>
+    <string name="chat_history_retention">Conversations are kept for 30 days unless you delete them.</string>
+</resources>

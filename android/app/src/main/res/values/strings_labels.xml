@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Display labels for contract enums. Keys follow the enum name so they are easy to audit. -->
+<resources>
+    <!-- Category -->
+    <string name="category_travel">Travel</string>
+    <string name="category_food">Food ordering</string>
+    <string name="category_grocery">Grocery</string>
+    <string name="category_shopping">Shopping</string>
+
+    <!-- TaskStatus -->
+    <string name="task_status_draft">Draft</string>
+    <string name="task_status_awaiting_approval">Waiting for your approval</string>
+    <string name="task_status_approved">Approved</string>
+    <string name="task_status_running">Preparing your cart</string>
+    <string name="task_status_checkpoint">Needs your confirmation</string>
+    <string name="task_status_needs_user_action">Needs you in the app</string>
+    <string name="task_status_cart_ready">Cart ready</string>
+    <string name="task_status_handed_off">Opened in app</string>
+    <string name="task_status_cancelled">Stopped</string>
+    <string name="task_status_expired">Expired</string>
+    <string name="task_status_failed_safe">Stopped safely</string>
+    <string name="task_status_blocked_policy">Blocked for your safety</string>
+
+    <!-- ActionRisk -->
+    <string name="risk_low">Low</string>
+    <string name="risk_medium">Medium</string>
+    <string name="risk_high">High — asks you first</string>
+    <string name="risk_prohibited">Never automated</string>
+
+    <!-- UserActionReason -->
+    <string name="reason_login_required">Sign-in needed</string>
+    <string name="reason_otp_required">OTP needed</string>
+    <string name="reason_captcha">Verification needed</string>
+    <string name="reason_biometric">Fingerprint or face needed</string>
+    <string name="reason_password_prompt">Password needed</string>
+    <string name="reason_unexpected_dialog">Unexpected pop-up</string>
+    <string name="reason_location_permission">Location permission needed</string>
+    <string name="reason_app_update_required">App update needed</string>
+    <string name="reason_item_unavailable">Item unavailable</string>
+
+    <!-- Objective -->
+    <string name="objective_lowest_total">Lowest total</string>
+    <string name="objective_fastest">Fastest</string>
+    <string name="objective_best_value">Best value</string>
+    <string name="objective_fewest_providers">Fewest apps</string>
+    <string name="objective_preferred_provider">My preferred app</string>
+
+    <!-- LineMatch -->
+    <string name="match_exact">Exact match</string>
+    <string name="match_equivalent">Equivalent item</string>
+    <string name="match_different_pack">Different pack size</string>
+    <string name="match_different_class">Different ride class</string>
+    <string name="match_unavailable">Unavailable</string>
+    <string name="match_uncertain">Match uncertain</string>
+
+    <!-- Availability -->
+    <string name="availability_available">Available</string>
+    <string name="availability_partial">Some items unavailable</string>
+    <string name="availability_unavailable">Unavailable</string>
+    <string name="availability_not_checked">Not checked</string>
+    <string name="availability_failed">Could not check</string>
+
+    <!-- RecommendationLabel -->
+    <string name="rec_label_cheapest">Cheapest</string>
+    <string name="rec_label_lowest_observed_estimate">Lowest observed estimate</string>
+    <string name="rec_label_fastest">Fastest</string>
+    <string name="rec_label_best_value">Best value</string>
+    <string name="rec_label_preferred">Your preferred app</string>
+
+    <!-- Confidence -->
+    <string name="confidence_high">High confidence</string>
+    <string name="confidence_medium">Medium confidence</string>
+    <string name="confidence_low">Low confidence</string>
+
+    <!-- RideClass -->
+    <string name="ride_bike">Bike</string>
+    <string name="ride_auto">Auto</string>
+    <string name="ride_mini">Mini</string>
+    <string name="ride_sedan">Sedan</string>
+    <string name="ride_suv">SUV</string>
+    <string name="ride_any">Any</string>
+
+    <!-- PrivacyMode -->
+    <string name="privacy_device_only">Keep on this device</string>
+    <string name="privacy_device_only_desc">Monthly totals are calculated on this phone only.</string>
+    <string name="privacy_normalized_upload">Sync summaries to your account</string>
+    <string name="privacy_normalized_upload_desc">Only normalized order summaries are uploaded after you review them.</string>
+
+    <!-- ProviderStatus -->
+    <string name="provider_status_enabled">Available</string>
+    <string name="provider_status_disabled">Not available</string>
+    <string name="provider_status_kill_switched">Temporarily paused</string>
+    <string name="provider_status_pending_approval">Coming soon</string>
+
+    <!-- Provider capabilities -->
+    <string name="cap_supported">supported</string>
+    <string name="cap_ride_setup_only">ride setup only</string>
+    <string name="cap_manual_only">manual only</string>
+    <string name="cap_unsupported">not supported</string>
+    <string name="cap_partial">partial</string>
+    <string name="cap_link_cart">opens cart</string>
+    <string name="cap_link_app">opens app</string>
+    <string name="cap_link_none">none</string>
+    <string name="cap_summary">Cart: %1$s · History: %2$s · Open cart link: %3$s</string>
+
+    <!-- ImportStatus -->
+    <string name="import_awaiting_permission">Waiting for permission</string>
+    <string name="import_running">Importing</string>
+    <string name="import_paused">Paused</string>
+    <string name="import_awaiting_review">Ready for review</string>
+    <string name="import_completed">Completed</string>
+    <string name="import_cancelled">Cancelled</string>
+    <string name="import_failed">Failed</string>
+
+    <!-- ProviderImportStatus -->
+    <string name="pimport_pending">Waiting</string>
+    <string name="pimport_running">Reading orders</string>
+    <string name="pimport_completed">Done</string>
+    <string name="pimport_failed">Skipped safely</string>
+    <string name="pimport_skipped">Skipped</string>
+
+    <!-- OrderStatus -->
+    <string name="order_placed">Placed</string>
+    <string name="order_confirmed">Confirmed</string>
+    <string name="order_preparing">Preparing</string>
+    <string name="order_out_for_delivery">Out for delivery</string>
+    <string name="order_delivered">Delivered</string>
+    <string name="order_cancelled">Cancelled</string>
+    <string name="order_refunded">Refunded</string>
+    <string name="order_partially_refunded">Partially refunded</string>
+    <string name="order_unknown">Unknown</string>
+
+    <!-- ImportField -->
+    <string name="field_order_date">Order date and time</string>
+    <string name="field_items">Item names</string>
+    <string name="field_quantity">Quantities</string>
+    <string name="field_amounts">Amounts, fees and discounts</string>
+    <string name="field_status">Order status</string>
+    <string name="field_location_label">Location label (e.g. Home)</string>
+
+    <!-- Cost rows (keys match contract field names) -->
+    <string name="cost_item_subtotal">Items</string>
+    <string name="cost_delivery_fee">Delivery fee</string>
+    <string name="cost_packaging_fee">Packaging fee</string>
+    <string name="cost_platform_fee">Platform fee</string>
+    <string name="cost_small_cart_fee">Small-cart fee</string>
+    <string name="cost_surge_or_booking_fee">Surge / booking fee</string>
+    <string name="cost_taxes">Taxes</string>
+    <string name="cost_discounts">Discounts</string>
+
+    <!-- FieldProblem -->
+    <string name="problem_user_id_short">Use at least %1$d characters</string>
+    <string name="problem_too_long">Use at most %1$d characters</string>
+    <string name="problem_user_id_chars">Use lowercase letters, numbers, dot, dash or underscore</string>
+    <string name="problem_email">Enter a valid email address</string>
+    <string name="problem_password_short">Use at least %1$d characters</string>
+    <string name="problem_contains_user_id">Don\'t include your user ID</string>
+    <string name="problem_repetitive">Use a less repetitive password</string>
+</resources>

@@ -4,13 +4,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ReasonCode(val label: String) {
-    @SerialName("recent") RECENT("Recent"),
-    @SerialName("frequent") FREQUENT("Frequent"),
-    @SerialName("regular_interval") REGULAR_INTERVAL("Regular interval"),
-    @SerialName("due_soon") DUE_SOON("Due soon"),
-    @SerialName("weekday_pattern") WEEKDAY_PATTERN("Weekday pattern"),
-    @SerialName("seasonal") SEASONAL("Seasonal"),
+enum class ReasonCode {
+    @SerialName("recent") RECENT,
+    @SerialName("frequent") FREQUENT,
+    @SerialName("regular_interval") REGULAR_INTERVAL,
+    @SerialName("due_soon") DUE_SOON,
+    @SerialName("weekday_pattern") WEEKDAY_PATTERN,
+    @SerialName("seasonal") SEASONAL,
 }
 
 @Serializable

@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class PrivacyMode(val label: String) {
-    @SerialName("device_only") DEVICE_ONLY("Keep on this device"),
-    @SerialName("normalized_upload") NORMALIZED_UPLOAD("Sync summaries to your account"),
+enum class PrivacyMode {
+    @SerialName("device_only") DEVICE_ONLY,
+    @SerialName("normalized_upload") NORMALIZED_UPLOAD,
 }
 
 @Serializable

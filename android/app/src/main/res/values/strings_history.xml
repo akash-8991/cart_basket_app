@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-HIST-01 -->
+    <string name="hist_connect_title">Connect order history</string>
+    <string name="hist_connect_intro">SmartCart opens each app you choose, goes to its order history and reads only the fields below. Reading happens on this phone; raw screens are never saved or uploaded.</string>
+    <string name="hist_apps">Apps</string>
+    <string name="hist_app_row">%1$s · %2$s</string>
+    <string name="hist_collected">What\'s collected</string>
+    <string name="hist_never_collected">Never collected: payment methods, card or UPI details, passwords, OTPs, chats with sellers or drivers.</string>
+    <string name="hist_where_kept">Where your history is kept</string>
+    <string name="hist_allow_import">Allow and import</string>
+
+    <!-- S-HIST-02 -->
+    <string name="hist_importing_title">Importing</string>
+    <string name="hist_progress">%1$s · %2$d of %3$d apps</string>
+    <plurals name="hist_provider_progress">
+        <item quantity="one">%1$s · %2$d order</item>
+        <item quantity="other">%1$s · %2$d orders</item>
+    </plurals>
+    <string name="hist_skipped">Skipped</string>
+    <string name="hist_cancelled">Import cancelled. Nothing was saved.</string>
+    <string name="hist_cancel">Cancel import</string>
+
+    <!-- S-HIST-03 -->
+    <string name="hist_review_title">Review before saving</string>
+    <string name="hist_review_device">Here\'s a sample of what was read. It stays on this phone.</string>
+    <string name="hist_review_upload">Here\'s a sample of what was read. Only these normalized fields will be synced to your account.</string>
+    <string name="hist_provider_skipped">%1$s was skipped.</string>
+    <string name="hist_nothing_title">Nothing to review</string>
+    <string name="hist_nothing_body">No orders were found.</string>
+    <plurals name="hist_save_device">
+        <item quantity="one">Save %1$d order on this phone</item>
+        <item quantity="other">Save %1$d orders on this phone</item>
+    </plurals>
+    <plurals name="hist_save_sync">
+        <item quantity="one">Save and sync %1$d order</item>
+        <item quantity="other">Save and sync %1$d orders</item>
+    </plurals>
+    <string name="hist_discard">Discard import</string>
+
+    <!-- Order row -->
+    <string name="order_header">%1$s · %2$s</string>
+    <string name="order_meta">%1$s · %2$s</string>
+    <string name="order_item">%1$s × %2$d</string>
+    <string name="order_check">Check</string>
+    <string name="order_delete_cd">Delete order from %1$s on %2$s</string>
+    <string name="order_include">Include this order</string>
+    <string name="order_not_counted">Not counted in monthly totals</string>
+
+    <!-- S-HIST-04 -->
+    <string name="orders_title">Imported orders</string>
+    <string name="orders_empty_title">No imported orders</string>
+    <string name="orders_empty_body">Connect your apps to see your order history here.</string>
+
+    <!-- S-SUG-01 -->
+    <string name="sug_title">Suggestions</string>
+    <string name="sug_empty_title">No suggestions yet</string>
+    <string name="sug_empty_body">Suggestions appear once there\'s enough order history to spot patterns.</string>
+    <string name="sug_why">Why: %1$s</string>
+    <string name="sug_usually_from">Usually from %1$s</string>
+    <string name="sug_not_useful">Not useful</string>
+    <string name="sug_checking">Checking prices…</string>
+    <string name="sug_compare">Compare prices</string>
+</resources>

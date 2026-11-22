@@ -44,11 +44,11 @@ data class Money(val amountMinor: Long, val currency: String) {
 }
 
 @Serializable
-enum class Category(val title: String) {
-    @SerialName("travel") TRAVEL("Travel"),
-    @SerialName("food") FOOD("Food ordering"),
-    @SerialName("grocery") GROCERY("Grocery"),
-    @SerialName("shopping") SHOPPING("Shopping");
+enum class Category {
+    @SerialName("travel") TRAVEL,
+    @SerialName("food") FOOD,
+    @SerialName("grocery") GROCERY,
+    @SerialName("shopping") SHOPPING;
 
     val key: String get() = name.lowercase()
 

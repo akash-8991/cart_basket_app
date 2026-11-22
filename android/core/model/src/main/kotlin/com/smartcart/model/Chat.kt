@@ -47,13 +47,13 @@ data class CartLine(
 }
 
 @Serializable
-enum class RideClass(val label: String) {
-    @SerialName("bike") BIKE("Bike"),
-    @SerialName("auto") AUTO("Auto"),
-    @SerialName("mini") MINI("Mini"),
-    @SerialName("sedan") SEDAN("Sedan"),
-    @SerialName("suv") SUV("SUV"),
-    @SerialName("any") ANY("Any"),
+enum class RideClass {
+    @SerialName("bike") BIKE,
+    @SerialName("auto") AUTO,
+    @SerialName("mini") MINI,
+    @SerialName("sedan") SEDAN,
+    @SerialName("suv") SUV,
+    @SerialName("any") ANY,
 }
 
 @Serializable

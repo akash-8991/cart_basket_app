@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared actions -->
+    <string name="common_back">Back</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_try_again">Try again</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_done">Done</string>
+    <string name="common_ok">OK</string>
+    <string name="common_home">Home</string>
+    <string name="common_back_home">Back to home</string>
+    <string name="common_continue_manually">Continue manually</string>
+    <string name="common_see_all">See all</string>
+    <string name="common_dash">—</string>
+    <string name="common_loading">Loading</string>
+    <string name="common_mock_no_partner_apps">In this mock build partner apps are not opened.</string>
+
+    <!-- Global automation bar -->
+    <string name="task_bar_status">%1$s: %2$s</string>
+    <string name="task_bar_stop">Stop</string>
+    <string name="task_bar_stop_cd">Emergency stop automation</string>
+
+    <!-- Error titles (contracts/error-codes.yaml) -->
+    <string name="err_title_offline">You\'re offline</string>
+    <string name="err_title_wait">Please wait a moment</string>
+    <string name="err_title_sign_in_failed">Couldn\'t sign you in</string>
+    <string name="err_title_sign_in_again">Please sign in again</string>
+    <string name="err_title_provider_paused">This app is paused</string>
+    <string name="err_title_permission">Permission needed</string>
+    <string name="err_title_ai_limited">Assistant is limited right now</string>
+    <string name="err_title_policy">Blocked for your safety</string>
+    <string name="err_title_expired">This has expired</string>
+    <string name="err_title_generic">Something went wrong</string>
+
+    <!-- Error bodies -->
+    <string name="err_body_offline">Check your connection and try again.</string>
+    <string name="err_body_rate_limited">You\'re going a bit fast.</string>
+    <string name="err_body_locked">Too many attempts.</string>
+    <string name="err_body_try_later">%1$s Try again later.</string>
+    <plurals name="err_body_try_in_minutes">
+        <item quantity="one">%1$s Try again in %2$d minute.</item>
+        <item quantity="other">%1$s Try again in %2$d minutes.</item>
+    </plurals>
+    <string name="err_body_invalid_credentials">User ID or password is incorrect.</string>
+    <string name="err_body_session">For your security, your session ended.</string>
+    <string name="err_body_user_id_taken">That user ID is taken. Try another.</string>
+    <string name="err_body_weak_password">Choose a longer, less common password.</string>
+    <string name="err_body_challenge_expired">That code has expired or was already used. Start again.</string>
+    <string name="err_body_provider_disabled">Automation for this app is temporarily unavailable. You can continue manually.</string>
+    <string name="err_body_consent">Allow automation or history access for this app first.</string>
+    <string name="err_body_ai">You can still type items and quantities, one per line.</string>
+    <string name="err_body_policy">This action isn\'t allowed right now. If you paused automation, resume it in Settings → Help.</string>
+    <string name="err_body_task_expired">This request expired. Start again.</string>
+    <string name="err_body_quote_expired">Prices need to be checked again.</string>
+    <string name="err_body_conflict">This changed in the meantime. Refreshing.</string>
+    <string name="err_body_validation">Please check what you entered and try again.</string>
+    <string name="err_body_generic">Please try again in a moment.</string>
+</resources>

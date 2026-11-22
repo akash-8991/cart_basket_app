@@ -7,4 +7,15 @@
     <string name="channel_imports_desc">Import progress and completion</string>
     <string name="channel_summaries">Monthly summaries</string>
     <string name="channel_summaries_desc">Your monthly spending summary</string>
+    <!-- Notifications: generic text is shown on the lock screen when privacy is on -->
+    <string name="notif_cart_ready_generic_title">Your cart is ready</string>
+    <string name="notif_cart_ready_generic_body">Tap to review and pay in the app.</string>
+    <string name="notif_cart_ready_title">%1$s cart is ready</string>
+    <string name="notif_cart_ready_body">Review it and pay in %1$s. SmartCart never pays for you.</string>
+    <string name="notif_needs_you_generic_title">A task needs you</string>
+    <string name="notif_needs_you_generic_body">Tap to continue.</string>
+    <string name="notif_needs_you_title">%1$s needs you</string>
+    <string name="notif_needs_you_fallback">Open the app to continue.</string>
+    <string name="notif_import_title">Order history imported</string>
+    <string name="notif_import_body">Tap to review.</string>
 </resources>

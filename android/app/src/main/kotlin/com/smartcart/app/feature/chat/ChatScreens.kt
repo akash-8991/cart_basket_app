@@ -54,7 +54,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.smartcart.app.feature.home.categoryIcon
+import com.smartcart.app.R
 import com.smartcart.app.ui.common.ErrorCopy
+import com.smartcart.app.ui.common.labelRes
+import com.smartcart.app.ui.common.title
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.Format
 import com.smartcart.app.ui.common.Load
 import com.smartcart.app.ui.common.LoadContent
@@ -171,10 +175,10 @@ class ChatViewModel(private val c: AppContainer, val category: Category) : ViewM
 }
 
 private fun placeholder(c: Category) = when (c) {
-    Category.TRAVEL -> "e.g. Auto from home to the airport now"
-    Category.FOOD -> "e.g. Two masala dosas from my usual place"
-    Category.GROCERY -> "e.g. Milk, brown bread, eggs and bananas"
-    Category.SHOPPING -> "e.g. A phone charger"
+    Category.TRAVEL -> R.string.chat_placeholder_travel
+    Category.FOOD -> R.string.chat_placeholder_food
+    Category.GROCERY -> R.string.chat_placeholder_grocery
+    Category.SHOPPING -> R.string.chat_placeholder_shopping
 }
 
 // ---------------------------------------------------------------- S-CHAT-01
@@ -188,7 +192,7 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
     LaunchedEffect(s.items.size, s.draft) { if (s.items.isNotEmpty()) list.animateScrollToItem(list.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
 
     ScreenScaffold(
-        title = category.title,
+        title = category.title(),
         onBack = onBack,
         bottomBar = {
             Surface(tonalElevation = 3.dp) {
@@ -196,7 +200,7 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
                     OutlinedTextField(
                         value = input,
                         onValueChange = { input = it.take(2000) },
-                        placeholder = { Text(placeholder(category)) },
+                        placeholder = { Text(stringResource(placeholder(category))) },
                         modifier = Modifier.weight(1f),
                         maxLines = 4,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -206,7 +210,7 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
                         onClick = { vm.send(input); input = "" },
                         enabled = input.isNotBlank() && !s.sending && s.sessionId != null,
                         modifier = Modifier.size(Spacing.touchTarget),
-                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send") }
+                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.chat_send)) }
                 }
             }
         },
@@ -222,21 +226,21 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
                     Icon(categoryIcon(category), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.size(Spacing.sm))
                     Text(
-                        "Tell me what you need. I'll check prices across your ${category.title.lowercase()} apps before anything is added to a cart.",
+                        stringResource(R.string.chat_intro, category.title().lowercase()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            s.sessionError?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e), actionLabel = "Try again", onAction = vm::startSession) } }
+            s.sessionError?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e), actionLabel = stringResource(R.string.common_try_again), onAction = vm::startSession) } }
             items(s.items, key = { it.id }) { item ->
                 when (item) {
                     is ChatItem.User -> Bubble(item.text, mine = true)
                     is ChatItem.Assistant -> AssistantBubble(item.turn, onOption = { id, label -> vm.send(label, item.turn.clarification!!.clarificationId to id) })
-                    is ChatItem.Failure -> Banner(ErrorCopy.body(item.error), tone = Tone.DANGER, title = ErrorCopy.title(item.error), actionLabel = "Retry", onAction = { vm.retry(item) })
+                    is ChatItem.Failure -> Banner(ErrorCopy.body(item.error), tone = Tone.DANGER, title = ErrorCopy.title(item.error), actionLabel = stringResource(R.string.common_retry), onAction = { vm.retry(item) })
                 }
             }
-            if (s.sending) item { Bubble("Thinking…", mine = false, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+            if (s.sending) item { Bubble(stringResource(R.string.chat_thinking), mine = false, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
             s.draft?.let { d ->
                 val last = s.items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant
                 if (last?.turn?.nextStep == NextStep.COMPARE || last?.turn?.nextStep == NextStep.REVIEW_CART) {
@@ -269,7 +273,7 @@ private fun Bubble(text: String, mine: Boolean, modifier: Modifier = Modifier) {
 @Composable
 private fun AssistantBubble(turn: AssistantTurn, onOption: (String, String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        if (turn.degraded) Banner("The assistant is temporarily limited, so I'm using simple rules.", tone = Tone.WARNING)
+        if (turn.degraded) Banner(stringResource(R.string.chat_degraded), tone = Tone.WARNING)
         Bubble(turn.replyText, mine = false)
         turn.clarification?.let { cl ->
             Text(cl.question, style = MaterialTheme.typography.titleSmall)
@@ -290,39 +294,40 @@ private fun DraftCard(
     onCompare: () -> Unit,
 ) {
     AppCard {
-        Text(if (d.ride != null) "Your ride" else "Your cart", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(if (d.ride != null) R.string.chat_your_ride else R.string.chat_your_cart), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.size(Spacing.xs))
         d.ride?.let { r ->
-            com.smartcart.designsystem.KeyValueRow("Pickup", r.pickupLabel)
-            com.smartcart.designsystem.KeyValueRow("Drop", r.dropLabel)
-            com.smartcart.designsystem.KeyValueRow("Ride type", r.rideClass.label)
-            com.smartcart.designsystem.KeyValueRow("When", r.`when`?.let { Format.dateTime(it) } ?: "Now")
+            com.smartcart.designsystem.KeyValueRow(stringResource(R.string.chat_pickup), r.pickupLabel)
+            com.smartcart.designsystem.KeyValueRow(stringResource(R.string.chat_drop), r.dropLabel)
+            com.smartcart.designsystem.KeyValueRow(stringResource(R.string.chat_ride_type), stringResource(r.rideClass.labelRes()))
+            com.smartcart.designsystem.KeyValueRow(stringResource(R.string.chat_when), r.`when`?.let { Format.dateTime(it) } ?: stringResource(R.string.chat_now))
         }
         d.lines.forEach { l ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(l.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                IconButton(onClick = { onQty(l.lineId, l.quantity - 1) }, enabled = l.quantity > 1) { Icon(Icons.Outlined.Remove, contentDescription = "Decrease ${l.name}") }
-                Text("${l.quantity}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { contentDescription = "Quantity ${l.quantity}" })
-                IconButton(onClick = { onQty(l.lineId, l.quantity + 1) }) { Icon(Icons.Outlined.Add, contentDescription = "Increase ${l.name}") }
-                IconButton(onClick = { onRemove(l.lineId) }) { Icon(Icons.Outlined.Delete, contentDescription = "Remove ${l.name}") }
+                IconButton(onClick = { onQty(l.lineId, l.quantity - 1) }, enabled = l.quantity > 1) { Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.chat_decrease, l.name)) }
+                val qtyCd = stringResource(R.string.chat_quantity_cd, l.quantity)
+                Text(l.quantity.toString(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { contentDescription = qtyCd })
+                IconButton(onClick = { onQty(l.lineId, l.quantity + 1) }) { Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.chat_increase, l.name)) }
+                IconButton(onClick = { onRemove(l.lineId) }) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.chat_remove, l.name)) }
             }
         }
         Spacer(Modifier.size(Spacing.sm))
-        Text("Compare by", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.chat_compare_by), style = MaterialTheme.typography.labelLarge)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             listOf(Objective.LOWEST_TOTAL, Objective.FASTEST, Objective.BEST_VALUE).forEach { o ->
-                FilterChip(selected = s.objective == o, onClick = { onObjective(o) }, label = { Text(o.label) }, modifier = Modifier.heightIn(min = Spacing.touchTarget))
+                FilterChip(selected = s.objective == o, onClick = { onObjective(o) }, label = { Text(stringResource(o.labelRes())) }, modifier = Modifier.heightIn(min = Spacing.touchTarget))
             }
         }
         s.compareError?.let { Banner(ErrorCopy.body(it), tone = Tone.DANGER, title = ErrorCopy.title(it)) }
         Spacer(Modifier.size(Spacing.sm))
         PrimaryButton(
-            if (d.ride != null) "Compare fares" else "Compare full cart",
+            stringResource(if (d.ride != null) R.string.chat_compare_fares else R.string.chat_compare_cart),
             onClick = onCompare,
             loading = s.comparing,
             enabled = d.lines.isNotEmpty() || d.ride != null,
         )
-        Text("Nothing is added to any app until you approve it.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.chat_nothing_until_approved), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -339,11 +344,11 @@ fun ChatHistoryScreen(onBack: () -> Unit, onOpen: (Category) -> Unit) {
     val c = LocalAppContainer.current
     val vm = viewModel { ChatHistoryViewModel(c) }
     val state by vm.state.collectAsStateWithLifecycle()
-    ScreenScaffold("Conversations", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.chat_history_title), onBack) { padding ->
         LoadContent(state, onRetry = vm::load) {
             val sessions = (state as Load.Ready).value
             if (sessions.isEmpty()) {
-                EmptyState("No conversations yet", "Start from a category on the home screen.", Modifier.padding(padding))
+                EmptyState(stringResource(R.string.chat_history_empty_title), stringResource(R.string.chat_history_empty_body), Modifier.padding(padding))
                 return@LoadContent
             }
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding()), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -356,12 +361,12 @@ fun ChatHistoryScreen(onBack: () -> Unit, onOpen: (Category) -> Unit) {
                                 Text(s.title, style = MaterialTheme.typography.titleSmall)
                                 Text(Format.dateTime(s.updatedAt ?: s.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            IconButton(onClick = { vm.delete(s.sessionId) }) { Icon(Icons.Outlined.Delete, contentDescription = "Delete conversation ${s.title}") }
+                            IconButton(onClick = { vm.delete(s.sessionId) }) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.chat_history_delete, s.title)) }
                         }
                     }
                 }
                 item {
-                    Text("Conversations are kept for 30 days unless you delete them.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = Spacing.md))
+                    Text(stringResource(R.string.chat_history_retention), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = Spacing.md))
                 }
             }
         }

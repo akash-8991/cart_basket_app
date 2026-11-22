@@ -53,7 +53,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.smartcart.app.AppContainer
 import com.smartcart.app.feature.auth.CheckRow
+import com.smartcart.app.R
 import com.smartcart.app.ui.common.ErrorCopy
+import com.smartcart.app.ui.common.label
+import com.smartcart.app.ui.common.labelRes
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.Format
 import com.smartcart.app.ui.common.LocalAppContainer
 import com.smartcart.app.ui.common.ScreenScaffold
@@ -107,54 +111,54 @@ fun AutomationConsentScreen(provider: ProviderKey, quoteId: String, onBack: () -
     var error by remember { mutableStateOf<ApiError?>(null) }
     val ride = provider.category == Category.TRAVEL
 
-    ScreenScaffold("Allow ${provider.displayName} automation", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.consent_title, provider.displayName), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(start = Spacing.xl, end = Spacing.xl, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             item {
                 Text(
-                    "SmartCart can open ${provider.displayName} and ${if (ride) "fill in your pickup, drop and ride type" else "search for and add the items you approve"}. It uses Android's Accessibility service only while a task you approved is running.",
+                    stringResource(if (ride) R.string.consent_intro_ride else R.string.consent_intro_cart, provider.displayName),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
             item {
                 AppCard {
-                    Text("It will", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.consent_will), style = MaterialTheme.typography.titleSmall)
                     listOf(
-                        "Read ${provider.displayName} screens only during a task you approved",
-                        if (ride) "Set pickup, drop and ride type" else "Search, select items and set quantities",
-                        "Show every step and stop if anything looks unexpected",
-                        "Ask you before any high-risk change (like a different address or item)",
-                    ).forEach { Text("✓  $it", style = MaterialTheme.typography.bodyMedium) }
+                        stringResource(R.string.consent_will_read, provider.displayName),
+                        stringResource(if (ride) R.string.consent_will_ride else R.string.consent_will_cart),
+                        stringResource(R.string.consent_will_show),
+                        stringResource(R.string.consent_will_ask),
+                    ).forEach { Text(stringResource(R.string.consent_will_item, it), style = MaterialTheme.typography.bodyMedium) }
                 }
             }
             item {
                 AppCard {
-                    Text("It will never", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.consent_never), style = MaterialTheme.typography.titleSmall)
                     listOf(
-                        "Pay, or enter card, UPI or bank details",
-                        "Enter OTPs, passwords, CAPTCHAs or use your fingerprint/face",
-                        if (ride) "Confirm or book the ride" else "Place the order",
-                        "Read other apps, messages or notifications",
-                    ).forEach { Text("✕  $it", style = MaterialTheme.typography.bodyMedium) }
+                        stringResource(R.string.consent_never_pay),
+                        stringResource(R.string.consent_never_secrets),
+                        stringResource(if (ride) R.string.consent_never_book else R.string.consent_never_order),
+                        stringResource(R.string.consent_never_read),
+                    ).forEach { Text(stringResource(R.string.consent_never_item, it), style = MaterialTheme.typography.bodyMedium) }
                 }
             }
             item {
-                Banner("You can stop any task instantly with the Stop button at the top of the screen, or turn this off at any time in Settings → Connected apps.", tone = Tone.INFO)
+                Banner(stringResource(R.string.consent_stop_note), tone = Tone.INFO)
             }
             item {
                 AppCard {
-                    Text("Android setting", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.consent_android_title), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "After you allow this, Android asks you to turn on SmartCart under Settings → Accessibility. In this mock build no accessibility service is installed, so this step is simulated.",
+                        stringResource(R.string.consent_android_body),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    TextButton(onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } }) { Text("Open Accessibility settings") }
+                    TextButton(onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } }) { Text(stringResource(R.string.consent_open_settings)) }
                 }
             }
-            item { CheckRow(agreed, { agreed = it }, "I allow SmartCart to automate ${provider.displayName} as described") }
+            item { CheckRow(agreed, { agreed = it }, stringResource(R.string.consent_agree, provider.displayName)) }
             error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e)) } }
             item {
-                PrimaryButton("Allow and continue", loading = busy, enabled = agreed, onClick = {
+                PrimaryButton(stringResource(R.string.consent_allow), loading = busy, enabled = agreed, onClick = {
                     busy = true
                     scope.launch {
                         c.providers.setAutomationConsent(provider, true)
@@ -167,7 +171,7 @@ fun AutomationConsentScreen(provider: ProviderKey, quoteId: String, onBack: () -
                     }
                 })
             }
-            item { SecondaryButton("No thanks, I'll do it myself", onManual) }
+            item { SecondaryButton(stringResource(R.string.consent_decline), onManual) }
         }
     }
 }
@@ -248,10 +252,10 @@ fun ApproveScreen(taskId: String, onBack: () -> Unit, onStarted: (String) -> Uni
     val quote = task?.let { c.comparisons.cached(it.quoteId) }
     val estimate = quote?.providerResults?.firstOrNull { it.provider == task?.provider }?.totalEstimate
 
-    ScreenScaffold("Review and approve", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.approve_title), onBack) { padding ->
         val t = task ?: run { LoadingState(); return@ScreenScaffold }
         if (t.status != TaskStatus.AWAITING_APPROVAL) {
-            EmptyState("This request is no longer waiting", "Status: ${t.status.label}", Modifier.padding(padding), actionLabel = "View task", onAction = { onStarted(t.taskId) })
+            EmptyState(stringResource(R.string.approve_not_waiting), stringResource(R.string.approve_status, t.status.label()), Modifier.padding(padding), actionLabel = stringResource(R.string.approve_view_task), onAction = { onStarted(t.taskId) })
             return@ScreenScaffold
         }
         LazyColumn(
@@ -265,35 +269,35 @@ fun ApproveScreen(taskId: String, onBack: () -> Unit, onStarted: (String) -> Uni
                     Spacer(Modifier.width(Spacing.md))
                     Column(Modifier.weight(1f)) {
                         Text(t.provider.displayName, style = MaterialTheme.typography.titleLarge)
-                        estimate?.let { Text("Estimated total ${it.format()} · final price shown in ${t.provider.displayName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        estimate?.let { Text(stringResource(R.string.approve_estimate, it.format(), t.provider.displayName), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             }
-            item { SectionHeader("SmartCart will do these steps") }
+            item { SectionHeader(stringResource(R.string.approve_steps)) }
             items(t.plannedActions, key = { it.actionId }) { a ->
                 Row(Modifier.fillMaxWidth().padding(vertical = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
                     Text(a.description, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Pill(a.risk.label, tone = riskTone(a.risk))
+                    Pill(stringResource(a.risk.labelRes()), tone = riskTone(a.risk))
                 }
             }
             item {
                 AppCard {
-                    Text("Safety limits for this task", style = MaterialTheme.typography.titleSmall)
-                    KeyValueRow("Maximum steps", t.limits.maxActions.toString())
-                    KeyValueRow("Maximum time", "${t.limits.maxRuntimeSeconds / 60} min")
-                    KeyValueRow("Stops if idle for", "${t.limits.inactivityTimeoutSeconds} s")
-                    KeyValueRow("Approval expires", Format.time(t.expiresAt))
+                    Text(stringResource(R.string.approve_limits), style = MaterialTheme.typography.titleSmall)
+                    KeyValueRow(stringResource(R.string.approve_max_steps), t.limits.maxActions.toString())
+                    KeyValueRow(stringResource(R.string.approve_max_time), stringResource(R.string.approve_minutes, t.limits.maxRuntimeSeconds / 60))
+                    KeyValueRow(stringResource(R.string.approve_idle), stringResource(R.string.approve_seconds, t.limits.inactivityTimeoutSeconds))
+                    KeyValueRow(stringResource(R.string.approve_expires), Format.time(t.expiresAt))
                 }
             }
             item {
                 Banner(
-                    "Stops automatically on any unfamiliar screen, sign-in, OTP, CAPTCHA or payment page. Payment always stays with you in ${t.provider.displayName}.",
+                    stringResource(R.string.approve_safety_note, t.provider.displayName),
                     tone = Tone.INFO,
                 )
             }
             error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e)) } }
-            item { PrimaryButton("Approve and start", onClick = { vm.approve { onStarted(t.taskId) } }, loading = busy) }
-            item { SecondaryButton("Cancel", onClick = { vm.stop(StopReason.USER_CANCEL); onBack() }) }
+            item { PrimaryButton(stringResource(R.string.approve_start), onClick = { vm.approve { onStarted(t.taskId) } }, loading = busy) }
+            item { SecondaryButton(stringResource(R.string.common_cancel), onClick = { vm.stop(StopReason.USER_CANCEL); onBack() }) }
         }
     }
 }
@@ -321,9 +325,9 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
         if (t.status == TaskStatus.CART_READY) onReady(t.taskId)
     }
 
-    ScreenScaffold("Cart task", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.task_title), onBack) { padding ->
         val t = task ?: run {
-            EmptyState("Task not found", "It may have expired.", Modifier.padding(padding), actionLabel = "Home", onAction = onHome)
+            EmptyState(stringResource(R.string.task_not_found), stringResource(R.string.task_not_found_body), Modifier.padding(padding), actionLabel = stringResource(R.string.common_home), onAction = onHome)
             return@ScreenScaffold
         }
         LazyColumn(
@@ -336,8 +340,8 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
                     ProviderMonogram(t.provider.displayName)
                     Spacer(Modifier.width(Spacing.md))
                     Column(Modifier.weight(1f)) {
-                        Text(t.status.label, style = MaterialTheme.typography.titleLarge)
-                        Text("${t.provider.displayName} · task ${t.taskId} · ${t.actionsUsed}/${t.limits.maxActions} steps", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t.status.label(), style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(R.string.task_meta, t.provider.displayName, t.taskId, t.actionsUsed, t.limits.maxActions), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (t.status == TaskStatus.RUNNING || t.status == TaskStatus.APPROVED) CircularProgressIndicator(Modifier.size(24.dp))
                 }
@@ -346,27 +350,27 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
             t.checkpoint?.takeIf { t.status == TaskStatus.CHECKPOINT }?.let { cp ->
                 item {
                     AppCard {
-                        Pill("Needs your decision · ${cp.risk.label}", tone = riskTone(cp.risk))
+                        Pill(stringResource(R.string.task_needs_decision, stringResource(cp.risk.labelRes())), tone = riskTone(cp.risk))
                         Spacer(Modifier.size(Spacing.sm))
                         Text(cp.prompt, style = MaterialTheme.typography.bodyLarge)
-                        Text("If you don't answer within ${t.limits.inactivityTimeoutSeconds} seconds, the task stops safely.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.task_decision_timeout, t.limits.inactivityTimeoutSeconds), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.size(Spacing.sm))
-                        PrimaryButton("Yes, continue", onClick = { vm.answer(true) }, loading = busy)
+                        PrimaryButton(stringResource(R.string.task_yes_continue), onClick = { vm.answer(true) }, loading = busy)
                         Spacer(Modifier.size(Spacing.xs))
-                        SecondaryButton("No, stop the task", onClick = { vm.answer(false) })
+                        SecondaryButton(stringResource(R.string.task_no_stop), onClick = { vm.answer(false) })
                     }
                 }
             }
             t.needsUserAction?.takeIf { t.status == TaskStatus.NEEDS_USER_ACTION }?.let { n ->
                 item {
                     AppCard {
-                        Pill(n.reason.title, tone = Tone.WARNING)
+                        Pill(stringResource(n.reason.labelRes()), tone = Tone.WARNING)
                         Spacer(Modifier.size(Spacing.sm))
                         Text(n.message, style = MaterialTheme.typography.bodyLarge)
                         Spacer(Modifier.size(Spacing.sm))
-                        PrimaryButton("I've done it — resume", onClick = vm::resume, loading = busy)
+                        PrimaryButton(stringResource(R.string.task_resume), onClick = vm::resume, loading = busy)
                         Spacer(Modifier.size(Spacing.xs))
-                        SecondaryButton("Continue manually instead", onClick = { vm.stop(StopReason.USER_CANCEL); onManual(t.provider, t.quoteId, t.taskId) })
+                        SecondaryButton(stringResource(R.string.task_manual_instead), onClick = { vm.stop(StopReason.USER_CANCEL); onManual(t.provider, t.quoteId, t.taskId) })
                     }
                 }
             }
@@ -375,21 +379,21 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
                     Banner(
                         f.message,
                         tone = if (t.status == TaskStatus.BLOCKED_POLICY) Tone.DANGER else Tone.WARNING,
-                        title = t.status.label,
-                        actionLabel = "Continue manually",
+                        title = t.status.label(),
+                        actionLabel = stringResource(R.string.common_continue_manually),
                         onAction = { onManual(t.provider, t.quoteId, t.taskId) },
                     )
                 }
             }
             if (t.status == TaskStatus.CANCELLED) {
-                item { Banner("The task was stopped. Anything already added stays in your ${t.provider.displayName} cart; nothing else will change.", tone = Tone.INFO, title = "Stopped", actionLabel = "Continue manually", onAction = { onManual(t.provider, t.quoteId, t.taskId) }) }
+                item { Banner(stringResource(R.string.task_stopped_body, t.provider.displayName), tone = Tone.INFO, title = stringResource(R.string.task_stopped_title), actionLabel = stringResource(R.string.common_continue_manually), onAction = { onManual(t.provider, t.quoteId, t.taskId) }) }
             }
             if (t.status == TaskStatus.EXPIRED) {
-                item { Banner("The approval window passed before the task started. Start again from the comparison.", tone = Tone.INFO, title = "Expired") }
+                item { Banner(stringResource(R.string.task_expired_body), tone = Tone.INFO, title = stringResource(R.string.task_expired_title)) }
             }
             error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e)) } }
 
-            item { SectionHeader("Timeline") }
+            item { SectionHeader(stringResource(R.string.task_timeline)) }
             // A step shows once: its "started" line is replaced by its outcome.
             val finished = t.events.filter { it.type != TaskEventType.ACTION_STARTED && it.actionId != null }.mapNotNull { it.actionId }.toSet()
             val timeline = t.events.filterNot { it.type == TaskEventType.ACTION_STARTED && it.actionId in finished }
@@ -412,10 +416,10 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
             if (t.status.isActive) {
                 item {
                     Spacer(Modifier.size(Spacing.md))
-                    DangerButton("Emergency stop", onClick = { confirmStop = true }, modifier = Modifier.fillMaxWidth())
+                    DangerButton(stringResource(R.string.task_emergency_stop), onClick = { confirmStop = true }, modifier = Modifier.fillMaxWidth())
                 }
             } else if (t.status.isTerminal) {
-                item { Spacer(Modifier.size(Spacing.md)); SecondaryButton("Back to home", onHome) }
+                item { Spacer(Modifier.size(Spacing.md)); SecondaryButton(stringResource(R.string.common_back_home), onHome) }
             }
         }
     }
@@ -424,10 +428,10 @@ fun TaskScreen(taskId: String, onBack: () -> Unit, onReady: (String) -> Unit, on
         // Stop is immediate; the dialog only guards against accidental taps on the large button.
         AlertDialog(
             onDismissRequest = { confirmStop = false },
-            title = { Text("Stop now?") },
-            text = { Text("SmartCart will stop immediately. Items already added stay in the cart.") },
-            confirmButton = { TextButton(onClick = { vm.stop(StopReason.EMERGENCY_STOP); confirmStop = false }) { Text("Stop") } },
-            dismissButton = { TextButton(onClick = { confirmStop = false }) { Text("Keep going") } },
+            title = { Text(stringResource(R.string.task_stop_confirm_title)) },
+            text = { Text(stringResource(R.string.task_stop_confirm_body)) },
+            confirmButton = { TextButton(onClick = { vm.stop(StopReason.EMERGENCY_STOP); confirmStop = false }) { Text(stringResource(R.string.task_stop_confirm)) } },
+            dismissButton = { TextButton(onClick = { confirmStop = false }) { Text(stringResource(R.string.task_keep_going)) } },
         )
     }
 }
@@ -443,7 +447,7 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
     var opened by remember { mutableStateOf<Handoff?>(null) }
     LaunchedEffect(Unit) { vm.loadHandoff() }
 
-    ScreenScaffold("Cart ready", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.ready_title), onBack) { padding ->
         val t = task ?: run { LoadingState(); return@ScreenScaffold }
         val cart = t.cart
         LazyColumn(
@@ -452,35 +456,35 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
             modifier = Modifier.navigationBarsPadding(),
         ) {
             item {
-                if (cart?.verified == true) Banner("I checked the ${t.provider.displayName} cart and it matches what you approved.", tone = Tone.SUCCESS, title = "Cart verified at ${Format.time(cart.verifiedAt)}")
-                else Banner("The cart could not be verified. Please check it carefully in ${t.provider.displayName}.", tone = Tone.WARNING)
+                if (cart?.verified == true) Banner(stringResource(R.string.ready_verified_body, t.provider.displayName), tone = Tone.SUCCESS, title = stringResource(R.string.ready_verified_title, Format.time(cart.verifiedAt)))
+                else Banner(stringResource(R.string.ready_unverified, t.provider.displayName), tone = Tone.WARNING)
             }
-            if (cart?.differsFromQuote == true) item { Banner("Some items were skipped with your OK, so the earlier estimate no longer applies. Check the final price in ${t.provider.displayName}.", tone = Tone.WARNING) }
+            if (cart?.differsFromQuote == true) item { Banner(stringResource(R.string.ready_differs, t.provider.displayName), tone = Tone.WARNING) }
             item {
                 AppCard {
                     cart?.lines?.forEach { l ->
                         KeyValueRow(
-                            "${l.matchedName ?: l.requestedName}${l.matchedSize?.let { " $it" } ?: ""} × ${l.quantity}",
-                            if (l.match == LineMatch.UNAVAILABLE) (l.note ?: "Skipped") else (l.lineTotal?.format() ?: ""),
+                            stringResource(R.string.ready_line, listOfNotNull(l.matchedName ?: l.requestedName, l.matchedSize).joinToString(" "), l.quantity),
+                            if (l.match == LineMatch.UNAVAILABLE) (l.note ?: stringResource(R.string.ready_skipped)) else (l.lineTotal?.format() ?: ""),
                         )
                     }
                     cart?.totalEstimate?.let {
                         HorizontalDivider(Modifier.padding(vertical = Spacing.sm))
-                        KeyValueRow("Estimated total", it.format(), emphasize = true)
+                        KeyValueRow(stringResource(R.string.ready_estimated_total), it.format(), emphasize = true)
                     }
                 }
             }
-            item { Text("The final price is shown in ${t.provider.displayName}. You review and pay there — SmartCart never pays for you.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e), actionLabel = "Try again", onAction = vm::loadHandoff) } }
+            item { Text(stringResource(R.string.ready_pay_note, t.provider.displayName), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e), actionLabel = stringResource(R.string.common_try_again), onAction = vm::loadHandoff) } }
             item {
                 PrimaryButton(
-                    "Open cart in ${t.provider.displayName}",
+                    stringResource(R.string.ready_open_cart, t.provider.displayName),
                     loading = busy,
                     enabled = handoff != null,
                     onClick = { vm.markHandedOff(); opened = handoff },
                 )
             }
-            item { SecondaryButton("Done", onHome) }
+            item { SecondaryButton(stringResource(R.string.common_done), onHome) }
         }
     }
 
@@ -488,21 +492,21 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
         val t = task
         AlertDialog(
             onDismissRequest = { opened = null },
-            title = { Text("Opening ${t?.provider?.displayName}") },
+            title = { Text(stringResource(R.string.ready_opening, t?.provider?.displayName.orEmpty())) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     Text(
                         when (h.strategy) {
-                            HandoffStrategy.CART_DEEP_LINK -> "In the live app this opens your ${t?.provider?.displayName} cart directly."
-                            HandoffStrategy.APP_LAUNCH -> "${t?.provider?.displayName} doesn't support opening the cart directly, so the app opens on its home screen."
-                            HandoffStrategy.MANUAL -> "Open ${t?.provider?.displayName} yourself and follow these steps."
+                            HandoffStrategy.CART_DEEP_LINK -> stringResource(R.string.ready_strategy_cart, t?.provider?.displayName.orEmpty())
+                            HandoffStrategy.APP_LAUNCH -> stringResource(R.string.ready_strategy_app, t?.provider?.displayName.orEmpty())
+                            HandoffStrategy.MANUAL -> stringResource(R.string.ready_strategy_manual, t?.provider?.displayName.orEmpty())
                         },
                     )
-                    h.manualSteps.forEachIndexed { i, s -> Text("${i + 1}. $s") }
-                    Text("This mock build does not open partner apps. Link expires ${Format.time(h.expiresAt)}.", style = MaterialTheme.typography.bodySmall)
+                    h.manualSteps.forEachIndexed { i, s -> Text(stringResource(R.string.ready_step, i + 1, s)) }
+                    Text(stringResource(R.string.ready_mock_note, Format.time(h.expiresAt)), style = MaterialTheme.typography.bodySmall)
                 }
             },
-            confirmButton = { TextButton(onClick = { opened = null; onHome() }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { opened = null; onHome() }) { Text(stringResource(R.string.common_ok)) } },
         )
     }
 }
@@ -517,25 +521,25 @@ fun ManualFallbackScreen(provider: ProviderKey, quoteId: String?, taskId: String
     val task by remember(taskId) { taskId?.let { c.tasks.observe(it) } ?: kotlinx.coroutines.flow.flowOf(null) }.collectAsStateWithLifecycle(null)
     val done = task?.events?.filter { it.type == TaskEventType.ACTION_SUCCEEDED }?.map { it.description }.orEmpty()
 
-    ScreenScaffold("Continue in ${provider.displayName}", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.manual_title, provider.displayName), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(start = Spacing.xl, end = Spacing.xl, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            item { Text("You can finish this yourself. Here's what to do:", style = MaterialTheme.typography.bodyLarge) }
+            item { Text(stringResource(R.string.manual_intro), style = MaterialTheme.typography.bodyLarge) }
             item {
                 AppCard {
                     listOf(
-                        "Open ${provider.displayName}",
-                        if (provider.category == Category.TRAVEL) "Enter your pickup and drop, and choose the ride type" else "Search for and add the items below",
-                        "Check the total, then pay in ${provider.displayName}",
-                    ).forEachIndexed { i, s -> Text("${i + 1}. $s", style = MaterialTheme.typography.bodyMedium) }
+                        stringResource(R.string.manual_step_open, provider.displayName),
+                        stringResource(if (provider.category == Category.TRAVEL) R.string.manual_step_ride else R.string.manual_step_cart),
+                        stringResource(R.string.manual_step_pay, provider.displayName),
+                    ).forEachIndexed { i, s -> Text(stringResource(R.string.ready_step, i + 1, s), style = MaterialTheme.typography.bodyMedium) }
                 }
             }
-            if (done.isNotEmpty()) item { Banner("Already done: ${done.joinToString()}", tone = Tone.INFO) }
+            if (done.isNotEmpty()) item { Banner(stringResource(R.string.manual_already_done, done.joinToString()), tone = Tone.INFO) }
             if (lines.isNotEmpty()) {
-                item { SectionHeader("Your list") }
-                items(lines, key = { it.lineId }) { l -> KeyValueRow(l.requestedName, "× ${l.quantity}") }
+                item { SectionHeader(stringResource(R.string.manual_your_list)) }
+                items(lines, key = { it.lineId }) { l -> KeyValueRow(l.requestedName, stringResource(R.string.manual_qty, l.quantity)) }
             }
-            item { Text("In this mock build partner apps are not opened.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            item { PrimaryButton("Done", onHome) }
+            item { Text(stringResource(R.string.common_mock_no_partner_apps), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            item { PrimaryButton(stringResource(R.string.common_done), onHome) }
         }
     }
 }

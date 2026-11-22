@@ -44,6 +44,7 @@ Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs
 | Fixture + schema validation, contract invariants | `npm run validate` | 71 fixtures valid, 6 schemas compile, invariants hold |
 | Kotlin unit tests (`core:data`) | `./gradlew :core:data:test` | 23/23 pass |
 | Compose UI acceptance tests (Robolectric) | `./gradlew :app:testDebugUnitTest` | 8/8 pass, plus screenshot tour |
+| No hardcoded copy in Kotlin (D-014) | `NoHardcodedCopyTest` | pass; 575 string/plural resources; verified to fail on a probe literal |
 | Debug APK | `./gradlew :app:assembleDebug` | builds |
 | Claude API key / secret scan of APK and repo | grep for `sk-ant-`, `ANTHROPIC_API_KEY`, `x-api-key`, `api.anthropic.com` | no matches |
 
@@ -57,7 +58,7 @@ Screenshots: `docs/phase2/screenshots/` (welcome, login, home light/dark, compar
 
 1. **Manual accessibility pass**: TalkBack walkthrough, focus order, 200% font scale, contrast spot-check on device.
 2. **Device matrix**: at least API 26, 30, 34 and 36; small phone, large phone, tablet; rotation; process death during a task.
-3. **Copy lives in Kotlin**, not `strings.xml`. Post-freeze change control allows "copy and translation corrections", which needs resources. **Recommend moving user-facing strings to resources before freezing.**
+3. ~~Copy lives in Kotlin~~ **Resolved (D-014):** all user-facing copy is in `strings_*.xml` with plurals; a test blocks regressions. Translations themselves are not started.
 4. Conversation history opens a fresh chat in that category; past messages are not replayed (needs `GET /v1/chat/sessions/{id}` wiring).
 5. Encrypted local cache (Room + SQLCipher) deferred to Phase 3 (D-012).
 6. Handoff tokens from notifications resolve to Home in the mock; real resolution needs the backend.

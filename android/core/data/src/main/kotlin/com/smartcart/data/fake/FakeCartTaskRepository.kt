@@ -200,7 +200,7 @@ class FakeCartTaskRepository(
                 }
                 is PolicyDecision.HandToUser -> {
                     val signal = CompletableDeferred<Unit>().also { resumeSignals[taskId] = it }
-                    transition(taskId, TaskStatus.NEEDS_USER_ACTION, "${t.provider.displayName} needs you: ${decision.reason.title.lowercase()}", TaskEventType.HALT) {
+                    transition(taskId, TaskStatus.NEEDS_USER_ACTION, "${t.provider.displayName} needs you: ${decision.reason.name.lowercase().replace('_', ' ')}", TaskEventType.HALT) {
                         it.copy(needsUserAction = NeedsUserAction(decision.reason, "${it.provider.displayName} needs you to sign in. Sign in yourself, then tap Resume. I never enter passwords or OTPs."))
                     }
                     signal.await()

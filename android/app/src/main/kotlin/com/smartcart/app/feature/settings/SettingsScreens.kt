@@ -49,7 +49,15 @@ import com.smartcart.app.AppContainer
 import com.smartcart.app.BuildConfig
 import com.smartcart.app.feature.auth.PasswordInput
 import com.smartcart.app.ui.Routes
+import com.smartcart.app.R
 import com.smartcart.app.ui.common.ErrorCopy
+import com.smartcart.app.ui.common.capabilitySummary
+import com.smartcart.app.ui.common.label
+import com.smartcart.app.ui.common.labelRes
+import com.smartcart.app.ui.common.title
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.Format
 import com.smartcart.app.ui.common.Load
 import com.smartcart.app.ui.common.LoadContent
@@ -116,18 +124,18 @@ fun SwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit, subt
 fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
     val c = LocalAppContainer.current
     val scope = rememberCoroutineScope()
-    ScreenScaffold("Settings", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_title), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = Spacing.xxl)) {
-            item { NavRow(Icons.Outlined.Apps, "Connected apps", "Permissions and automation per app") { onNavigate(Routes.SET_PROVIDERS) } }
-            item { NavRow(Icons.Outlined.PrivacyTip, "Privacy and data", "Export, delete, where data is kept") { onNavigate(Routes.SET_PRIVACY) } }
-            item { NavRow(Icons.Outlined.Devices, "Devices and sessions", "Signed-in devices") { onNavigate(Routes.SET_SESSIONS) } }
-            item { NavRow(Icons.Outlined.Notifications, "Notifications") { onNavigate(Routes.SET_NOTIFICATIONS) } }
-            item { NavRow(Icons.AutoMirrored.Outlined.ListAlt, "Activity", "Recent automation and consent events") { onNavigate(Routes.SET_ACTIVITY) } }
-            item { NavRow(Icons.Outlined.HelpOutline, "Help and emergency stop", "Pause all automation, troubleshooting") { onNavigate(Routes.HELP) } }
-            if (BuildConfig.MOCK_SCENARIOS) item { NavRow(Icons.Outlined.Build, "Developer: mock scenarios", "Debug builds only") { onNavigate(Routes.DEVELOPER) } }
+            item { NavRow(Icons.Outlined.Apps, stringResource(R.string.set_providers), stringResource(R.string.set_providers_sub)) { onNavigate(Routes.SET_PROVIDERS) } }
+            item { NavRow(Icons.Outlined.PrivacyTip, stringResource(R.string.set_privacy), stringResource(R.string.set_privacy_sub)) { onNavigate(Routes.SET_PRIVACY) } }
+            item { NavRow(Icons.Outlined.Devices, stringResource(R.string.set_sessions), stringResource(R.string.set_sessions_sub)) { onNavigate(Routes.SET_SESSIONS) } }
+            item { NavRow(Icons.Outlined.Notifications, stringResource(R.string.set_notifications)) { onNavigate(Routes.SET_NOTIFICATIONS) } }
+            item { NavRow(Icons.AutoMirrored.Outlined.ListAlt, stringResource(R.string.set_activity), stringResource(R.string.set_activity_sub)) { onNavigate(Routes.SET_ACTIVITY) } }
+            item { NavRow(Icons.Outlined.HelpOutline, stringResource(R.string.set_help), stringResource(R.string.set_help_sub)) { onNavigate(Routes.HELP) } }
+            if (BuildConfig.MOCK_SCENARIOS) item { NavRow(Icons.Outlined.Build, stringResource(R.string.set_developer), stringResource(R.string.set_developer_sub)) { onNavigate(Routes.DEVELOPER) } }
             item { HorizontalDivider(Modifier.padding(vertical = Spacing.sm)) }
             item {
-                NavRow(Icons.Outlined.Logout, "Sign out") {
+                NavRow(Icons.Outlined.Logout, stringResource(R.string.set_sign_out)) {
                     scope.launch {
                         c.tasks.stopAll(StopReason.USER_CANCEL)
                         c.analytics.track(AnalyticsEventName.AUTH_LOGOUT)
@@ -135,7 +143,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
                     }
                 }
             }
-            item { Text("Version ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(Spacing.lg)) }
+            item { Text(stringResource(R.string.set_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(Spacing.lg)) }
         }
     }
 }
@@ -146,9 +154,9 @@ fun ProvidersScreen(onBack: () -> Unit) {
     val c = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     val providers by c.providers.providers.collectAsStateWithLifecycle()
-    ScreenScaffold("Connected apps", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_providers), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            item { Text("SmartCart only works with an app after you allow it. Turning a switch off takes effect immediately.", style = MaterialTheme.typography.bodyMedium) }
+            item { Text(stringResource(R.string.providers_intro), style = MaterialTheme.typography.bodyMedium) }
             items(providers.filterNot { it.hidden }, key = { it.key.key }) { p ->
                 AppCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -156,24 +164,24 @@ fun ProvidersScreen(onBack: () -> Unit) {
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
                             Text(p.displayName, style = MaterialTheme.typography.titleSmall)
-                            Text(p.category.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(p.category.title(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Pill(p.status.label, tone = if (p.status == ProviderStatus.ENABLED) Tone.SUCCESS else Tone.WARNING)
+                        Pill(stringResource(p.status.labelRes()), tone = if (p.status == ProviderStatus.ENABLED) Tone.SUCCESS else Tone.WARNING)
                     }
                     Text(
-                        "Cart: ${p.capabilities.cartAutomation.name.lowercase().replace('_', ' ')} · History: ${p.capabilities.historyImport.name.lowercase().replace('_', ' ')} · Open cart link: ${p.capabilities.deepLink.name.lowercase().replace('_', ' ')}",
+                        capabilitySummary(p.capabilities),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     val enabled = p.status == ProviderStatus.ENABLED
-                    SwitchRow("Allow cart automation", p.consent.automation, enabled = enabled, onChange = { on ->
+                    SwitchRow(stringResource(R.string.providers_allow_cart), p.consent.automation, enabled = enabled, onChange = { on ->
                         scope.launch {
                             c.providers.setAutomationConsent(p.key, on)
                             c.account.setConsent("automation.${p.key.key}", on)
                             c.analytics.track(AnalyticsEventName.AUTOMATION_CONSENT_CHANGED, mapOf("provider" to p.key.key, "granted" to on, "consent_scope" to "automation"))
                         }
                     })
-                    SwitchRow("Allow order-history import", p.consent.history, enabled = enabled, onChange = { on ->
+                    SwitchRow(stringResource(R.string.providers_allow_history), p.consent.history, enabled = enabled, onChange = { on ->
                         scope.launch {
                             c.providers.setHistoryConsent(p.key, on)
                             c.account.setConsent("history.${p.key.key}", on)
@@ -189,7 +197,8 @@ fun ProvidersScreen(onBack: () -> Unit) {
 // ---------------------------------------------------------------- S-SET-03
 class PrivacyViewModel(private val c: AppContainer) : ViewModel() {
     val profile = MutableStateFlow<Load<Profile>>(Load.Loading)
-    val result = MutableStateFlow<String?>(null)
+    /** Successful request: whether it was an export, plus the server SLA in days. */
+    val result = MutableStateFlow<Pair<Boolean, Int?>?>(null)
     val error = MutableStateFlow<ApiError?>(null)
     val busy = MutableStateFlow(false)
     init { load() }
@@ -209,7 +218,7 @@ class PrivacyViewModel(private val c: AppContainer) : ViewModel() {
         viewModelScope.launch {
             when (val r = block()) {
                 is ApiResult.Success -> {
-                    result.value = r.value.message + (r.value.slaDays?.let { " Completes within $it days." } ?: "")
+                    result.value = (action == "export") to r.value.slaDays
                     c.analytics.track(AnalyticsEventName.PRIVACY_ACTION, mapOf("privacy_action" to action))
                     if (action == "delete_account") { c.tasks.stopAll(StopReason.USER_CANCEL); c.auth.logout() }
                 }
@@ -220,11 +229,11 @@ class PrivacyViewModel(private val c: AppContainer) : ViewModel() {
     }
 }
 
-private enum class StepUpAction(val title: String, val body: String, val confirm: String) {
-    EXPORT("Export your data", "We'll email a copy of your data to your registered address.", "Request export"),
-    DELETE_HISTORY("Delete order history", "Removes all imported orders and monthly totals. This can't be undone.", "Delete history"),
-    DELETE_CHAT("Delete conversations", "Removes all chat history. This can't be undone.", "Delete conversations"),
-    DELETE_ACCOUNT("Delete account", "Deletes your account and all data, and signs you out everywhere. This can't be undone.", "Delete account"),
+private enum class StepUpAction(@StringRes val title: Int, @StringRes val body: Int, @StringRes val confirm: Int) {
+    EXPORT(R.string.stepup_export_title, R.string.stepup_export_body, R.string.stepup_export_confirm),
+    DELETE_HISTORY(R.string.stepup_history_title, R.string.stepup_history_body, R.string.stepup_history_confirm),
+    DELETE_CHAT(R.string.stepup_chat_title, R.string.stepup_chat_body, R.string.stepup_chat_confirm),
+    DELETE_ACCOUNT(R.string.stepup_account_title, R.string.stepup_account_body, R.string.stepup_account_confirm),
 }
 
 @Composable
@@ -238,37 +247,42 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
     var stepUp by remember { mutableStateOf<StepUpAction?>(null) }
     var cacheCleared by remember { mutableStateOf(false) }
 
-    ScreenScaffold("Privacy and data", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_privacy), onBack) { padding ->
         LoadContent(profile, onRetry = vm::load) {
             val p = (profile as Load.Ready).value
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                result?.let { item { Banner(it, tone = Tone.SUCCESS, title = "Request received") } }
+                result?.let { (isExport, sla) ->
+                    item {
+                        val msg = stringResource(if (isExport) R.string.privacy_export_queued else R.string.privacy_delete_queued)
+                        Banner(sla?.let { pluralStringResource(R.plurals.privacy_sla, it, msg, it) } ?: msg, tone = Tone.SUCCESS, title = stringResource(R.string.privacy_request_received))
+                    }
+                }
                 error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e)) } }
                 item {
                     AppCard {
-                        KeyValueRow("User ID", p.userId)
-                        KeyValueRow("Email", p.emailMasked + if (p.emailVerified) " · verified" else " · not verified")
-                        KeyValueRow("Member since", Format.date(p.createdAt))
+                        KeyValueRow(stringResource(R.string.privacy_user_id), p.userId)
+                        KeyValueRow(stringResource(R.string.privacy_email), stringResource(if (p.emailVerified) R.string.privacy_email_verified else R.string.privacy_email_unverified, p.emailMasked))
+                        KeyValueRow(stringResource(R.string.privacy_member_since), Format.date(p.createdAt))
                     }
                 }
-                item { SectionHeader("Where your order history is kept") }
+                item { SectionHeader(stringResource(R.string.privacy_where_kept)) }
                 item {
                     AppCard {
                         PrivacyMode.entries.forEach { m ->
-                            SwitchRow(m.label, p.privacyMode == m, onChange = { if (it) vm.setMode(m) })
+                            SwitchRow(stringResource(m.labelRes()), p.privacyMode == m, onChange = { if (it) vm.setMode(m) })
                         }
                     }
                 }
-                item { SectionHeader("Your data") }
-                item { SecondaryButton("View imported orders", onOrders) }
-                item { SecondaryButton("Export my data", { stepUp = StepUpAction.EXPORT }) }
-                item { SecondaryButton(if (cacheCleared) "Cache cleared" else "Clear cache on this device", { cacheCleared = true; c.analytics.track(AnalyticsEventName.PRIVACY_ACTION, mapOf("privacy_action" to "clear_cache")) }, enabled = !cacheCleared) }
-                item { SecondaryButton("Delete order history", { stepUp = StepUpAction.DELETE_HISTORY }) }
-                item { SecondaryButton("Delete conversations", { stepUp = StepUpAction.DELETE_CHAT }) }
-                item { Spacer(Modifier.size(Spacing.md)); DangerButton("Delete account", { stepUp = StepUpAction.DELETE_ACCOUNT }, Modifier.fillMaxWidth()) }
+                item { SectionHeader(stringResource(R.string.privacy_your_data)) }
+                item { SecondaryButton(stringResource(R.string.privacy_view_orders), onOrders) }
+                item { SecondaryButton(stringResource(R.string.privacy_export), { stepUp = StepUpAction.EXPORT }) }
+                item { SecondaryButton(stringResource(if (cacheCleared) R.string.privacy_cache_cleared else R.string.privacy_clear_cache), { cacheCleared = true; c.analytics.track(AnalyticsEventName.PRIVACY_ACTION, mapOf("privacy_action" to "clear_cache")) }, enabled = !cacheCleared) }
+                item { SecondaryButton(stringResource(R.string.privacy_delete_history), { stepUp = StepUpAction.DELETE_HISTORY }) }
+                item { SecondaryButton(stringResource(R.string.privacy_delete_chat), { stepUp = StepUpAction.DELETE_CHAT }) }
+                item { Spacer(Modifier.size(Spacing.md)); DangerButton(stringResource(R.string.privacy_delete_account), { stepUp = StepUpAction.DELETE_ACCOUNT }, Modifier.fillMaxWidth()) }
                 item {
                     Text(
-                        "Retention: conversations 30 days unless saved; automation logs 90 days (redacted); price comparisons 90 days; order history until you delete it.",
+                        stringResource(R.string.privacy_retention),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Spacing.md),
@@ -282,11 +296,11 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
         var password by remember(a) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { stepUp = null },
-            title = { Text(a.title) },
+            title = { Text(stringResource(a.title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    Text(a.body)
-                    Text("Enter your password to confirm it's you.", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(a.body))
+                    Text(stringResource(R.string.privacy_confirm_identity), style = MaterialTheme.typography.bodySmall)
                     PasswordInput(password, { password = it })
                 }
             },
@@ -299,9 +313,9 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
                         StepUpAction.DELETE_ACCOUNT -> vm.delete(DeleteScope.ACCOUNT, password)
                     }
                     stepUp = null
-                }) { Text(a.confirm) }
+                }) { Text(stringResource(a.confirm)) }
             },
-            dismissButton = { TextButton(onClick = { stepUp = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { stepUp = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -309,16 +323,17 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
 // ---------------------------------------------------------------- S-SET-04
 class SessionsViewModel(private val c: AppContainer) : ViewModel() {
     val state = MutableStateFlow<Load<List<DeviceSession>>>(Load.Loading)
-    val message = MutableStateFlow<String?>(null)
+    /** Number of devices just signed out (shown as a confirmation), or null. */
+    val revoked = MutableStateFlow<Int?>(null)
     init { load() }
     fun load() { state.value = Load.Loading; viewModelScope.launch { state.value = c.auth.sessions().toLoad() } }
     fun revoke(id: String) = viewModelScope.launch {
-        c.auth.revokeSession(id); c.analytics.track(AnalyticsEventName.SESSION_REVOKED); message.value = "Device signed out."; load()
+        c.auth.revokeSession(id); c.analytics.track(AnalyticsEventName.SESSION_REVOKED); revoked.value = -1; load()
     }
     fun revokeAll() = viewModelScope.launch {
         val r = c.auth.revokeAllOthers()
         c.analytics.track(AnalyticsEventName.SESSION_REVOKED)
-        message.value = (r as? ApiResult.Success)?.let { "Signed out ${it.value} other device(s)." }
+        revoked.value = (r as? ApiResult.Success)?.value
         load()
     }
 }
@@ -328,25 +343,25 @@ fun SessionsScreen(onBack: () -> Unit) {
     val c = LocalAppContainer.current
     val vm = viewModel { SessionsViewModel(c) }
     val state by vm.state.collectAsStateWithLifecycle()
-    val message by vm.message.collectAsStateWithLifecycle()
-    ScreenScaffold("Devices and sessions", onBack) { padding ->
+    val revoked by vm.revoked.collectAsStateWithLifecycle()
+    ScreenScaffold(stringResource(R.string.set_sessions), onBack) { padding ->
         LoadContent(state, onRetry = vm::load) {
             val sessions = (state as Load.Ready).value
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                message?.let { item { Banner(it, tone = Tone.SUCCESS) } }
+                revoked?.let { n -> item { Banner(if (n < 0) stringResource(R.string.sessions_one_revoked) else pluralStringResource(R.plurals.sessions_all_revoked, n, n), tone = Tone.SUCCESS) } }
                 items(sessions, key = { it.sessionId }) { s ->
                     AppCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(s.deviceLabel + if (s.current) " (this device)" else "", style = MaterialTheme.typography.titleSmall)
-                                Text("App ${s.appVersion} · ${s.approximateLocation ?: "Unknown location"} · last seen ${Format.dateTime(s.lastSeenAt)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (s.current) stringResource(R.string.sessions_this_device, s.deviceLabel) else s.deviceLabel, style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(R.string.sessions_meta, s.appVersion, s.approximateLocation ?: stringResource(R.string.sessions_unknown_location), Format.dateTime(s.lastSeenAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            if (!s.current) TextButton(onClick = { vm.revoke(s.sessionId) }) { Text("Sign out") }
+                            if (!s.current) TextButton(onClick = { vm.revoke(s.sessionId) }) { Text(stringResource(R.string.sessions_sign_out)) }
                         }
                     }
                 }
-                if (sessions.count { !it.current } > 0) item { SecondaryButton("Sign out all other devices", vm::revokeAll) }
-                item { Text("Don't recognise a device? Sign it out and change your password.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (sessions.count { !it.current } > 0) item { SecondaryButton(stringResource(R.string.sessions_sign_out_all), vm::revokeAll) }
+                item { Text(stringResource(R.string.sessions_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }
@@ -357,14 +372,14 @@ fun SessionsScreen(onBack: () -> Unit) {
 fun NotificationSettingsScreen(onBack: () -> Unit) {
     val c = LocalAppContainer.current
     val v by c.notificationPrefs.values.collectAsStateWithLifecycle()
-    ScreenScaffold("Notifications", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_notifications), onBack) { padding ->
         Column(Modifier.padding(padding).padding(horizontal = Spacing.lg)) {
-            SwitchRow("Cart ready", v.cartReady, { on -> c.notificationPrefs.update { it.copy(cartReady = on) } })
-            SwitchRow("Task needs you", v.needsUserAction, { on -> c.notificationPrefs.update { it.copy(needsUserAction = on) } }, subtitle = "Sign-in, OTP or a decision is needed")
-            SwitchRow("Order history imported", v.importComplete, { on -> c.notificationPrefs.update { it.copy(importComplete = on) } })
-            SwitchRow("Monthly summary", v.monthlySummary, { on -> c.notificationPrefs.update { it.copy(monthlySummary = on) } })
+            SwitchRow(stringResource(R.string.notif_pref_cart_ready), v.cartReady, { on -> c.notificationPrefs.update { it.copy(cartReady = on) } })
+            SwitchRow(stringResource(R.string.notif_pref_needs_you), v.needsUserAction, { on -> c.notificationPrefs.update { it.copy(needsUserAction = on) } }, subtitle = stringResource(R.string.notif_pref_needs_you_sub))
+            SwitchRow(stringResource(R.string.notif_pref_import), v.importComplete, { on -> c.notificationPrefs.update { it.copy(importComplete = on) } })
+            SwitchRow(stringResource(R.string.notif_pref_monthly), v.monthlySummary, { on -> c.notificationPrefs.update { it.copy(monthlySummary = on) } })
             HorizontalDivider(Modifier.padding(vertical = Spacing.sm))
-            SwitchRow("Hide details on lock screen", v.lockScreenPrivate, { on -> c.notificationPrefs.update { it.copy(lockScreenPrivate = on) } }, subtitle = "Shows \"Your cart is ready\" without the app name")
+            SwitchRow(stringResource(R.string.notif_pref_lock_screen), v.lockScreenPrivate, { on -> c.notificationPrefs.update { it.copy(lockScreenPrivate = on) } }, subtitle = stringResource(R.string.notif_pref_lock_screen_sub))
         }
     }
 }
@@ -381,18 +396,18 @@ fun ActivityScreen(onBack: () -> Unit) {
     val c = LocalAppContainer.current
     val vm = viewModel { ActivityViewModel(c) }
     val state by vm.state.collectAsStateWithLifecycle()
-    ScreenScaffold("Activity", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_activity), onBack) { padding ->
         LoadContent(state, onRetry = vm::load) {
             val events = (state as Load.Ready).value.events
             if (events.isEmpty()) {
-                EmptyState("No activity yet", "Automation, consent and data events will appear here.", Modifier.padding(padding))
+                EmptyState(stringResource(R.string.activity_empty_title), stringResource(R.string.activity_empty_body), Modifier.padding(padding))
                 return@LoadContent
             }
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl)) {
                 items(events, key = { it.eventId }) { e ->
                     Column(Modifier.padding(vertical = Spacing.sm)) {
                         Text(e.summary, style = MaterialTheme.typography.bodyMedium)
-                        Text(Format.dateTime(e.at) + (e.taskId?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(e.taskId?.let { stringResource(R.string.activity_meta_task, Format.dateTime(e.at), it) } ?: Format.dateTime(e.at), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     HorizontalDivider()
                 }
@@ -408,21 +423,20 @@ fun HelpScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val paused by c.account.automationPaused.collectAsStateWithLifecycle()
     val active by c.tasks.activeTask.collectAsStateWithLifecycle()
-    ScreenScaffold("Help and emergency stop", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.set_help), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             item {
                 AppCard {
-                    Text("Emergency stop", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.help_stop_title), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        if (paused) "All automation is paused. No app will be opened or changed until you resume."
-                        else "Stops any running task immediately and prevents new ones until you resume.",
+                        stringResource(if (paused) R.string.help_paused_body else R.string.help_active_body),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(Modifier.size(Spacing.sm))
                     if (paused) {
-                        PrimaryButton("Resume automation", onClick = { c.account.setAutomationPaused(false) })
+                        PrimaryButton(stringResource(R.string.help_resume), onClick = { c.account.setAutomationPaused(false) })
                     } else {
-                        DangerButton("Stop and pause all automation", onClick = {
+                        DangerButton(stringResource(R.string.help_pause_all), onClick = {
                             scope.launch {
                                 c.account.setAutomationPaused(true)
                                 c.tasks.stopAll(StopReason.PAUSE_ALL)
@@ -430,20 +444,20 @@ fun HelpScreen(onBack: () -> Unit) {
                             }
                         }, modifier = Modifier.fillMaxWidth())
                     }
-                    active?.let { Text("Running now: ${it.provider.displayName} (${it.status.label})", style = MaterialTheme.typography.bodySmall) }
+                    active?.let { Text(stringResource(R.string.help_running_now, it.provider.displayName, it.status.label()), style = MaterialTheme.typography.bodySmall) }
                 }
             }
-            item { SectionHeader("Troubleshooting") }
+            item { SectionHeader(stringResource(R.string.help_troubleshooting)) }
             listOf(
-                "A task stopped on an unfamiliar screen" to "Apps change their screens. SmartCart stops rather than guess. Finish in the app yourself; your list is shown on the next screen.",
-                "The price in the app is different" to "Comparisons are estimates checked at a point in time. The app always shows the final price before you pay.",
-                "The app asked me to sign in or enter an OTP" to "SmartCart never enters passwords or OTPs. Do it yourself, then tap Resume.",
-                "I can't find my cart" to "Open the app and tap its cart icon. Some apps don't support opening the cart directly.",
+                R.string.help_q_unknown_screen to R.string.help_a_unknown_screen,
+                R.string.help_q_price to R.string.help_a_price,
+                R.string.help_q_otp to R.string.help_a_otp,
+                R.string.help_q_cart to R.string.help_a_cart,
             ).forEach { (q, a) ->
                 item {
                     AppCard {
-                        Text(q, style = MaterialTheme.typography.titleSmall)
-                        Text(a, style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(q), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(a), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

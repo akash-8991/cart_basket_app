@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-TASK-01 Automation consent -->
+    <string name="consent_title">Allow %1$s automation</string>
+    <string name="consent_intro_ride">SmartCart can open %1$s and fill in your pickup, drop and ride type. It uses Android\'s Accessibility service only while a task you approved is running.</string>
+    <string name="consent_intro_cart">SmartCart can open %1$s and search for and add the items you approve. It uses Android\'s Accessibility service only while a task you approved is running.</string>
+    <string name="consent_will">It will</string>
+    <string name="consent_will_read">Read %1$s screens only during a task you approved</string>
+    <string name="consent_will_ride">Set pickup, drop and ride type</string>
+    <string name="consent_will_cart">Search, select items and set quantities</string>
+    <string name="consent_will_show">Show every step and stop if anything looks unexpected</string>
+    <string name="consent_will_ask">Ask you before any high-risk change (like a different address or item)</string>
+    <string name="consent_will_item">✓  %1$s</string>
+    <string name="consent_never">It will never</string>
+    <string name="consent_never_pay">Pay, or enter card, UPI or bank details</string>
+    <string name="consent_never_secrets">Enter OTPs, passwords, CAPTCHAs or use your fingerprint/face</string>
+    <string name="consent_never_book">Confirm or book the ride</string>
+    <string name="consent_never_order">Place the order</string>
+    <string name="consent_never_read">Read other apps, messages or notifications</string>
+    <string name="consent_never_item">✕  %1$s</string>
+    <string name="consent_stop_note">You can stop any task instantly with the Stop button at the top of the screen, or turn this off at any time in Settings → Connected apps.</string>
+    <string name="consent_android_title">Android setting</string>
+    <string name="consent_android_body">After you allow this, Android asks you to turn on SmartCart under Settings → Accessibility. In this mock build no accessibility service is installed, so this step is simulated.</string>
+    <string name="consent_open_settings">Open Accessibility settings</string>
+    <string name="consent_agree">I allow SmartCart to automate %1$s as described</string>
+    <string name="consent_allow">Allow and continue</string>
+    <string name="consent_decline">No thanks, I\'ll do it myself</string>
+
+    <!-- S-TASK-02 Approve -->
+    <string name="approve_title">Review and approve</string>
+    <string name="approve_not_waiting">This request is no longer waiting</string>
+    <string name="approve_status">Status: %1$s</string>
+    <string name="approve_view_task">View task</string>
+    <string name="approve_estimate">Estimated total %1$s · final price shown in %2$s</string>
+    <string name="approve_steps">SmartCart will do these steps</string>
+    <string name="approve_limits">Safety limits for this task</string>
+    <string name="approve_max_steps">Maximum steps</string>
+    <string name="approve_max_time">Maximum time</string>
+    <string name="approve_minutes">%1$d min</string>
+    <string name="approve_idle">Stops if idle for</string>
+    <string name="approve_seconds">%1$d s</string>
+    <string name="approve_expires">Approval expires</string>
+    <string name="approve_safety_note">Stops automatically on any unfamiliar screen, sign-in, OTP, CAPTCHA or payment page. Payment always stays with you in %1$s.</string>
+    <string name="approve_start">Approve and start</string>
+
+    <!-- S-TASK-03 Progress -->
+    <string name="task_title">Cart task</string>
+    <string name="task_not_found">Task not found</string>
+    <string name="task_not_found_body">It may have expired.</string>
+    <string name="task_meta">%1$s · task %2$s · %3$d/%4$d steps</string>
+    <string name="task_needs_decision">Needs your decision · %1$s</string>
+    <string name="task_decision_timeout">If you don\'t answer within %1$d seconds, the task stops safely.</string>
+    <string name="task_yes_continue">Yes, continue</string>
+    <string name="task_no_stop">No, stop the task</string>
+    <string name="task_resume">I\'ve done it — resume</string>
+    <string name="task_manual_instead">Continue manually instead</string>
+    <string name="task_stopped_title">Stopped</string>
+    <string name="task_stopped_body">The task was stopped. Anything already added stays in your %1$s cart; nothing else will change.</string>
+    <string name="task_expired_title">Expired</string>
+    <string name="task_expired_body">The approval window passed before the task started. Start again from the comparison.</string>
+    <string name="task_timeline">Timeline</string>
+    <string name="task_emergency_stop">Emergency stop</string>
+    <string name="task_stop_confirm_title">Stop now?</string>
+    <string name="task_stop_confirm_body">SmartCart will stop immediately. Items already added stay in the cart.</string>
+    <string name="task_stop_confirm">Stop</string>
+    <string name="task_keep_going">Keep going</string>
+
+    <!-- S-TASK-04 Cart ready -->
+    <string name="ready_title">Cart ready</string>
+    <string name="ready_verified_title">Cart verified at %1$s</string>
+    <string name="ready_verified_body">I checked the %1$s cart and it matches what you approved.</string>
+    <string name="ready_unverified">The cart could not be verified. Please check it carefully in %1$s.</string>
+    <string name="ready_differs">Some items were skipped with your OK, so the earlier estimate no longer applies. Check the final price in %1$s.</string>
+    <string name="ready_line">%1$s × %2$d</string>
+    <string name="ready_skipped">Skipped</string>
+    <string name="ready_estimated_total">Estimated total</string>
+    <string name="ready_pay_note">The final price is shown in %1$s. You review and pay there — SmartCart never pays for you.</string>
+    <string name="ready_open_cart">Open cart in %1$s</string>
+    <string name="ready_opening">Opening %1$s</string>
+    <string name="ready_strategy_cart">In the live app this opens your %1$s cart directly.</string>
+    <string name="ready_strategy_app">%1$s doesn\'t support opening the cart directly, so the app opens on its home screen.</string>
+    <string name="ready_strategy_manual">Open %1$s yourself and follow these steps.</string>
+    <string name="ready_step">%1$d. %2$s</string>
+    <string name="ready_mock_note">This mock build does not open partner apps. Link expires %1$s.</string>
+
+    <!-- S-TASK-05 Manual fallback -->
+    <string name="manual_title">Continue in %1$s</string>
+    <string name="manual_intro">You can finish this yourself. Here\'s what to do:</string>
+    <string name="manual_step_open">Open %1$s</string>
+    <string name="manual_step_ride">Enter your pickup and drop, and choose the ride type</string>
+    <string name="manual_step_cart">Search for and add the items below</string>
+    <string name="manual_step_pay">Check the total, then pay in %1$s</string>
+    <string name="manual_already_done">Already done: %1$s</string>
+    <string name="manual_your_list">Your list</string>
+    <string name="manual_qty">× %1$d</string>
+</resources>

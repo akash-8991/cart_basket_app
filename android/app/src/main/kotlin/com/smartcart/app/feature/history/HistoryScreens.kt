@@ -39,6 +39,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.smartcart.app.AppContainer
 import com.smartcart.app.feature.auth.CheckRow
 import com.smartcart.app.feature.home.confidenceTone
+import com.smartcart.app.R
+import com.smartcart.app.ui.common.descriptionRes
+import com.smartcart.app.ui.common.labelRes
+import com.smartcart.app.ui.common.title
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.ErrorCopy
 import com.smartcart.app.ui.common.Format
 import com.smartcart.app.ui.common.Load
@@ -85,24 +91,24 @@ fun HistoryConnectScreen(onBack: () -> Unit, onStarted: (String) -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<ApiError?>(null) }
 
-    ScreenScaffold("Connect order history", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.hist_connect_title), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.navigationBarsPadding()) {
             item {
                 Text(
-                    "SmartCart opens each app you choose, goes to its order history and reads only the fields below. Reading happens on this phone; raw screens are never saved or uploaded.",
+                    stringResource(R.string.hist_connect_intro),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            item { SectionHeader("Apps") }
+            item { SectionHeader(stringResource(R.string.hist_apps)) }
             items(eligible, key = { it.key.key }) { p ->
-                CheckRow(p.key.key in selected, { on -> selected = if (on) selected + p.key.key else selected - p.key.key }, "${p.displayName} · ${p.category.title}")
+                CheckRow(p.key.key in selected, { on -> selected = if (on) selected + p.key.key else selected - p.key.key }, stringResource(R.string.hist_app_row, p.displayName, p.category.title()))
             }
-            item { SectionHeader("What's collected") }
+            item { SectionHeader(stringResource(R.string.hist_collected)) }
             items(ImportField.entries, key = { it.key }) { f ->
-                CheckRow(f.key in fields, { on -> fields = if (on) fields + f.key else fields - f.key }, f.label)
+                CheckRow(f.key in fields, { on -> fields = if (on) fields + f.key else fields - f.key }, stringResource(f.labelRes()))
             }
-            item { Text("Never collected: payment methods, card or UPI details, passwords, OTPs, chats with sellers or drivers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            item { SectionHeader("Where your history is kept") }
+            item { Text(stringResource(R.string.hist_never_collected), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            item { SectionHeader(stringResource(R.string.hist_where_kept)) }
             items(PrivacyMode.entries, key = { it.name }) { m ->
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = Spacing.touchTarget).selectable(mode == m, role = Role.RadioButton, onClick = { mode = m }),
@@ -111,9 +117,9 @@ fun HistoryConnectScreen(onBack: () -> Unit, onStarted: (String) -> Unit) {
                     RadioButton(selected = mode == m, onClick = null)
                     Spacer(Modifier.width(Spacing.sm))
                     Column {
-                        Text(m.label, style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(m.labelRes()), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            if (m == PrivacyMode.DEVICE_ONLY) "Monthly totals are calculated on this phone only." else "Only normalized order summaries are uploaded after you review them.",
+                            stringResource(m.descriptionRes()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -123,7 +129,7 @@ fun HistoryConnectScreen(onBack: () -> Unit, onStarted: (String) -> Unit) {
             error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e)) } }
             item {
                 Spacer(Modifier.size(Spacing.md))
-                PrimaryButton("Allow and import", enabled = selected.isNotEmpty() && fields.isNotEmpty(), loading = busy, onClick = {
+                PrimaryButton(stringResource(R.string.hist_allow_import), enabled = selected.isNotEmpty() && fields.isNotEmpty(), loading = busy, onClick = {
                     busy = true
                     scope.launch {
                         val keys = selected.mapNotNull { k -> ProviderKey.entries.firstOrNull { it.key == k } }
@@ -155,12 +161,12 @@ fun ImportProgressScreen(sessionId: String, onBack: () -> Unit, onReview: (Strin
             onReview(sessionId)
         }
     }
-    ScreenScaffold("Importing", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.hist_importing_title), onBack) { padding ->
         val s = session ?: run { LoadingState(); return@ScreenScaffold }
         LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             item {
                 val done = s.providers.count { it.status in setOf(ProviderImportStatus.COMPLETED, ProviderImportStatus.FAILED, ProviderImportStatus.SKIPPED) }
-                ProgressRow("${s.status.label} · $done of ${s.providers.size} apps", done.toFloat() / s.providers.size.coerceAtLeast(1))
+                ProgressRow(stringResource(R.string.hist_progress, stringResource(s.status.labelRes()), done, s.providers.size), done.toFloat() / s.providers.size.coerceAtLeast(1))
             }
             items(s.providers, key = { it.provider.key }) { p ->
                 AppCard {
@@ -169,15 +175,15 @@ fun ImportProgressScreen(sessionId: String, onBack: () -> Unit, onReview: (Strin
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
                             Text(p.provider.displayName, style = MaterialTheme.typography.titleSmall)
-                            Text("${p.status.label} · ${p.ordersFound} orders", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(pluralStringResource(R.plurals.hist_provider_progress, p.ordersFound, stringResource(p.status.labelRes()), p.ordersFound), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (p.status == ProviderImportStatus.FAILED) Pill("Skipped", tone = Tone.WARNING)
+                        if (p.status == ProviderImportStatus.FAILED) Pill(stringResource(R.string.hist_skipped), tone = Tone.WARNING)
                     }
                     p.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
-            if (s.status == ImportStatus.CANCELLED) item { Banner("Import cancelled. Nothing was saved.", tone = Tone.INFO) }
-            else if (s.status == ImportStatus.RUNNING) item { SecondaryButton("Cancel import", onClick = { scope.launch { c.history.cancel(sessionId) } }) }
+            if (s.status == ImportStatus.CANCELLED) item { Banner(stringResource(R.string.hist_cancelled), tone = Tone.INFO) }
+            else if (s.status == ImportStatus.RUNNING) item { SecondaryButton(stringResource(R.string.hist_cancel), onClick = { scope.launch { c.history.cancel(sessionId) } }) }
         }
     }
 }
@@ -190,25 +196,25 @@ fun ImportReviewScreen(sessionId: String, onBack: () -> Unit, onDone: () -> Unit
     val session by remember(sessionId) { c.history.observe(sessionId) }.collectAsStateWithLifecycle(null)
     var excluded by rememberSaveable { mutableStateOf(setOf<String>()) }
     var busy by remember { mutableStateOf(false) }
-    ScreenScaffold("Review before saving", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.hist_review_title), onBack) { padding ->
         val s = session ?: run { LoadingState(); return@ScreenScaffold }
         LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.navigationBarsPadding()) {
             item {
                 Text(
-                    if (s.uploadMode == PrivacyMode.DEVICE_ONLY) "Here's a sample of what was read. It stays on this phone." else "Here's a sample of what was read. Only these normalized fields will be synced to your account.",
+                    stringResource(if (s.uploadMode == PrivacyMode.DEVICE_ONLY) R.string.hist_review_device else R.string.hist_review_upload),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
             s.providers.filter { it.status == ProviderImportStatus.FAILED }.forEach { f ->
-                item { Banner(f.message ?: "${f.provider.displayName} was skipped.", tone = Tone.WARNING) }
+                item { Banner(f.message ?: stringResource(R.string.hist_provider_skipped, f.provider.displayName), tone = Tone.WARNING) }
             }
-            if (s.reviewSample.isEmpty()) item { EmptyState("Nothing to review", "No orders were found.") }
+            if (s.reviewSample.isEmpty()) item { EmptyState(stringResource(R.string.hist_nothing_title), stringResource(R.string.hist_nothing_body)) }
             items(s.reviewSample, key = { it.orderId }) { o ->
                 OrderRow(o, excluded = o.orderId in excluded, onToggle = { excluded = if (o.orderId in excluded) excluded - o.orderId else excluded + o.orderId })
             }
             item {
                 val count = s.providers.sumOf { it.ordersFound }
-                PrimaryButton(if (s.uploadMode == PrivacyMode.DEVICE_ONLY) "Save $count orders on this phone" else "Save and sync $count orders", loading = busy, onClick = {
+                PrimaryButton(pluralStringResource(if (s.uploadMode == PrivacyMode.DEVICE_ONLY) R.plurals.hist_save_device else R.plurals.hist_save_sync, count, count), loading = busy, onClick = {
                     busy = true
                     scope.launch {
                         c.history.confirmReview(sessionId, excluded)
@@ -217,7 +223,7 @@ fun ImportReviewScreen(sessionId: String, onBack: () -> Unit, onDone: () -> Unit
                     }
                 })
             }
-            item { SecondaryButton("Discard import", onClick = { scope.launch { c.history.cancel(sessionId); onDone() } }) }
+            item { SecondaryButton(stringResource(R.string.hist_discard), onClick = { scope.launch { c.history.cancel(sessionId); onDone() } }) }
         }
     }
 }
@@ -229,16 +235,16 @@ private fun OrderRow(o: Order, excluded: Boolean = false, onToggle: (() -> Unit)
             ProviderMonogram(o.provider.displayName, size = 32)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Text("${o.provider.displayName} · ${o.total.format()}", style = MaterialTheme.typography.titleSmall)
-                Text("${Format.date(o.orderedAt)} · ${o.status.label}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(o.items.joinToString { "${it.name} × ${it.quantity}" }, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.order_header, o.provider.displayName, o.total.format()), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.order_meta, Format.date(o.orderedAt), stringResource(o.status.labelRes())), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(o.items.map { stringResource(R.string.order_item, it.name, it.quantity) }.joinToString(), style = MaterialTheme.typography.bodySmall)
             }
-            if (o.extractionConfidence != com.smartcart.model.Confidence.HIGH) Pill("Check", tone = confidenceTone(o.extractionConfidence))
-            onDelete?.let { IconButton(onClick = it) { Icon(Icons.Outlined.Delete, contentDescription = "Delete order from ${o.provider.displayName} on ${Format.date(o.orderedAt)}") } }
+            if (o.extractionConfidence != com.smartcart.model.Confidence.HIGH) Pill(stringResource(R.string.order_check), tone = confidenceTone(o.extractionConfidence))
+            onDelete?.let { IconButton(onClick = it) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.order_delete_cd, o.provider.displayName, Format.date(o.orderedAt))) } }
         }
-        onToggle?.let { CheckRow(!excluded, { _ -> it() }, "Include this order") }
+        onToggle?.let { CheckRow(!excluded, { _ -> it() }, stringResource(R.string.order_include)) }
         if (o.status == OrderStatus.REFUNDED || o.status == OrderStatus.CANCELLED) {
-            Text("Not counted in monthly totals", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.order_not_counted), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -256,11 +262,11 @@ fun OrdersScreen(onBack: () -> Unit, onConnect: () -> Unit) {
     val c = LocalAppContainer.current
     val vm = viewModel { OrdersViewModel(c) }
     val state by vm.state.collectAsStateWithLifecycle()
-    ScreenScaffold("Imported orders", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.orders_title), onBack) { padding ->
         LoadContent(state, onRetry = vm::load) {
             val orders = (state as Load.Ready).value
             if (orders.isEmpty()) {
-                EmptyState("No imported orders", "Connect your apps to see your order history here.", Modifier.padding(padding), actionLabel = "Connect order history", onAction = onConnect)
+                EmptyState(stringResource(R.string.orders_empty_title), stringResource(R.string.orders_empty_body), Modifier.padding(padding), actionLabel = stringResource(R.string.home_connect_history), onAction = onConnect)
                 return@LoadContent
             }
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {

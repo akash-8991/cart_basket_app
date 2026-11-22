@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -203,7 +204,7 @@ fun DangerButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
 // ---------------------------------------------------------------- screen states (catalogue L/E/X/O)
 
 @Composable
-fun LoadingState(modifier: Modifier = Modifier, label: String = "Loading") {
+fun LoadingState(modifier: Modifier = Modifier, label: String = stringResource(R.string.ds_loading)) {
     Column(
         modifier.fillMaxSize().padding(Spacing.xl).semantics { liveRegion = LiveRegionMode.Polite },
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -233,7 +234,7 @@ fun EmptyState(title: String, body: String, modifier: Modifier = Modifier, actio
 
 @Composable
 fun ErrorState(title: String, body: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null, offline: Boolean = false) {
-    MessageState(if (offline) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline, title, body, modifier, if (onRetry != null) "Try again" else null, onRetry)
+    MessageState(if (offline) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline, title, body, modifier, if (onRetry != null) stringResource(R.string.ds_try_again) else null, onRetry)
 }
 
 @Composable

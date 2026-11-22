@@ -83,27 +83,32 @@ sealed interface AccountState {
     data class SignedIn(val userId: String, val emailVerificationRequired: Boolean = false) : AccountState
 }
 
+/** Client-side validation problems; the app maps each to a string resource. */
+enum class FieldProblem { TOO_SHORT, TOO_LONG, INVALID_CHARACTERS, INVALID_EMAIL, CONTAINS_USER_ID, TOO_REPETITIVE }
+
 /** Client-side validation mirrors server rules in the contract; the server remains authoritative. */
 object AuthRules {
     val USER_ID = Regex("^[a-z0-9._-]{4,30}$")
+    const val USER_ID_MIN = 4
+    const val USER_ID_MAX = 30
     const val PASSWORD_MIN = 10
     const val PASSWORD_MAX = 128
     private val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 
-    fun userIdError(v: String): String? = when {
-        v.length < 4 -> "Use at least 4 characters"
-        v.length > 30 -> "Use at most 30 characters"
-        !USER_ID.matches(v) -> "Use lowercase letters, numbers, dot, dash or underscore"
+    fun userIdError(v: String): FieldProblem? = when {
+        v.length < USER_ID_MIN -> FieldProblem.TOO_SHORT
+        v.length > USER_ID_MAX -> FieldProblem.TOO_LONG
+        !USER_ID.matches(v) -> FieldProblem.INVALID_CHARACTERS
         else -> null
     }
 
-    fun emailError(v: String): String? = if (EMAIL.matches(v.trim())) null else "Enter a valid email address"
+    fun emailError(v: String): FieldProblem? = if (EMAIL.matches(v.trim())) null else FieldProblem.INVALID_EMAIL
 
-    fun passwordError(v: String, userId: String = ""): String? = when {
-        v.length < PASSWORD_MIN -> "Use at least $PASSWORD_MIN characters"
-        v.length > PASSWORD_MAX -> "Use at most $PASSWORD_MAX characters"
-        userId.isNotBlank() && v.contains(userId, ignoreCase = true) -> "Don't include your user ID"
-        v.toSet().size < 5 -> "Use a less repetitive password"
+    fun passwordError(v: String, userId: String = ""): FieldProblem? = when {
+        v.length < PASSWORD_MIN -> FieldProblem.TOO_SHORT
+        v.length > PASSWORD_MAX -> FieldProblem.TOO_LONG
+        userId.isNotBlank() && v.contains(userId, ignoreCase = true) -> FieldProblem.CONTAINS_USER_ID
+        v.toSet().size < 5 -> FieldProblem.TOO_REPETITIVE
         else -> null
     }
 }

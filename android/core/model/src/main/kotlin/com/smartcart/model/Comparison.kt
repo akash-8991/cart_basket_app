@@ -4,12 +4,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class Objective(val label: String) {
-    @SerialName("lowest_total") LOWEST_TOTAL("Lowest total"),
-    @SerialName("fastest") FASTEST("Fastest"),
-    @SerialName("best_value") BEST_VALUE("Best value"),
-    @SerialName("fewest_providers") FEWEST_PROVIDERS("Fewest apps"),
-    @SerialName("preferred_provider") PREFERRED_PROVIDER("My preferred app"),
+enum class Objective {
+    @SerialName("lowest_total") LOWEST_TOTAL,
+    @SerialName("fastest") FASTEST,
+    @SerialName("best_value") BEST_VALUE,
+    @SerialName("fewest_providers") FEWEST_PROVIDERS,
+    @SerialName("preferred_provider") PREFERRED_PROVIDER,
 }
 
 @Serializable
@@ -25,13 +25,13 @@ enum class ComparisonStatus {
 }
 
 @Serializable
-enum class LineMatch(val label: String) {
-    @SerialName("exact") EXACT("Exact match"),
-    @SerialName("equivalent") EQUIVALENT("Equivalent item"),
-    @SerialName("different_pack") DIFFERENT_PACK("Different pack size"),
-    @SerialName("different_class") DIFFERENT_CLASS("Different ride class"),
-    @SerialName("unavailable") UNAVAILABLE("Unavailable"),
-    @SerialName("uncertain") UNCERTAIN("Match uncertain"),
+enum class LineMatch {
+    @SerialName("exact") EXACT,
+    @SerialName("equivalent") EQUIVALENT,
+    @SerialName("different_pack") DIFFERENT_PACK,
+    @SerialName("different_class") DIFFERENT_CLASS,
+    @SerialName("unavailable") UNAVAILABLE,
+    @SerialName("uncertain") UNCERTAIN,
 }
 
 @Serializable
@@ -60,29 +60,27 @@ data class CostComponents(
 ) {
     /** Display rows in a fixed order; values come from the server unchanged. */
     fun rows(): List<CostRow> = listOf(
-        CostRow("item_subtotal", "Items", itemSubtotal),
-        CostRow("delivery_fee", "Delivery fee", deliveryFee),
-        CostRow("packaging_fee", "Packaging fee", packagingFee),
-        CostRow("platform_fee", "Platform fee", platformFee),
-        CostRow("small_cart_fee", "Small-cart fee", smallCartFee),
-        CostRow("surge_or_booking_fee", "Surge / booking fee", surgeOrBookingFee),
-        CostRow("taxes", "Taxes", taxes),
-        CostRow("discounts", "Discounts", discounts, subtract = true),
+        CostRow("item_subtotal", itemSubtotal),
+        CostRow("delivery_fee", deliveryFee),
+        CostRow("packaging_fee", packagingFee),
+        CostRow("platform_fee", platformFee),
+        CostRow("small_cart_fee", smallCartFee),
+        CostRow("surge_or_booking_fee", surgeOrBookingFee),
+        CostRow("taxes", taxes),
+        CostRow("discounts", discounts, subtract = true),
     )
 }
 
-/** A display row; [key] matches the contract field name used in `unavailable_fields`. */
-data class CostRow(val key: String, val label: String, val amount: Money?, val subtract: Boolean = false) {
-    // (no arithmetic here by design: totals come from the server)
-}
+/** A display row; [key] matches the contract field name used in `unavailable_fields`. Labels live in app resources. */
+data class CostRow(val key: String, val amount: Money?, val subtract: Boolean = false)
 
 @Serializable
-enum class Availability(val label: String) {
-    @SerialName("available") AVAILABLE("Available"),
-    @SerialName("partial") PARTIAL("Some items unavailable"),
-    @SerialName("unavailable") UNAVAILABLE("Unavailable"),
-    @SerialName("not_checked") NOT_CHECKED("Not checked"),
-    @SerialName("failed") FAILED("Could not check"),
+enum class Availability {
+    @SerialName("available") AVAILABLE,
+    @SerialName("partial") PARTIAL,
+    @SerialName("unavailable") UNAVAILABLE,
+    @SerialName("not_checked") NOT_CHECKED,
+    @SerialName("failed") FAILED,
 }
 
 @Serializable
@@ -100,13 +98,13 @@ data class ProviderResult(
 )
 
 @Serializable
-enum class RecommendationLabel(val badge: String) {
-    @SerialName("cheapest") CHEAPEST("Cheapest"),
-    @SerialName("lowest_observed_estimate") LOWEST_OBSERVED_ESTIMATE("Lowest observed estimate"),
-    @SerialName("fastest") FASTEST("Fastest"),
-    @SerialName("best_value") BEST_VALUE("Best value"),
-    @SerialName("preferred") PREFERRED("Your preferred app"),
-    @SerialName("none") NONE(""),
+enum class RecommendationLabel {
+    @SerialName("cheapest") CHEAPEST,
+    @SerialName("lowest_observed_estimate") LOWEST_OBSERVED_ESTIMATE,
+    @SerialName("fastest") FASTEST,
+    @SerialName("best_value") BEST_VALUE,
+    @SerialName("preferred") PREFERRED,
+    @SerialName("none") NONE,
 }
 
 @Serializable

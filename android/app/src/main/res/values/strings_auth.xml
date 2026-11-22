@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-AUTH-01 Welcome -->
+    <string name="welcome_title">SmartCart</string>
+    <string name="welcome_body">Tell me what you need. I compare the full cart across your apps, prepare it with your approval, and you pay in the app yourself.</string>
+    <string name="welcome_point_approval">Nothing happens in your apps without your approval</string>
+    <string name="welcome_point_payments">Payments, OTPs and passwords always stay with you</string>
+    <string name="welcome_point_stop">Stop any task at any time</string>
+    <string name="welcome_bullet">•  %1$s</string>
+    <string name="welcome_create">Create account</string>
+    <string name="welcome_sign_in">Sign in</string>
+    <string name="welcome_reinstalled">Reinstalled the app?</string>
+
+    <!-- Shared fields -->
+    <string name="auth_user_id">User ID</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_registered_email">Registered email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_show_password">Show password</string>
+    <string name="auth_hide_password">Hide password</string>
+
+    <!-- S-AUTH-02 Register -->
+    <string name="register_title">Create account</string>
+    <string name="register_intro">Your user ID and password sign you in. Your email is only used to recover your account.</string>
+    <string name="register_user_id_hint">4–30 characters: a–z, 0–9, . _ -</string>
+    <string name="register_password_hint">At least 10 characters</string>
+    <string name="register_confirm_password">Confirm password</string>
+    <string name="register_passwords_differ">Passwords don\'t match</string>
+    <string name="register_terms">I agree to the Terms (v2026-11) and have read the Privacy notice (v2026-11)</string>
+    <string name="register_terms_required">Accept the terms to continue</string>
+    <string name="register_submit">Create account</string>
+    <string name="register_have_account">Already have an account? Sign in</string>
+
+    <!-- S-AUTH-03 Login -->
+    <string name="login_title">Sign in</string>
+    <string name="login_remember">Keep me signed in on this device</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_forgot_user_id">Forgot user ID?</string>
+    <string name="login_forgot_password">Forgot password?</string>
+
+    <!-- S-AUTH-04 Unlock -->
+    <string name="unlock_title">Welcome back</string>
+    <string name="unlock_continue_as">Continue as %1$s</string>
+    <string name="unlock_continue">Continue</string>
+    <string name="unlock_other_account">Use another account</string>
+
+    <!-- S-AUTH-05 Reinstall -->
+    <string name="reinstall_title">Reinstalled the app?</string>
+    <string name="reinstall_body">For your security, sign-in sessions are tied to this installation and are removed when the app is uninstalled. Sign in again with your user ID and password.</string>
+    <string name="reinstall_note">SmartCart never stores your password, so it cannot be recovered or shown to you. If you\'ve forgotten it, reset it using your registered email.</string>
+    <string name="reinstall_sign_in">Sign in</string>
+    <string name="reinstall_reset">Reset password</string>
+
+    <!-- S-AUTH-06 Forgot password -->
+    <string name="forgot_pw_title">Reset password</string>
+    <string name="forgot_pw_intro">Enter your user ID and the email registered to it. If they match, we\'ll email you a reset code.</string>
+    <string name="forgot_pw_submit">Send reset code</string>
+
+    <!-- S-AUTH-07 Reset password -->
+    <string name="reset_title">Choose a new password</string>
+    <string name="reset_done_title">All set</string>
+    <string name="reset_done_body">Password changed. You\'ve been signed out on all other devices.</string>
+    <string name="reset_sign_in">Sign in</string>
+    <string name="reset_code_sent">If the details matched an account, a code was sent to the registered email. It expires in 15 minutes.</string>
+    <string name="reset_start_again">Start again</string>
+    <string name="reset_code">Code from email</string>
+    <string name="reset_new_password">New password</string>
+    <string name="reset_submit">Change password</string>
+
+    <!-- S-AUTH-08 Forgot user ID -->
+    <string name="forgot_id_title">Forgot user ID</string>
+    <string name="forgot_id_sent_title">Check your email</string>
+    <string name="forgot_id_sent_body">If the email is registered, we\'ve sent your user ID to it.</string>
+    <string name="forgot_id_back">Back to sign in</string>
+    <string name="forgot_id_intro">Enter your registered email. For your security, your user ID is only ever sent to that email, never shown here.</string>
+    <string name="forgot_id_submit">Email my user ID</string>
+</resources>

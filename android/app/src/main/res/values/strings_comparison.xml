@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ComparisonStatus -->
+    <string name="cmp_status_in_progress">checking</string>
+    <string name="cmp_status_complete">complete</string>
+    <string name="cmp_status_partial">partial</string>
+    <string name="cmp_status_stale">out of date</string>
+    <string name="cmp_status_incomparable">not like-for-like</string>
+    <string name="cmp_status_unavailable">unavailable</string>
+    <string name="cmp_status_price_changed">price changed</string>
+    <string name="cmp_status_manual_only">manual only</string>
+
+    <!-- S-CMP-01 -->
+    <string name="cmp_title">Compare prices</string>
+    <string name="cmp_loading">Checking prices</string>
+    <string name="cmp_all_checked">All apps checked</string>
+    <string name="cmp_one_checked">App checked</string>
+    <string name="cmp_progress">Checking %1$d apps… (%2$d done)</string>
+    <string name="cmp_partial_title">Partial comparison</string>
+    <string name="cmp_partial_body">Some apps couldn\'t be checked. This is the lowest price I could see, not a guaranteed cheapest.</string>
+    <string name="cmp_partial_body_named">Some apps couldn\'t be checked: %1$s. This is the lowest price I could see, not a guaranteed cheapest.</string>
+    <string name="cmp_stale_title">Prices may be out of date</string>
+    <string name="cmp_stale_body">Prices were checked at %1$s and may have changed.</string>
+    <string name="cmp_check_again">Check prices again</string>
+    <string name="cmp_incomparable_title">Not a like-for-like comparison</string>
+    <string name="cmp_unavailable_title">Not available right now</string>
+    <string name="cmp_price_changed_title">Price changed</string>
+    <string name="cmp_price_changed_body">The estimated total changed from %1$s to %2$s. Please check before continuing.</string>
+    <string name="cmp_manual_title">Automatic price check unavailable</string>
+    <string name="cmp_about_min">About %1$d min</string>
+    <string name="cmp_reason_savings">Recommended because the estimated total is %1$s lower than %2$s, based on prices checked at %3$s. Final price may change in %4$s.</string>
+    <string name="cmp_reason_plain">%1$s Prices checked at %2$s. Final price may change in %3$s.</string>
+    <string name="cmp_use">Use %1$s</string>
+    <string name="cmp_your_pick">Your pick</string>
+    <string name="cmp_recommended">Recommended</string>
+    <string name="cmp_eta_short">~%1$d min</string>
+    <string name="cmp_line_issue">• %1$s: %2$s</string>
+    <string name="cmp_not_visible">Not visible: %1$s</string>
+    <string name="cmp_cost_breakdown">Cost breakdown</string>
+    <string name="cmp_open_manually">Open manually</string>
+    <string name="cmp_please_wait">Please wait…</string>
+    <string name="cmp_choose">Choose this app</string>
+    <string name="cmp_result_cd">%1$s, %2$s</string>
+    <string name="cmp_result_cd_total">, estimated total %1$s</string>
+    <string name="cmp_result_cd_eta">, about %1$d minutes</string>
+
+    <!-- S-CMP-02 switch dialog -->
+    <string name="cmp_switch_title">Switch to %1$s?</string>
+    <string name="cmp_switch_body">You started with %1$s. Your cart will be prepared in %2$s instead. Nothing changes in %1$s.</string>
+    <string name="cmp_switch_body_savings">You started with %1$s. Your cart will be prepared in %2$s instead, which is estimated to be %3$s cheaper. Nothing changes in %1$s.</string>
+    <string name="cmp_keep">Keep %1$s</string>
+
+    <!-- S-CMP-03 breakdown -->
+    <string name="cmp_estimate_title">%1$s estimate</string>
+    <string name="cmp_checked_at">Checked at %1$s</string>
+    <string name="cmp_line_item">%1$s × %2$d</string>
+    <string name="cmp_minus">−%1$s</string>
+    <string name="cmp_not_visible_value">Not visible</string>
+    <string name="cmp_estimated_total">Estimated total</string>
+    <string name="cmp_estimate_note">This is an estimate. The final price, including any fees and taxes, is shown in %1$s before you pay.</string>
+
+    <!-- Footnotes -->
+    <string name="cmp_checked_count">Checked %1$d of %2$d apps at %3$s.</string>
+    <string name="cmp_missing_fees">Some fees weren\'t visible: %1$s.</string>
+    <string name="cmp_assumptions">Assumptions</string>
+    <string name="cmp_bullet">• %1$s</string>
+    <string name="cmp_disclaimer">Prices and availability change often. The app you choose shows the final price before you pay. SmartCart never makes payments.</string>
+</resources>

@@ -51,7 +51,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.smartcart.app.R
 import com.smartcart.app.ui.common.ErrorCopy
+import com.smartcart.app.ui.common.label
+import com.smartcart.app.ui.common.labelRes
+import com.smartcart.app.ui.common.title
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.Format
 import com.smartcart.app.ui.common.Load
 import com.smartcart.app.ui.common.LoadContent
@@ -147,11 +153,11 @@ fun HomeScreen(
     LaunchedEffect(Unit) { c.analytics.track(AnalyticsEventName.SCREEN_VIEW, mapOf("screen" to "S-HOME-01")) }
 
     ScreenScaffold(
-        title = "SmartCart",
+        title = stringResource(R.string.home_title),
         onBack = null,
         actions = {
-            IconButton(onClick = onChatHistory) { Icon(Icons.Outlined.History, contentDescription = "Conversation history") }
-            IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Settings") }
+            IconButton(onClick = onChatHistory) { Icon(Icons.Outlined.History, contentDescription = stringResource(R.string.home_cd_history)) }
+            IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.home_cd_settings)) }
         },
     ) { padding ->
         LazyColumn(
@@ -164,22 +170,22 @@ fun HomeScreen(
                     Icon(Icons.Outlined.VerifiedUser, contentDescription = null, tint = SmartCartTheme.semantic.success, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(Spacing.xs))
                     val who = (account as? com.smartcart.model.AccountState.SignedIn)?.userId
-                    Text((who?.let { "Signed in as $it · " } ?: "") + "Session protected on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(who?.let { stringResource(R.string.home_signed_in_as, it) } ?: stringResource(R.string.home_session_protected), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (paused) Banner("All automation is paused. Resume it in Settings → Help.", tone = Tone.WARNING)
+                if (paused) Banner(stringResource(R.string.home_paused), tone = Tone.WARNING)
             }
             // 2. KPI summary
             item {
                 when (val s = state) {
                     Load.Loading -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) { SkeletonBlock(height = 28); SkeletonBlock(height = 150) }
                     is Load.Failed -> AppCard {
-                        ErrorState(ErrorCopy.title(s.error), "Your summary couldn't load. Categories still work.", onRetry = { vm.load() }, offline = s.error.code == ErrorCode.OFFLINE)
+                        ErrorState(ErrorCopy.title(s.error), stringResource(R.string.home_summary_error), onRetry = { vm.load() }, offline = s.error.code == ErrorCode.OFFLINE)
                     }
                     is Load.Ready -> KpiSection(s.value, onMonthSelected = vm::selectMonth, onDetails = { onMonth(s.value.month) }, onConnect = onConnectHistory)
                 }
             }
             // 3. Category cards directly below the KPIs
-            item { SectionHeader("What do you need?") }
+            item { SectionHeader(stringResource(R.string.home_what_do_you_need)) }
             val cards = (state as? Load.Ready)?.value?.categories ?: defaultCards()
             val visible = cards.filter { flags[FlagKeys.category(it.category)] == true }
             items(visible, key = { it.category.key }) { card -> CategoryCardView(card, onClick = { c.analytics.track(AnalyticsEventName.CATEGORY_SELECTED, mapOf("category" to card.category.key)); onCategory(card.category) }) }
@@ -187,26 +193,27 @@ fun HomeScreen(
             // 4. Suggestions and recent comparisons
             val ready = (state as? Load.Ready)?.value
             if (ready != null && ready.suggestionsPreview.isNotEmpty()) {
-                item { SectionHeader("Suggested for you", trailing = { TextButton(onClick = onSuggestions) { Text("See all") } }) }
+                item { SectionHeader(stringResource(R.string.home_suggested), trailing = { TextButton(onClick = onSuggestions) { Text(stringResource(R.string.common_see_all)) } }) }
                 items(ready.suggestionsPreview, key = { it.recommendationId }) { r ->
                     AppCard(onClick = onSuggestions) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(r.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                            Pill("${r.confidence.name.lowercase().replaceFirstChar { it.uppercase() }} confidence", tone = confidenceTone(r.confidence))
+                            Pill(r.confidence.label(), tone = confidenceTone(r.confidence))
                         }
                         Text(r.explanation, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             if (ready != null && ready.recentComparisons.isNotEmpty()) {
-                item { SectionHeader("Recent comparisons") }
+                item { SectionHeader(stringResource(R.string.home_recent_comparisons)) }
                 items(ready.recentComparisons, key = { it.quoteId }) { rc ->
                     AppCard(onClick = { onComparison(rc.quoteId) }) {
                         Text(rc.title, style = MaterialTheme.typography.titleSmall)
-                        val who = rc.recommendedProvider?.displayName ?: "No recommendation"
-                        val total = rc.totalEstimate?.format()?.let { " · est. $it" } ?: ""
-                        Text("$who$total · ${Format.dateTime(rc.createdAt)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (rc.status != ComparisonStatus.COMPLETE) Pill(rc.status.name.lowercase().replace('_', ' '), tone = Tone.WARNING)
+                        val who = rc.recommendedProvider?.displayName ?: stringResource(R.string.home_no_recommendation)
+                        val line = rc.totalEstimate?.let { stringResource(R.string.home_recent_line_total, who, it.format(), Format.dateTime(rc.createdAt)) }
+                            ?: stringResource(R.string.home_recent_line, who, Format.dateTime(rc.createdAt))
+                        Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (rc.status != ComparisonStatus.COMPLETE) Pill(stringResource(rc.status.labelRes()), tone = Tone.WARNING)
                     }
                 }
             }
@@ -217,7 +224,7 @@ fun HomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null)
                         Spacer(Modifier.width(Spacing.md))
-                        Text("Tell me what you need… pick a category above or start with groceries", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.home_chat_entry), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -226,9 +233,9 @@ fun HomeScreen(
 }
 
 private fun defaultCards() = listOf(
-    CategoryCard(Category.TRAVEL, "Travel", listOf(com.smartcart.model.ProviderKey.UBER, com.smartcart.model.ProviderKey.RAPIDO, com.smartcart.model.ProviderKey.OLA), CategoryStatus.READY),
-    CategoryCard(Category.FOOD, "Food ordering", listOf(com.smartcart.model.ProviderKey.ZOMATO, com.smartcart.model.ProviderKey.SWIGGY), CategoryStatus.READY),
-    CategoryCard(Category.GROCERY, "Grocery", listOf(com.smartcart.model.ProviderKey.BLINKIT, com.smartcart.model.ProviderKey.BIGBASKET, com.smartcart.model.ProviderKey.SWIGGY_INSTAMART), CategoryStatus.READY),
+    CategoryCard(Category.TRAVEL, "", listOf(com.smartcart.model.ProviderKey.UBER, com.smartcart.model.ProviderKey.RAPIDO, com.smartcart.model.ProviderKey.OLA), CategoryStatus.READY),
+    CategoryCard(Category.FOOD, "", listOf(com.smartcart.model.ProviderKey.ZOMATO, com.smartcart.model.ProviderKey.SWIGGY), CategoryStatus.READY),
+    CategoryCard(Category.GROCERY, "", listOf(com.smartcart.model.ProviderKey.BLINKIT, com.smartcart.model.ProviderKey.BIGBASKET, com.smartcart.model.ProviderKey.SWIGGY_INSTAMART), CategoryStatus.READY),
 )
 
 @Composable
@@ -243,9 +250,9 @@ private fun KpiSection(s: DashboardSummary, onMonthSelected: (String) -> Unit, o
         if (s.isEmpty) {
             AppCard {
                 EmptyState(
-                    title = "No orders yet",
-                    body = "Connect your order history to see monthly totals and frequency. You choose which apps and fields.",
-                    actionLabel = "Connect order history",
+                    title = stringResource(R.string.home_empty_title),
+                    body = stringResource(R.string.home_empty_body),
+                    actionLabel = stringResource(R.string.home_connect_history),
                     onAction = onConnect,
                 )
             }
@@ -256,13 +263,14 @@ private fun KpiSection(s: DashboardSummary, onMonthSelected: (String) -> Unit, o
             Spacer(Modifier.size(Spacing.sm))
             val prevMonth = s.availableMonths.getOrNull(s.availableMonths.indexOf(s.month) - 1)?.let { Format.monthShort(it) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                Kpi("Total orders", s.kpis.totalOrders.toString(), Format.pct(s.deltaVsPrevious.totalOrdersPct), prevMonth, Modifier.weight(1f))
-                Kpi("Total spent", s.kpis.totalAmount.format(), Format.pct(s.deltaVsPrevious.totalAmountPct), prevMonth, Modifier.weight(1f))
-                Kpi("Orders / week", Format.oneDecimal(s.kpis.ordersPerWeek), Format.pct(s.deltaVsPrevious.ordersPerWeekPct), prevMonth, Modifier.weight(1f))
+                Kpi(stringResource(R.string.kpi_total_orders), s.kpis.totalOrders.toString(), Format.pct(s.deltaVsPrevious.totalOrdersPct), prevMonth, Modifier.weight(1f))
+                Kpi(stringResource(R.string.kpi_total_spent), s.kpis.totalAmount.format(), Format.pct(s.deltaVsPrevious.totalAmountPct), prevMonth, Modifier.weight(1f))
+                Kpi(stringResource(R.string.kpi_orders_per_week), Format.oneDecimal(s.kpis.ordersPerWeek), Format.pct(s.deltaVsPrevious.ordersPerWeekPct), prevMonth, Modifier.weight(1f))
             }
             Spacer(Modifier.size(Spacing.sm))
             Text(
-                "Avg order ${s.kpis.averageOrderValue.format()}" + (s.kpis.daysBetweenOrders?.let { " · every ${Format.oneDecimal(it)} days" } ?: ""),
+                s.kpis.daysBetweenOrders?.let { stringResource(R.string.kpi_avg_order_interval, s.kpis.averageOrderValue.format(), Format.oneDecimal(it)) }
+                    ?: stringResource(R.string.kpi_avg_order, s.kpis.averageOrderValue.format()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -274,7 +282,7 @@ private fun KpiSection(s: DashboardSummary, onMonthSelected: (String) -> Unit, o
             FreshnessLine(s)
         }
         if (s.freshness.status == FreshnessStatus.STALE) {
-            Banner("Your order history was last imported ${Format.date(s.freshness.lastImportedAt)}. Totals may be out of date.", tone = Tone.WARNING, actionLabel = "Refresh history", onAction = onConnect)
+            Banner(stringResource(R.string.home_stale_banner, Format.date(s.freshness.lastImportedAt)), tone = Tone.WARNING, actionLabel = stringResource(R.string.home_refresh_history), onAction = onConnect)
         }
     }
 }
@@ -285,7 +293,7 @@ private fun Kpi(label: String, value: String, delta: String?, prevMonth: String?
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        if (delta != null && prevMonth != null) Text("$delta vs $prevMonth", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (delta != null && prevMonth != null) Text(stringResource(R.string.kpi_delta_vs, delta, prevMonth), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -294,7 +302,8 @@ private fun SplitBars(splits: List<Split>) {
     val total = splits.sumOf { it.amount.amountMinor }.coerceAtLeast(1)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         splits.forEach { s ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clearAndSetSemantics { contentDescription = "${s.label}: ${s.orders} orders, ${s.amount.format()}" }) {
+            val cd = pluralStringResource(R.plurals.split_cd, s.orders, s.label, s.orders, s.amount.format())
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clearAndSetSemantics { contentDescription = cd }) {
                 Text(s.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(96.dp))
                 LinearProgressIndicator(progress = { s.amount.amountMinor.toFloat() / total }, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(Spacing.sm))
@@ -307,27 +316,29 @@ private fun SplitBars(splits: List<Split>) {
 @Composable
 private fun FreshnessLine(s: DashboardSummary) {
     val text = when (s.freshness.status) {
-        FreshnessStatus.FRESH -> "Up to date · last imported ${Format.dateTime(s.freshness.lastImportedAt)}"
-        FreshnessStatus.STALE -> "Out of date · last imported ${Format.dateTime(s.freshness.lastImportedAt)}"
-        FreshnessStatus.NEVER_IMPORTED -> "No history imported"
+        FreshnessStatus.FRESH -> stringResource(R.string.freshness_fresh, Format.dateTime(s.freshness.lastImportedAt))
+        FreshnessStatus.STALE -> stringResource(R.string.freshness_stale, Format.dateTime(s.freshness.lastImportedAt))
+        FreshnessStatus.NEVER_IMPORTED -> stringResource(R.string.freshness_never)
     }
     Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
 private fun CategoryCardView(card: CategoryCard, onClick: () -> Unit) {
-    AppCard(onClick = onClick, modifier = Modifier.semantics { contentDescription = "${card.title}. ${card.providers.joinToString { it.displayName }}" }) {
+    val title = card.category.title()
+    val cd = stringResource(R.string.category_cd, title, card.providers.joinToString { it.displayName })
+    AppCard(onClick = onClick, modifier = Modifier.semantics { contentDescription = cd }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(categoryIcon(card.category), contentDescription = null, tint = categoryColor(card.category), modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Text(card.title, style = MaterialTheme.typography.titleMedium)
+                Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(card.providers.joinToString(" · ") { it.displayName }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             when (card.status) {
                 CategoryStatus.READY -> Unit
-                CategoryStatus.SETUP_REQUIRED -> Pill("Set up", tone = Tone.INFO)
-                CategoryStatus.UNAVAILABLE -> Pill("Unavailable", tone = Tone.WARNING)
+                CategoryStatus.SETUP_REQUIRED -> Pill(stringResource(R.string.category_set_up), tone = Tone.INFO)
+                CategoryStatus.UNAVAILABLE -> Pill(stringResource(R.string.category_unavailable), tone = Tone.WARNING)
             }
         }
     }
@@ -355,35 +366,35 @@ fun MonthDetailScreen(month: String, onBack: () -> Unit) {
             val current = data.months.lastOrNull { it.month == month } ?: data.months.lastOrNull()
             LazyColumn(contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding(), bottom = Spacing.xxl)) {
                 if (current == null) {
-                    item { EmptyState("No data for this month", "Import order history to see details.") }
+                    item { EmptyState(stringResource(R.string.month_empty_title), stringResource(R.string.month_empty_body)) }
                     return@LazyColumn
                 }
                 item {
                     AppCard {
-                        com.smartcart.designsystem.KeyValueRow("Orders", current.kpis.totalOrders.toString())
-                        com.smartcart.designsystem.KeyValueRow("Total spent", current.kpis.totalAmount.format())
-                        com.smartcart.designsystem.KeyValueRow("Average order", current.kpis.averageOrderValue.format())
-                        com.smartcart.designsystem.KeyValueRow("Orders per week", Format.oneDecimal(current.kpis.ordersPerWeek))
-                        current.kpis.daysBetweenOrders?.let { com.smartcart.designsystem.KeyValueRow("Days between orders", Format.oneDecimal(it)) }
+                        com.smartcart.designsystem.KeyValueRow(stringResource(R.string.month_orders), current.kpis.totalOrders.toString())
+                        com.smartcart.designsystem.KeyValueRow(stringResource(R.string.month_total_spent), current.kpis.totalAmount.format())
+                        com.smartcart.designsystem.KeyValueRow(stringResource(R.string.month_average_order), current.kpis.averageOrderValue.format())
+                        com.smartcart.designsystem.KeyValueRow(stringResource(R.string.month_orders_per_week), Format.oneDecimal(current.kpis.ordersPerWeek))
+                        current.kpis.daysBetweenOrders?.let { com.smartcart.designsystem.KeyValueRow(stringResource(R.string.month_days_between), Format.oneDecimal(it)) }
                     }
                 }
-                item { SectionHeader("By category") }
+                item { SectionHeader(stringResource(R.string.month_by_category)) }
                 item {
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                        FilterChip(selected = categoryFilter == null, onClick = { categoryFilter = null }, label = { Text("All") })
+                        FilterChip(selected = categoryFilter == null, onClick = { categoryFilter = null }, label = { Text(stringResource(R.string.month_all)) })
                         current.categorySplit.forEach { s -> FilterChip(selected = categoryFilter == s.key, onClick = { categoryFilter = s.key }, label = { Text(s.label) }) }
                     }
                 }
                 item { AppCard { SplitBars(current.categorySplit.filter { categoryFilter == null || it.key == categoryFilter }) } }
-                item { SectionHeader("By app") }
+                item { SectionHeader(stringResource(R.string.month_by_app)) }
                 item { AppCard { SplitBars(current.providerSplit.sortedByDescending { it.amount.amountMinor }) } }
-                item { SectionHeader("Month on month") }
+                item { SectionHeader(stringResource(R.string.month_on_month)) }
                 items(data.months.reversed(), key = { it.month }) { m ->
-                    com.smartcart.designsystem.KeyValueRow(Format.month(m.month), "${m.kpis.totalOrders} orders · ${m.kpis.totalAmount.format()}", emphasize = m.month == month)
+                    com.smartcart.designsystem.KeyValueRow(Format.month(m.month), pluralStringResource(R.plurals.month_row, m.kpis.totalOrders, m.kpis.totalOrders, m.kpis.totalAmount.format()), emphasize = m.month == month)
                 }
                 item {
                     Spacer(Modifier.size(Spacing.md))
-                    Text("Totals are calculated from your imported orders, including fees and discounts. Refunded and cancelled orders are excluded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.month_footnote), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- S-SET-01 -->
+    <string name="set_title">Settings</string>
+    <string name="set_providers">Connected apps</string>
+    <string name="set_providers_sub">Permissions and automation per app</string>
+    <string name="set_privacy">Privacy and data</string>
+    <string name="set_privacy_sub">Export, delete, where data is kept</string>
+    <string name="set_sessions">Devices and sessions</string>
+    <string name="set_sessions_sub">Signed-in devices</string>
+    <string name="set_notifications">Notifications</string>
+    <string name="set_activity">Activity</string>
+    <string name="set_activity_sub">Recent automation and consent events</string>
+    <string name="set_help">Help and emergency stop</string>
+    <string name="set_help_sub">Pause all automation, troubleshooting</string>
+    <string name="set_developer">Developer: mock scenarios</string>
+    <string name="set_developer_sub">Debug builds only</string>
+    <string name="set_sign_out">Sign out</string>
+    <string name="set_version">Version %1$s</string>
+
+    <!-- S-SET-02 -->
+    <string name="providers_intro">SmartCart only works with an app after you allow it. Turning a switch off takes effect immediately.</string>
+    <string name="providers_allow_cart">Allow cart automation</string>
+    <string name="providers_allow_history">Allow order-history import</string>
+
+    <!-- S-SET-03 -->
+    <string name="privacy_request_received">Request received</string>
+    <string name="privacy_export_queued">Your export will be emailed to your registered address.</string>
+    <string name="privacy_delete_queued">Deletion has started.</string>
+    <plurals name="privacy_sla">
+        <item quantity="one">%1$s Completes within %2$d day.</item>
+        <item quantity="other">%1$s Completes within %2$d days.</item>
+    </plurals>
+    <string name="privacy_user_id">User ID</string>
+    <string name="privacy_email">Email</string>
+    <string name="privacy_email_verified">%1$s · verified</string>
+    <string name="privacy_email_unverified">%1$s · not verified</string>
+    <string name="privacy_member_since">Member since</string>
+    <string name="privacy_where_kept">Where your order history is kept</string>
+    <string name="privacy_your_data">Your data</string>
+    <string name="privacy_view_orders">View imported orders</string>
+    <string name="privacy_export">Export my data</string>
+    <string name="privacy_clear_cache">Clear cache on this device</string>
+    <string name="privacy_cache_cleared">Cache cleared</string>
+    <string name="privacy_delete_history">Delete order history</string>
+    <string name="privacy_delete_chat">Delete conversations</string>
+    <string name="privacy_delete_account">Delete account</string>
+    <string name="privacy_retention">Retention: conversations 30 days unless saved; automation logs 90 days (redacted); price comparisons 90 days; order history until you delete it.</string>
+    <string name="privacy_confirm_identity">Enter your password to confirm it\'s you.</string>
+    <string name="stepup_export_title">Export your data</string>
+    <string name="stepup_export_body">We\'ll email a copy of your data to your registered address.</string>
+    <string name="stepup_export_confirm">Request export</string>
+    <string name="stepup_history_title">Delete order history</string>
+    <string name="stepup_history_body">Removes all imported orders and monthly totals. This can\'t be undone.</string>
+    <string name="stepup_history_confirm">Delete history</string>
+    <string name="stepup_chat_title">Delete conversations</string>
+    <string name="stepup_chat_body">Removes all chat history. This can\'t be undone.</string>
+    <string name="stepup_chat_confirm">Delete conversations</string>
+    <string name="stepup_account_title">Delete account</string>
+    <string name="stepup_account_body">Deletes your account and all data, and signs you out everywhere. This can\'t be undone.</string>
+    <string name="stepup_account_confirm">Delete account</string>
+
+    <!-- S-SET-04 -->
+    <string name="sessions_one_revoked">Device signed out.</string>
+    <plurals name="sessions_all_revoked">
+        <item quantity="one">Signed out %1$d other device.</item>
+        <item quantity="other">Signed out %1$d other devices.</item>
+    </plurals>
+    <string name="sessions_this_device">%1$s (this device)</string>
+    <string name="sessions_meta">App %1$s · %2$s · last seen %3$s</string>
+    <string name="sessions_unknown_location">Unknown location</string>
+    <string name="sessions_sign_out">Sign out</string>
+    <string name="sessions_sign_out_all">Sign out all other devices</string>
+    <string name="sessions_note">Don\'t recognise a device? Sign it out and change your password.</string>
+
+    <!-- S-SET-05 -->
+    <string name="notif_pref_cart_ready">Cart ready</string>
+    <string name="notif_pref_needs_you">Task needs you</string>
+    <string name="notif_pref_needs_you_sub">Sign-in, OTP or a decision is needed</string>
+    <string name="notif_pref_import">Order history imported</string>
+    <string name="notif_pref_monthly">Monthly summary</string>
+    <string name="notif_pref_lock_screen">Hide details on lock screen</string>
+    <string name="notif_pref_lock_screen_sub">Shows \"Your cart is ready\" without the app name</string>
+
+    <!-- S-SET-06 -->
+    <string name="activity_empty_title">No activity yet</string>
+    <string name="activity_empty_body">Automation, consent and data events will appear here.</string>
+    <string name="activity_meta_task">%1$s · %2$s</string>
+
+    <!-- S-SET-07 -->
+    <string name="help_stop_title">Emergency stop</string>
+    <string name="help_paused_body">All automation is paused. No app will be opened or changed until you resume.</string>
+    <string name="help_active_body">Stops any running task immediately and prevents new ones until you resume.</string>
+    <string name="help_resume">Resume automation</string>
+    <string name="help_pause_all">Stop and pause all automation</string>
+    <string name="help_running_now">Running now: %1$s (%2$s)</string>
+    <string name="help_troubleshooting">Troubleshooting</string>
+    <string name="help_q_unknown_screen">A task stopped on an unfamiliar screen</string>
+    <string name="help_a_unknown_screen">Apps change their screens. SmartCart stops rather than guess. Finish in the app yourself; your list is shown on the next screen.</string>
+    <string name="help_q_price">The price in the app is different</string>
+    <string name="help_a_price">Comparisons are estimates checked at a point in time. The app always shows the final price before you pay.</string>
+    <string name="help_q_otp">The app asked me to sign in or enter an OTP</string>
+    <string name="help_a_otp">SmartCart never enters passwords or OTPs. Do it yourself, then tap Resume.</string>
+    <string name="help_q_cart">I can\'t find my cart</string>
+    <string name="help_a_cart">Open the app and tap its cart icon. Some apps don\'t support opening the cart directly.</string>
+</resources>

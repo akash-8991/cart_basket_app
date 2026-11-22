@@ -25,7 +25,7 @@ class FakeChatRepository(fixtures: Fixtures, mock: MockControl) : FakeBase(fixtu
         val s = ChatSession(
             sessionId = "chs_" + UUID.randomUUID().toString().take(8),
             category = category,
-            title = "New ${category.title.lowercase()} chat",
+            title = "New ${category.key} chat", // server-generated title in production
             createdAt = Instant.now().toString(),
         )
         sessions.add(0, s)

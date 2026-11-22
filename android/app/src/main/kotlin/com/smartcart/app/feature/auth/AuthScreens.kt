@@ -47,7 +47,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.smartcart.app.R
 import com.smartcart.app.ui.common.ErrorCopy
+import com.smartcart.app.ui.common.emailProblem
+import com.smartcart.app.ui.common.passwordProblem
+import com.smartcart.app.ui.common.userIdProblem
+import androidx.compose.ui.res.stringResource
 import com.smartcart.app.ui.common.LocalAppContainer
 import com.smartcart.app.ui.common.ScreenScaffold
 import com.smartcart.data.AnalyticsEventName
@@ -104,7 +109,7 @@ class AuthViewModel(private val auth: AuthRepository, private val analytics: Ana
 
     fun forgotUserId(email: String) = run({ auth.forgotUserId(email.trim()) }) {
         analytics.track(AnalyticsEventName.AUTH_RECOVERY_REQUESTED, mapOf("result" to "success"))
-        _state.value = SubmitState(message = (it as com.smartcart.model.RecoveryAccepted).message)
+        _state.value = SubmitState(message = "sent")
     }
 
     fun reset(challengeId: String, code: String, password: String, onOk: () -> Unit) = run({ auth.resetPassword(challengeId, code.trim(), password) }) { onOk() }
@@ -150,7 +155,7 @@ fun TextInput(
 }
 
 @Composable
-fun PasswordInput(value: String, onChange: (String) -> Unit, label: String = "Password", error: String? = null, supporting: String? = null, imeAction: ImeAction = ImeAction.Done) {
+fun PasswordInput(value: String, onChange: (String) -> Unit, label: String = stringResource(R.string.auth_password), error: String? = null, supporting: String? = null, imeAction: ImeAction = ImeAction.Done) {
     var visible by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
         value = value,
@@ -163,7 +168,7 @@ fun PasswordInput(value: String, onChange: (String) -> Unit, label: String = "Pa
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction, autoCorrectEnabled = false),
         trailingIcon = {
             IconButton(onClick = { visible = !visible }) {
-                Icon(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, contentDescription = if (visible) "Hide password" else "Show password")
+                Icon(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, contentDescription = stringResource(if (visible) R.string.auth_hide_password else R.string.auth_show_password))
             }
         },
         modifier = Modifier.fillMaxWidth(),
@@ -196,23 +201,20 @@ fun WelcomeScreen(onCreate: () -> Unit, onLogin: () -> Unit, onReinstall: () -> 
     ) {
         Column(Modifier.padding(top = Spacing.xxl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp))
-            Text("SmartCart", style = MaterialTheme.typography.displaySmall, modifier = Modifier.semantics { heading() })
+            Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.displaySmall, modifier = Modifier.semantics { heading() })
             Text(
-                "Tell me what you need. I compare the full cart across your apps, prepare it with your approval, and you pay in the app yourself.",
+                stringResource(R.string.welcome_body),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.size(Spacing.sm))
-            listOf(
-                "Nothing happens in your apps without your approval",
-                "Payments, OTPs and passwords always stay with you",
-                "Stop any task at any time",
-            ).forEach { Text("•  $it", style = MaterialTheme.typography.bodyMedium) }
+            listOf(R.string.welcome_point_approval, R.string.welcome_point_payments, R.string.welcome_point_stop)
+                .forEach { Text(stringResource(R.string.welcome_bullet, stringResource(it)), style = MaterialTheme.typography.bodyMedium) }
         }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            PrimaryButton("Create account", onCreate)
-            SecondaryButton("Sign in", onLogin)
-            TextButton(onClick = onReinstall, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touchTarget)) { Text("Reinstalled the app?") }
+            PrimaryButton(stringResource(R.string.welcome_create), onCreate)
+            SecondaryButton(stringResource(R.string.welcome_sign_in), onLogin)
+            TextButton(onClick = onReinstall, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.welcome_reinstalled)) }
         }
     }
 }
@@ -229,29 +231,30 @@ fun RegisterScreen(onDone: () -> Unit, onBack: () -> Unit, onLogin: () -> Unit) 
     var terms by rememberSaveable { mutableStateOf(false) }
     var attempted by rememberSaveable { mutableStateOf(false) }
 
-    val idErr = if (attempted || userId.isNotEmpty()) AuthRules.userIdError(userId) else null
-    val emailErr = if (attempted || email.isNotEmpty()) AuthRules.emailError(email) else null
-    val pwErr = if (attempted || password.isNotEmpty()) AuthRules.passwordError(password, userId) else null
-    val confirmErr = if ((attempted || confirm.isNotEmpty()) && confirm != password) "Passwords don't match" else null
-    val serverField = s.error?.fieldErrors?.associate { it.field to ErrorCopy.body(s.error!!) }.orEmpty()
+    val idErr = userIdProblem(if (attempted || userId.isNotEmpty()) AuthRules.userIdError(userId) else null)
+    val emailErr = emailProblem(if (attempted || email.isNotEmpty()) AuthRules.emailError(email) else null)
+    val pwErr = passwordProblem(if (attempted || password.isNotEmpty()) AuthRules.passwordError(password, userId) else null)
+    val confirmErr = if ((attempted || confirm.isNotEmpty()) && confirm != password) stringResource(R.string.register_passwords_differ) else null
+    val serverMsg = s.error?.let { ErrorCopy.body(it) }
+    val serverField = s.error?.fieldErrors?.associate { it.field to serverMsg!! }.orEmpty()
 
-    ScreenScaffold("Create account", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.register_title), onBack) { padding ->
         FormColumn(padding) {
-            Text("Your user ID and password sign you in. Your email is only used to recover your account.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.register_intro), style = MaterialTheme.typography.bodyMedium)
             if (s.error != null && s.error!!.fieldErrors.isEmpty()) ErrorBanner(s.error)
-            TextInput(userId, { userId = it.lowercase().trim(); vm.clearError() }, "User ID", error = idErr ?: serverField["user_id"], supporting = "4–30 characters: a–z, 0–9, . _ -")
-            TextInput(email, { email = it; vm.clearError() }, "Email", error = emailErr, keyboard = KeyboardType.Email)
-            PasswordInput(password, { password = it; vm.clearError() }, error = pwErr ?: serverField["password"], supporting = "At least 10 characters", imeAction = ImeAction.Next)
-            PasswordInput(confirm, { confirm = it }, label = "Confirm password", error = confirmErr)
-            CheckRow(terms, { terms = it }, "I agree to the Terms (v2026-11) and have read the Privacy notice (v2026-11)")
-            PrimaryButton("Create account", loading = s.busy, onClick = {
+            TextInput(userId, { userId = it.lowercase().trim(); vm.clearError() }, stringResource(R.string.auth_user_id), error = idErr ?: serverField["user_id"], supporting = stringResource(R.string.register_user_id_hint))
+            TextInput(email, { email = it; vm.clearError() }, stringResource(R.string.auth_email), error = emailErr, keyboard = KeyboardType.Email)
+            PasswordInput(password, { password = it; vm.clearError() }, error = pwErr ?: serverField["password"], supporting = stringResource(R.string.register_password_hint), imeAction = ImeAction.Next)
+            PasswordInput(confirm, { confirm = it }, label = stringResource(R.string.register_confirm_password), error = confirmErr)
+            CheckRow(terms, { terms = it }, stringResource(R.string.register_terms))
+            PrimaryButton(stringResource(R.string.register_submit), loading = s.busy, onClick = {
                 attempted = true
                 val ok = AuthRules.userIdError(userId) == null && AuthRules.emailError(email) == null &&
                     AuthRules.passwordError(password, userId) == null && confirm == password && terms
                 if (ok) vm.register(userId, email, password, onDone)
             })
-            if (attempted && !terms) Text("Accept the terms to continue", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onLogin, modifier = Modifier.fillMaxWidth()) { Text("Already have an account? Sign in") }
+            if (attempted && !terms) Text(stringResource(R.string.register_terms_required), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = onLogin, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.register_have_account)) }
         }
     }
 }
@@ -264,21 +267,21 @@ fun LoginScreen(onSignedIn: () -> Unit, onForgotPassword: () -> Unit, onForgotUs
     var userId by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var remember by rememberSaveable { mutableStateOf(true) }
-    ScreenScaffold("Sign in", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.login_title), onBack) { padding ->
         FormColumn(padding) {
             ErrorBanner(s.error)
-            TextInput(userId, { userId = it; vm.clearError() }, "User ID")
+            TextInput(userId, { userId = it; vm.clearError() }, stringResource(R.string.auth_user_id))
             PasswordInput(password, { password = it; vm.clearError() })
-            CheckRow(remember, { remember = it }, "Keep me signed in on this device")
+            CheckRow(remember, { remember = it }, stringResource(R.string.login_remember))
             PrimaryButton(
-                "Sign in",
+                stringResource(R.string.login_submit),
                 loading = s.busy,
                 enabled = userId.isNotBlank() && password.isNotEmpty(),
                 onClick = { vm.login(userId, password, remember, onSignedIn) },
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = onForgotUserId, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text("Forgot user ID?") }
-                TextButton(onClick = onForgotPassword, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text("Forgot password?") }
+                TextButton(onClick = onForgotUserId, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.login_forgot_user_id)) }
+                TextButton(onClick = onForgotPassword, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.login_forgot_password)) }
             }
         }
     }
@@ -294,29 +297,29 @@ fun UnlockScreen(onContinue: () -> Unit, onUseAnother: () -> Unit) {
     Column(Modifier.fillMaxSize().systemBarsPadding().padding(Spacing.xl), verticalArrangement = Arrangement.Center) {
         Icon(Icons.Outlined.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
         Spacer(Modifier.size(Spacing.lg))
-        Text("Welcome back", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
-        Text("Continue as $userId", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.unlock_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+        Text(stringResource(R.string.unlock_continue_as, userId), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.size(Spacing.lg))
         ErrorBanner(s.error)
         Spacer(Modifier.size(Spacing.md))
-        PrimaryButton("Continue", loading = s.busy, onClick = { vm.resume(onContinue) })
+        PrimaryButton(stringResource(R.string.unlock_continue), loading = s.busy, onClick = { vm.resume(onContinue) })
         Spacer(Modifier.size(Spacing.sm))
-        SecondaryButton("Use another account", onUseAnother)
+        SecondaryButton(stringResource(R.string.unlock_other_account), onUseAnother)
     }
 }
 
 // ---------------------------------------------------------------- S-AUTH-05
 @Composable
 fun ReinstallScreen(onLogin: () -> Unit, onForgotPassword: () -> Unit, onBack: () -> Unit) {
-    ScreenScaffold("Reinstalled the app?", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.reinstall_title), onBack) { padding ->
         FormColumn(padding) {
             Text(
-                "For your security, sign-in sessions are tied to this installation and are removed when the app is uninstalled. Sign in again with your user ID and password.",
+                stringResource(R.string.reinstall_body),
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Banner("SmartCart never stores your password, so it cannot be recovered or shown to you. If you've forgotten it, reset it using your registered email.", tone = Tone.INFO)
-            PrimaryButton("Sign in", onLogin)
-            SecondaryButton("Reset password", onForgotPassword)
+            Banner(stringResource(R.string.reinstall_note), tone = Tone.INFO)
+            PrimaryButton(stringResource(R.string.reinstall_sign_in), onLogin)
+            SecondaryButton(stringResource(R.string.reinstall_reset), onForgotPassword)
         }
     }
 }
@@ -328,14 +331,14 @@ fun ForgotPasswordScreen(onCodeSent: (String) -> Unit, onBack: () -> Unit) {
     val s by vm.state.collectAsStateWithLifecycle()
     var userId by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    ScreenScaffold("Reset password", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.forgot_pw_title), onBack) { padding ->
         FormColumn(padding) {
-            Text("Enter your user ID and the email registered to it. If they match, we'll email you a reset code.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.forgot_pw_intro), style = MaterialTheme.typography.bodyMedium)
             ErrorBanner(s.error)
-            TextInput(userId, { userId = it }, "User ID")
-            TextInput(email, { email = it }, "Registered email", keyboard = KeyboardType.Email, error = if (email.isNotEmpty()) AuthRules.emailError(email) else null, imeAction = ImeAction.Done)
+            TextInput(userId, { userId = it }, stringResource(R.string.auth_user_id))
+            TextInput(email, { email = it }, stringResource(R.string.auth_registered_email), keyboard = KeyboardType.Email, error = emailProblem(if (email.isNotEmpty()) AuthRules.emailError(email) else null), imeAction = ImeAction.Done)
             PrimaryButton(
-                "Send reset code",
+                stringResource(R.string.forgot_pw_submit),
                 loading = s.busy,
                 enabled = userId.isNotBlank() && AuthRules.emailError(email) == null,
                 onClick = { vm.forgotPassword(userId, email, onCodeSent) },
@@ -352,22 +355,22 @@ fun ResetPasswordScreen(challengeId: String, onDone: () -> Unit, onRestart: () -
     var code by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var done by rememberSaveable { mutableStateOf(false) }
-    ScreenScaffold("Choose a new password", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.reset_title), onBack) { padding ->
         FormColumn(padding) {
             if (done) {
-                Banner("Password changed. You've been signed out on all other devices.", tone = Tone.SUCCESS, title = "All set")
-                PrimaryButton("Sign in", onDone)
+                Banner(stringResource(R.string.reset_done_body), tone = Tone.SUCCESS, title = stringResource(R.string.reset_done_title))
+                PrimaryButton(stringResource(R.string.reset_sign_in), onDone)
                 return@FormColumn
             }
-            Banner("If the details matched an account, a code was sent to the registered email. It expires in 15 minutes.", tone = Tone.INFO)
+            Banner(stringResource(R.string.reset_code_sent), tone = Tone.INFO)
             ErrorBanner(s.error)
             if (s.error?.code == com.smartcart.model.ErrorCode.CHALLENGE_EXPIRED) {
-                SecondaryButton("Start again", onRestart)
+                SecondaryButton(stringResource(R.string.reset_start_again), onRestart)
             }
-            TextInput(code, { code = it.filter(Char::isDigit).take(8) }, "Code from email", keyboard = KeyboardType.NumberPassword)
-            PasswordInput(password, { password = it }, label = "New password", error = if (password.isNotEmpty()) AuthRules.passwordError(password) else null, supporting = "At least 10 characters")
+            TextInput(code, { code = it.filter(Char::isDigit).take(8) }, stringResource(R.string.reset_code), keyboard = KeyboardType.NumberPassword)
+            PasswordInput(password, { password = it }, label = stringResource(R.string.reset_new_password), error = passwordProblem(if (password.isNotEmpty()) AuthRules.passwordError(password) else null), supporting = stringResource(R.string.register_password_hint))
             PrimaryButton(
-                "Change password",
+                stringResource(R.string.reset_submit),
                 loading = s.busy,
                 enabled = code.length >= 6 && AuthRules.passwordError(password) == null,
                 onClick = { vm.reset(challengeId, code, password) { done = true } },
@@ -382,17 +385,17 @@ fun ForgotUserIdScreen(onBack: () -> Unit, onLogin: () -> Unit) {
     val vm = authVm()
     val s by vm.state.collectAsStateWithLifecycle()
     var email by rememberSaveable { mutableStateOf("") }
-    ScreenScaffold("Forgot user ID", onBack) { padding ->
+    ScreenScaffold(stringResource(R.string.forgot_id_title), onBack) { padding ->
         FormColumn(padding) {
             if (s.message != null) {
-                Banner(s.message!!, tone = Tone.SUCCESS, title = "Check your email")
-                PrimaryButton("Back to sign in", onLogin)
+                Banner(stringResource(R.string.forgot_id_sent_body), tone = Tone.SUCCESS, title = stringResource(R.string.forgot_id_sent_title))
+                PrimaryButton(stringResource(R.string.forgot_id_back), onLogin)
                 return@FormColumn
             }
-            Text("Enter your registered email. For your security, your user ID is only ever sent to that email, never shown here.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.forgot_id_intro), style = MaterialTheme.typography.bodyMedium)
             ErrorBanner(s.error)
-            TextInput(email, { email = it }, "Registered email", keyboard = KeyboardType.Email, error = if (email.isNotEmpty()) AuthRules.emailError(email) else null, imeAction = ImeAction.Done)
-            PrimaryButton("Email my user ID", loading = s.busy, enabled = AuthRules.emailError(email) == null, onClick = { vm.forgotUserId(email) })
+            TextInput(email, { email = it }, stringResource(R.string.auth_registered_email), keyboard = KeyboardType.Email, error = emailProblem(if (email.isNotEmpty()) AuthRules.emailError(email) else null), imeAction = ImeAction.Done)
+            PrimaryButton(stringResource(R.string.forgot_id_submit), loading = s.busy, enabled = AuthRules.emailError(email) == null, onClick = { vm.forgotUserId(email) })
         }
     }
 }
