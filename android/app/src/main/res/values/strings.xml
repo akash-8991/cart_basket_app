@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartCart</string>
+    <string name="channel_tasks">Cart tasks</string>
+    <string name="channel_tasks_desc">Cart ready and tasks that need you</string>
+    <string name="channel_imports">Order history</string>
+    <string name="channel_imports_desc">Import progress and completion</string>
+    <string name="channel_summaries">Monthly summaries</string>
+    <string name="channel_summaries_desc">Your monthly spending summary</string>
+</resources>

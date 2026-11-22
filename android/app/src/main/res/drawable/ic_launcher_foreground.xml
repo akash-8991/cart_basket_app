@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple cart-with-chat-bubble mark on the 108dp adaptive canvas (safe zone 66dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34,38h6l6,24h22l5,-16H46l-1.5,-5H78c1.6,0 2.7,1.5 2.2,3l-7,22c-0.4,1.2 -1.5,2 -2.8,2H44c-1.4,0 -2.6,-0.9 -2.9,-2.3L35.6,43H34c-1.4,0 -2.5,-1.1 -2.5,-2.5S32.6,38 34,38z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48,74m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M68,74m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>
