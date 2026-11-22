@@ -1,0 +1,360 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "file": "auth/forgot-password.accepted.json",
+      "schema": "RecoveryAccepted",
+      "status": 202
+    },
+    {
+      "file": "auth/forgot-user-id.accepted.json",
+      "schema": "RecoveryAccepted",
+      "status": 202
+    },
+    {
+      "file": "auth/login.account-locked.json",
+      "schema": "ErrorEnvelope",
+      "status": 429
+    },
+    {
+      "file": "auth/login.invalid-credentials.json",
+      "schema": "ErrorEnvelope",
+      "status": 401
+    },
+    {
+      "file": "auth/login.success.json",
+      "schema": "AuthSession",
+      "status": 200
+    },
+    {
+      "file": "auth/recovery.rate-limited.json",
+      "schema": "ErrorEnvelope",
+      "status": 429
+    },
+    {
+      "file": "auth/refresh.session-expired.json",
+      "schema": "ErrorEnvelope",
+      "status": 401
+    },
+    {
+      "file": "auth/refresh.success.json",
+      "schema": "TokenPair",
+      "status": 200
+    },
+    {
+      "file": "auth/register.success.json",
+      "schema": "AuthSession",
+      "status": 201
+    },
+    {
+      "file": "auth/register.user-id-unavailable.json",
+      "schema": "ErrorEnvelope",
+      "status": 409
+    },
+    {
+      "file": "auth/register.weak-password.json",
+      "schema": "ErrorEnvelope",
+      "status": 400
+    },
+    {
+      "file": "auth/reset-password.expired.json",
+      "schema": "ErrorEnvelope",
+      "status": 410
+    },
+    {
+      "file": "auth/reset-password.success.json",
+      "schema": "ResetPasswordResponse",
+      "status": 200
+    },
+    {
+      "file": "auth/revoke-all.json",
+      "schema": "RevokeAllResponse",
+      "status": 200
+    },
+    {
+      "file": "auth/sessions.json",
+      "schema": "SessionList",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/awaiting-approval.json",
+      "schema": "CartTask",
+      "status": 201
+    },
+    {
+      "file": "cart-tasks/blocked-policy.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/cancelled.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/cart-ready.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/checkpoint.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/expired.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/failed-safe.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/handed-off.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/needs-user-action.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/running.json",
+      "schema": "CartTask",
+      "status": 200
+    },
+    {
+      "file": "cart-tasks/state-conflict.json",
+      "schema": "ErrorEnvelope",
+      "status": 409
+    },
+    {
+      "file": "chat/session.created.json",
+      "schema": "ChatSession",
+      "status": 201
+    },
+    {
+      "file": "chat/session.detail.json",
+      "schema": "ChatSessionDetail",
+      "status": 200
+    },
+    {
+      "file": "chat/sessions.empty.json",
+      "schema": "ChatSessionPage",
+      "status": 200
+    },
+    {
+      "file": "chat/sessions.json",
+      "schema": "ChatSessionPage",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.degraded.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.food-cart.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.general.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.grocery-cart.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.grocery-clarification.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "chat/turn.travel-ride.json",
+      "schema": "AssistantTurn",
+      "status": 200
+    },
+    {
+      "file": "comparison/food.complete.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/food.manual-only.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/grocery.complete.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/grocery.in-progress.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/grocery.incomparable.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/grocery.partial-coverage.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/grocery.price-changed.json",
+      "schema": "ComparisonQuote",
+      "status": 200
+    },
+    {
+      "file": "comparison/grocery.stale.json",
+      "schema": "ComparisonQuote",
+      "status": 200
+    },
+    {
+      "file": "comparison/grocery.unavailable.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "comparison/travel.complete.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
+      "file": "dashboard/monthly.json",
+      "schema": "MonthlyMetrics",
+      "status": 200
+    },
+    {
+      "file": "dashboard/summary.empty.json",
+      "schema": "DashboardSummary",
+      "status": 200
+    },
+    {
+      "file": "dashboard/summary.stale.json",
+      "schema": "DashboardSummary",
+      "status": 200
+    },
+    {
+      "file": "dashboard/summary.success.json",
+      "schema": "DashboardSummary",
+      "status": 200
+    },
+    {
+      "file": "deep-links/app-launch.json",
+      "schema": "Handoff",
+      "status": 201
+    },
+    {
+      "file": "deep-links/cart.json",
+      "schema": "Handoff",
+      "status": 201
+    },
+    {
+      "file": "deep-links/manual.json",
+      "schema": "Handoff",
+      "status": 201
+    },
+    {
+      "file": "errors/ai-unavailable.json",
+      "schema": "ErrorEnvelope",
+      "status": 503
+    },
+    {
+      "file": "errors/consent-required.json",
+      "schema": "ErrorEnvelope",
+      "status": 403
+    },
+    {
+      "file": "errors/provider-disabled.json",
+      "schema": "ErrorEnvelope",
+      "status": 403
+    },
+    {
+      "file": "errors/rate-limited.json",
+      "schema": "ErrorEnvelope",
+      "status": 429
+    },
+    {
+      "file": "errors/service-unavailable.json",
+      "schema": "ErrorEnvelope",
+      "status": 503
+    },
+    {
+      "file": "history/import.review.json",
+      "schema": "ImportSession",
+      "status": 200
+    },
+    {
+      "file": "history/import.running.json",
+      "schema": "ImportSession",
+      "status": 201
+    },
+    {
+      "file": "history/orders.empty.json",
+      "schema": "OrderPage",
+      "status": 200
+    },
+    {
+      "file": "history/orders.json",
+      "schema": "OrderPage",
+      "status": 200
+    },
+    {
+      "file": "me/activity.empty.json",
+      "schema": "ActivityPage",
+      "status": 200
+    },
+    {
+      "file": "me/activity.json",
+      "schema": "ActivityPage",
+      "status": 200
+    },
+    {
+      "file": "me/consents.json",
+      "schema": "ConsentList",
+      "status": 200
+    },
+    {
+      "file": "me/delete.accepted.json",
+      "schema": "DataRequestAccepted",
+      "status": 202
+    },
+    {
+      "file": "me/export.accepted.json",
+      "schema": "DataRequestAccepted",
+      "status": 202
+    },
+    {
+      "file": "me/profile.json",
+      "schema": "Profile",
+      "status": 200
+    },
+    {
+      "file": "providers/capabilities.json",
+      "schema": "ProviderList",
+      "status": 200
+    },
+    {
+      "file": "recommendations/empty.json",
+      "schema": "RecommendationList",
+      "status": 200
+    },
+    {
+      "file": "recommendations/list.json",
+      "schema": "RecommendationList",
+      "status": 200
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "session": {
+    "session_id": "chs_01",
+    "category": "grocery",
+    "title": "Weekly groceries",
+    "created_at": "2026-11-22T05:00:00Z",
+    "updated_at": "2026-11-22T05:03:00Z"
+  },
+  "messages": [
+    {
+      "message_id": "msg_u1",
+      "role": "user",
+      "text": "Milk, brown bread, eggs and bananas",
+      "created_at": "2026-11-22T05:00:00Z",
+      "turn": null
+    },
+    {
+      "message_id": "msg_a1",
+      "role": "assistant",
+      "text": "Sure. Quick check before I compare prices:",
+      "created_at": "2026-11-22T05:01:00Z",
+      "turn": null
+    }
+  ]
+}

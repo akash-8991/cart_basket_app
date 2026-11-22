@@ -1,0 +1,162 @@
+{
+  "session_id": "imp_01",
+  "status": "awaiting_review",
+  "upload_mode": "normalized_upload",
+  "providers": [
+    {
+      "provider": "blinkit",
+      "status": "completed",
+      "orders_found": 9,
+      "confidence": "high",
+      "message": null
+    },
+    {
+      "provider": "zomato",
+      "status": "completed",
+      "orders_found": 6,
+      "confidence": "high",
+      "message": null
+    },
+    {
+      "provider": "swiggy",
+      "status": "failed",
+      "orders_found": 0,
+      "confidence": null,
+      "message": "Swiggy order history screen changed. Skipped safely."
+    }
+  ],
+  "review_sample": [
+    {
+      "order_id": "ord_001",
+      "provider": "blinkit",
+      "category": "grocery",
+      "ordered_at": "2026-11-20T03:10:00Z",
+      "status": "DELIVERED",
+      "total": {
+        "amount_minor": 18200,
+        "currency": "INR"
+      },
+      "items": [
+        {
+          "name": "Toned milk 1 L",
+          "quantity": 2,
+          "amount": {
+            "amount_minor": 5600,
+            "currency": "INR"
+          }
+        },
+        {
+          "name": "Eggs 12 pack",
+          "quantity": 1,
+          "amount": {
+            "amount_minor": 8400,
+            "currency": "INR"
+          }
+        },
+        {
+          "name": "Bananas 6 pcs",
+          "quantity": 1,
+          "amount": {
+            "amount_minor": 4200,
+            "currency": "INR"
+          }
+        }
+      ],
+      "location_label": "Home",
+      "extraction_confidence": "high"
+    },
+    {
+      "order_id": "ord_002",
+      "provider": "zomato",
+      "category": "food",
+      "ordered_at": "2026-11-19T14:00:00Z",
+      "status": "DELIVERED",
+      "total": {
+        "amount_minor": 31000,
+        "currency": "INR"
+      },
+      "items": [
+        {
+          "name": "Masala dosa",
+          "quantity": 2,
+          "amount": {
+            "amount_minor": 22000,
+            "currency": "INR"
+          }
+        },
+        {
+          "name": "Filter coffee",
+          "quantity": 2,
+          "amount": {
+            "amount_minor": 9000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "location_label": "Home",
+      "extraction_confidence": "high"
+    },
+    {
+      "order_id": "ord_003",
+      "provider": "uber",
+      "category": "travel",
+      "ordered_at": "2026-11-18T04:30:00Z",
+      "status": "DELIVERED",
+      "total": {
+        "amount_minor": 21400,
+        "currency": "INR"
+      },
+      "items": [
+        {
+          "name": "Auto ride",
+          "quantity": 1,
+          "amount": {
+            "amount_minor": 21400,
+            "currency": "INR"
+          }
+        }
+      ],
+      "location_label": null,
+      "extraction_confidence": "high"
+    },
+    {
+      "order_id": "ord_004",
+      "provider": "blinkit",
+      "category": "grocery",
+      "ordered_at": "2026-11-16T03:05:00Z",
+      "status": "DELIVERED",
+      "total": {
+        "amount_minor": 18200,
+        "currency": "INR"
+      },
+      "items": [
+        {
+          "name": "Toned milk 1 L",
+          "quantity": 2,
+          "amount": {
+            "amount_minor": 5600,
+            "currency": "INR"
+          }
+        },
+        {
+          "name": "Eggs 12 pack",
+          "quantity": 1,
+          "amount": {
+            "amount_minor": 8400,
+            "currency": "INR"
+          }
+        },
+        {
+          "name": "Bananas 6 pcs",
+          "quantity": 1,
+          "amount": {
+            "amount_minor": 4200,
+            "currency": "INR"
+          }
+        }
+      ],
+      "location_label": "Home",
+      "extraction_confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests. Try again later.",
+    "correlation_id": "6f1c2a90-5a7b-4c1e-9d0a-2b7e4f8c1a33",
+    "retry_after_seconds": 1800
+  }
+}

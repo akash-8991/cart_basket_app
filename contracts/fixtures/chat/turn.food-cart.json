@@ -1,0 +1,35 @@
+{
+  "message_id": "msg_a3",
+  "degraded": false,
+  "clarification": null,
+  "cart_draft": {
+    "category": "food",
+    "selected_provider": "swiggy",
+    "lines": [
+      {
+        "line_id": "f1",
+        "name": "Masala dosa",
+        "quantity": 2,
+        "size": null,
+        "brand": null,
+        "modifiers": []
+      },
+      {
+        "line_id": "f2",
+        "name": "Filter coffee",
+        "quantity": 2,
+        "size": null,
+        "brand": null,
+        "modifiers": []
+      }
+    ],
+    "ride": null
+  },
+  "reply_text": "Two masala dosas and two filter coffees from your usual place. I will compare Zomato and Swiggy.",
+  "intent": {
+    "type": "order",
+    "category": "food",
+    "confidence": 0.88
+  },
+  "next_step": "compare"
+}

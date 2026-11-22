@@ -1,0 +1,202 @@
+{
+  "providers": [
+    {
+      "key": "uber",
+      "display_name": "Uber",
+      "category": "travel",
+      "capabilities": {
+        "cart_automation": "ride_setup_only",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "ola",
+      "display_name": "Ola",
+      "category": "travel",
+      "capabilities": {
+        "cart_automation": "ride_setup_only",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "rapido",
+      "display_name": "Rapido",
+      "category": "travel",
+      "capabilities": {
+        "cart_automation": "ride_setup_only",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "zomato",
+      "display_name": "Zomato",
+      "category": "food",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": true,
+        "history": true
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "swiggy",
+      "display_name": "Swiggy",
+      "category": "food",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "blinkit",
+      "display_name": "Blinkit",
+      "category": "grocery",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": true,
+        "history": true
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "bigbasket",
+      "display_name": "BigBasket",
+      "category": "grocery",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "app_launch",
+        "comparison": "partial"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "swiggy_instamart",
+      "display_name": "Swiggy Instamart",
+      "category": "grocery",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "enabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": "0.1.0-mock"
+    },
+    {
+      "key": "amazon",
+      "display_name": "Amazon",
+      "category": "shopping",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "pending_approval",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": null
+    },
+    {
+      "key": "flipkart",
+      "display_name": "Flipkart",
+      "category": "shopping",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "pending_approval",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": null
+    },
+    {
+      "key": "zepto",
+      "display_name": "Zepto",
+      "category": "grocery",
+      "capabilities": {
+        "cart_automation": "supported",
+        "history_import": "supported",
+        "deep_link": "cart",
+        "comparison": "supported"
+      },
+      "status": "disabled",
+      "installed": null,
+      "consent": {
+        "automation": false,
+        "history": false
+      },
+      "adapter_version": null
+    }
+  ]
+}

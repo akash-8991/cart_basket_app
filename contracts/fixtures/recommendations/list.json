@@ -1,0 +1,102 @@
+{
+  "recommendations": [
+    {
+      "recommendation_id": "rec_1",
+      "label": "Your usual weekly groceries",
+      "category": "grocery",
+      "confidence": "high",
+      "reason_codes": [
+        "frequent",
+        "regular_interval",
+        "due_soon"
+      ],
+      "explanation": "You ordered milk, eggs and bananas 4 times in the last 4 weeks, usually every 7 days. Your last order was 2 days ago.",
+      "usual_provider": "blinkit",
+      "prefill_lines": [
+        {
+          "line_id": "l1",
+          "name": "Toned milk",
+          "quantity": 2,
+          "size": "1 L",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l3",
+          "name": "Eggs",
+          "quantity": 1,
+          "size": "12 pack",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l4",
+          "name": "Bananas",
+          "quantity": 1,
+          "size": "6 pcs",
+          "brand": null,
+          "modifiers": []
+        }
+      ]
+    },
+    {
+      "recommendation_id": "rec_2",
+      "label": "Atta and dal restock",
+      "category": "grocery",
+      "confidence": "medium",
+      "reason_codes": [
+        "regular_interval"
+      ],
+      "explanation": "You bought atta and toor dal about every 3 weeks. It has been 10 days.",
+      "usual_provider": "bigbasket",
+      "prefill_lines": [
+        {
+          "line_id": "l9",
+          "name": "Atta",
+          "quantity": 1,
+          "size": "5 kg",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l10",
+          "name": "Toor dal",
+          "quantity": 1,
+          "size": "1 kg",
+          "brand": null,
+          "modifiers": []
+        }
+      ]
+    },
+    {
+      "recommendation_id": "rec_3",
+      "label": "Thursday dinner order",
+      "category": "food",
+      "confidence": "low",
+      "reason_codes": [
+        "weekday_pattern"
+      ],
+      "explanation": "You ordered dinner on 2 of the last 3 Thursdays.",
+      "usual_provider": "zomato",
+      "prefill_lines": [
+        {
+          "line_id": "f1",
+          "name": "Masala dosa",
+          "quantity": 2,
+          "size": null,
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "f2",
+          "name": "Filter coffee",
+          "quantity": 2,
+          "size": null,
+          "brand": null,
+          "modifiers": []
+        }
+      ]
+    }
+  ],
+  "disclaimer": "Suggestions are based on your past orders and may not match what you need. Nothing is ordered without your approval."
+}

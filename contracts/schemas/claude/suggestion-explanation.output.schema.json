@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.smartcart.invalid/claude/suggestion-explanation.output.schema.json",
+  "title": "ClaudeSuggestionExplanationOutput",
+  "description": "Backend-only. Claude words an explanation for a candidate already selected by deterministic features. It may not change confidence upward; the server takes min(model, feature) confidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "confidence", "explanation", "disclaimer"],
+  "properties": {
+    "label": { "type": "string", "maxLength": 80 },
+    "confidence": { "enum": ["high", "medium", "low"] },
+    "explanation": { "type": "string", "maxLength": 240 },
+    "disclaimer": { "type": "string", "maxLength": 160 }
+  }
+}

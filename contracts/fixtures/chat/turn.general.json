@@ -1,0 +1,13 @@
+{
+  "message_id": "msg_a6",
+  "degraded": false,
+  "clarification": null,
+  "cart_draft": null,
+  "reply_text": "I can help you build a cart, compare prices across your apps, or show your monthly spending.",
+  "intent": {
+    "type": "general",
+    "category": null,
+    "confidence": 0.8
+  },
+  "next_step": "none"
+}

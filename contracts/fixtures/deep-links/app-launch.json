@@ -1,0 +1,11 @@
+{
+  "handoff_url": "smartcart://handoff/k2Lm9QrT4vB8nW3pZhX7",
+  "strategy": "app_launch",
+  "target_package": null,
+  "expires_at": "2026-11-22T05:15:00Z",
+  "manual_steps": [
+    "Open the app",
+    "Tap the cart icon",
+    "Check items and pay in the app"
+  ]
+}

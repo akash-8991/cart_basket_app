@@ -1,0 +1,201 @@
+{
+  "quote_id": "qt_food_complete",
+  "category": "food",
+  "status": "complete",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": "swiggy",
+  "recommendation": {
+    "provider": "zomato",
+    "label": "cheapest",
+    "reason": "Lowest estimated total including fees and a visible ₹40 discount.",
+    "savings_vs_selected": {
+      "amount_minor": 5100,
+      "currency": "INR"
+    }
+  },
+  "coverage": {
+    "checked": [
+      "zomato",
+      "swiggy"
+    ],
+    "failed": [],
+    "complete": true
+  },
+  "provider_results": [
+    {
+      "provider": "zomato",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "f1",
+          "requested_name": "Masala dosa",
+          "matched_name": "Masala dosa",
+          "matched_size": null,
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 11000,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 22000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "f2",
+          "requested_name": "Filter coffee",
+          "matched_name": "Filter coffee",
+          "matched_size": null,
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 9000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 31000,
+          "currency": "INR"
+        },
+        "delivery_fee": {
+          "amount_minor": 2500,
+          "currency": "INR"
+        },
+        "packaging_fee": {
+          "amount_minor": 2000,
+          "currency": "INR"
+        },
+        "platform_fee": {
+          "amount_minor": 600,
+          "currency": "INR"
+        },
+        "small_cart_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "surge_or_booking_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "taxes": {
+          "amount_minor": 1600,
+          "currency": "INR"
+        },
+        "discounts": {
+          "amount_minor": 4000,
+          "currency": "INR"
+        }
+      },
+      "total_estimate": {
+        "amount_minor": 33700,
+        "currency": "INR"
+      },
+      "eta_minutes": 32,
+      "rank": 1,
+      "unavailable_fields": [],
+      "notes": []
+    },
+    {
+      "provider": "swiggy",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "f1",
+          "requested_name": "Masala dosa",
+          "matched_name": "Masala dosa",
+          "matched_size": null,
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 11500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 23000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "f2",
+          "requested_name": "Filter coffee",
+          "matched_name": "Filter coffee",
+          "matched_size": null,
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 9000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 32000,
+          "currency": "INR"
+        },
+        "delivery_fee": {
+          "amount_minor": 3000,
+          "currency": "INR"
+        },
+        "packaging_fee": {
+          "amount_minor": 1500,
+          "currency": "INR"
+        },
+        "platform_fee": {
+          "amount_minor": 600,
+          "currency": "INR"
+        },
+        "small_cart_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "surge_or_booking_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "taxes": {
+          "amount_minor": 1700,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 38800,
+        "currency": "INR"
+      },
+      "eta_minutes": 28,
+      "rank": 2,
+      "unavailable_fields": [],
+      "notes": []
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [
+    "Same restaurant on both apps: \"Udupi Corner, Indiranagar\" (mock)",
+    "Delivery to your saved Home label",
+    "No membership benefits applied"
+  ],
+  "confidence": "high",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

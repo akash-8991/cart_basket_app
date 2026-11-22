@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.smartcart.invalid/claude/comparison-explanation.output.schema.json",
+  "title": "ClaudeComparisonExplanationOutput",
+  "description": "Backend-only. Claude explains a comparison whose ranking and totals were computed deterministically. Any number in the text must appear in the input snapshot; the server rejects explanations containing unknown amounts or the word 'guaranteed'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "caveats"],
+  "properties": {
+    "summary": { "type": "string", "maxLength": 300 },
+    "caveats": { "type": "array", "maxItems": 5, "items": { "type": "string", "maxLength": 160 } }
+  }
+}

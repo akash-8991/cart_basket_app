@@ -1,0 +1,375 @@
+{
+  "quote_id": "qt_grocery_complete",
+  "category": "grocery",
+  "status": "complete",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": "bigbasket",
+  "recommendation": {
+    "provider": "blinkit",
+    "label": "cheapest",
+    "reason": "Lowest estimated complete-cart total across all 3 apps checked.",
+    "savings_vs_selected": {
+      "amount_minor": 3500,
+      "currency": "INR"
+    }
+  },
+  "coverage": {
+    "checked": [
+      "blinkit",
+      "bigbasket",
+      "swiggy_instamart"
+    ],
+    "failed": [],
+    "complete": true
+  },
+  "provider_results": [
+    {
+      "provider": "blinkit",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "l1",
+          "requested_name": "Toned milk 1 L",
+          "matched_name": "Toned milk",
+          "matched_size": "1 L",
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 2800,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 5600,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l2",
+          "requested_name": "Brown bread 400 g",
+          "matched_name": "Brown bread",
+          "matched_size": "400 g",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l3",
+          "requested_name": "Eggs 12 pack",
+          "matched_name": "Eggs",
+          "matched_size": "12 pack",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 8400,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 8400,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l4",
+          "requested_name": "Bananas 6 pcs",
+          "matched_name": "Bananas",
+          "matched_size": "6 pcs",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 4200,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 4200,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 22700,
+          "currency": "INR"
+        },
+        "delivery_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "packaging_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "platform_fee": {
+          "amount_minor": 200,
+          "currency": "INR"
+        },
+        "small_cart_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "surge_or_booking_fee": null,
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 22900,
+        "currency": "INR"
+      },
+      "eta_minutes": 11,
+      "rank": 1,
+      "unavailable_fields": [],
+      "notes": []
+    },
+    {
+      "provider": "bigbasket",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "l1",
+          "requested_name": "Toned milk 1 L",
+          "matched_name": "Toned milk",
+          "matched_size": "1 L",
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 2700,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 5400,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l2",
+          "requested_name": "Brown bread 400 g",
+          "matched_name": "Brown bread",
+          "matched_size": "400 g",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 5000,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 5000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l3",
+          "requested_name": "Eggs 12 pack",
+          "matched_name": "Eggs",
+          "matched_size": "12 pack",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 9000,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 9000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l4",
+          "requested_name": "Bananas 6 pcs",
+          "matched_name": "Bananas",
+          "matched_size": "6 pcs",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 4000,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 4000,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 23400,
+          "currency": "INR"
+        },
+        "delivery_fee": {
+          "amount_minor": 3000,
+          "currency": "INR"
+        },
+        "packaging_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "platform_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "small_cart_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "surge_or_booking_fee": null,
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 26400,
+        "currency": "INR"
+      },
+      "eta_minutes": 45,
+      "rank": 3,
+      "unavailable_fields": [],
+      "notes": []
+    },
+    {
+      "provider": "swiggy_instamart",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "l1",
+          "requested_name": "Toned milk 1 L",
+          "matched_name": "Toned milk",
+          "matched_size": "1 L",
+          "quantity": 2,
+          "unit_price": {
+            "amount_minor": 2900,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 5800,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l2",
+          "requested_name": "Brown bread 400 g",
+          "matched_name": "Brown bread",
+          "matched_size": "400 g",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 4400,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 4400,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l3",
+          "requested_name": "Eggs 12 pack",
+          "matched_name": "Eggs",
+          "matched_size": "12 pack",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 8600,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 8600,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        },
+        {
+          "line_id": "l4",
+          "requested_name": "Bananas 6 pcs",
+          "matched_name": "Bananas",
+          "matched_size": "6 pcs",
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 4500,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 23300,
+          "currency": "INR"
+        },
+        "delivery_fee": {
+          "amount_minor": 1500,
+          "currency": "INR"
+        },
+        "packaging_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "platform_fee": {
+          "amount_minor": 500,
+          "currency": "INR"
+        },
+        "small_cart_fee": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "surge_or_booking_fee": null,
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": {
+          "amount_minor": 1000,
+          "currency": "INR"
+        }
+      },
+      "total_estimate": {
+        "amount_minor": 24300,
+        "currency": "INR"
+      },
+      "eta_minutes": 14,
+      "rank": 2,
+      "unavailable_fields": [],
+      "notes": []
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [
+    "Delivery to your saved Home label",
+    "No membership benefits applied",
+    "Coupons not applied unless shown"
+  ],
+  "confidence": "high",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

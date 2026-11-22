@@ -1,0 +1,5 @@
+{
+  "access_token": "mock-access-token-2",
+  "refresh_token": "mock-refresh-token-2",
+  "access_expires_in_seconds": 900
+}

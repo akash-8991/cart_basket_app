@@ -1,0 +1,6 @@
+{
+  "request_id": "del_01",
+  "status": "queued",
+  "message": "Deletion has started.",
+  "sla_days": 30
+}

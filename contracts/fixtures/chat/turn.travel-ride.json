@@ -1,0 +1,23 @@
+{
+  "message_id": "msg_a4",
+  "degraded": false,
+  "clarification": null,
+  "cart_draft": {
+    "category": "travel",
+    "selected_provider": "uber",
+    "lines": [],
+    "ride": {
+      "pickup_label": "Home",
+      "drop_label": "Airport Terminal 1",
+      "ride_class": "auto",
+      "when": null
+    }
+  },
+  "reply_text": "An auto from Home to Airport Terminal 1, now. I will compare Uber, Ola and Rapido.",
+  "intent": {
+    "type": "book_ride",
+    "category": "travel",
+    "confidence": 0.9
+  },
+  "next_step": "compare"
+}

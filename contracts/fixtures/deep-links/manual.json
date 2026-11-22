@@ -1,0 +1,11 @@
+{
+  "handoff_url": "smartcart://handoff/Q7rT4vB8nW3pZhX9k2Lm",
+  "strategy": "manual",
+  "target_package": null,
+  "expires_at": "2026-11-22T05:15:00Z",
+  "manual_steps": [
+    "Open the app yourself",
+    "Add the items listed below",
+    "Pay in the app"
+  ]
+}

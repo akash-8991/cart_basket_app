@@ -1,0 +1,521 @@
+{
+  "currency": "INR",
+  "months": [
+    {
+      "month": "2026-06",
+      "kpis": {
+        "total_orders": 9,
+        "total_amount": {
+          "amount_minor": 742000,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 82444,
+          "currency": "INR"
+        },
+        "orders_per_week": 2.1,
+        "days_between_orders": 3.3
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    },
+    {
+      "month": "2026-07",
+      "kpis": {
+        "total_orders": 11,
+        "total_amount": {
+          "amount_minor": 910500,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 82773,
+          "currency": "INR"
+        },
+        "orders_per_week": 2.6,
+        "days_between_orders": 2.7
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    },
+    {
+      "month": "2026-08",
+      "kpis": {
+        "total_orders": 10,
+        "total_amount": {
+          "amount_minor": 865000,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 86500,
+          "currency": "INR"
+        },
+        "orders_per_week": 2.3,
+        "days_between_orders": 3
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    },
+    {
+      "month": "2026-09",
+      "kpis": {
+        "total_orders": 13,
+        "total_amount": {
+          "amount_minor": 1124000,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 86462,
+          "currency": "INR"
+        },
+        "orders_per_week": 3,
+        "days_between_orders": 2.3
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    },
+    {
+      "month": "2026-10",
+      "kpis": {
+        "total_orders": 12,
+        "total_amount": {
+          "amount_minor": 1038000,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 86500,
+          "currency": "INR"
+        },
+        "orders_per_week": 2.8,
+        "days_between_orders": 2.5
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    },
+    {
+      "month": "2026-11",
+      "kpis": {
+        "total_orders": 14,
+        "total_amount": {
+          "amount_minor": 1247000,
+          "currency": "INR"
+        },
+        "average_order_value": {
+          "amount_minor": 89071,
+          "currency": "INR"
+        },
+        "orders_per_week": 3.3,
+        "days_between_orders": 2.1
+      },
+      "provider_split": [
+        {
+          "key": "blinkit",
+          "label": "Blinkit",
+          "orders": 6,
+          "amount": {
+            "amount_minor": 392000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "zomato",
+          "label": "Zomato",
+          "orders": 3,
+          "amount": {
+            "amount_minor": 231000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "swiggy",
+          "label": "Swiggy",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 28900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "bigbasket",
+          "label": "BigBasket",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 418000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "uber",
+          "label": "Uber",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 148000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "rapido",
+          "label": "Rapido",
+          "orders": 1,
+          "amount": {
+            "amount_minor": 29100,
+            "currency": "INR"
+          }
+        }
+      ],
+      "category_split": [
+        {
+          "key": "grocery",
+          "label": "Grocery",
+          "orders": 8,
+          "amount": {
+            "amount_minor": 810000,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "food",
+          "label": "Food ordering",
+          "orders": 4,
+          "amount": {
+            "amount_minor": 259900,
+            "currency": "INR"
+          }
+        },
+        {
+          "key": "travel",
+          "label": "Travel",
+          "orders": 2,
+          "amount": {
+            "amount_minor": 177100,
+            "currency": "INR"
+          }
+        }
+      ]
+    }
+  ]
+}

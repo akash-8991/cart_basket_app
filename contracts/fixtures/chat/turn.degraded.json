@@ -1,0 +1,13 @@
+{
+  "message_id": "msg_a5",
+  "degraded": true,
+  "clarification": null,
+  "cart_draft": null,
+  "reply_text": "The assistant is temporarily limited. Tell me the items and quantities one per line, for example \"2 x toned milk 1 L\".",
+  "intent": {
+    "type": "unknown",
+    "category": null,
+    "confidence": 0
+  },
+  "next_step": "none"
+}

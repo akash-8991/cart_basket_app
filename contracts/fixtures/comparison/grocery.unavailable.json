@@ -1,0 +1,74 @@
+{
+  "quote_id": "qt_grocery_unavailable",
+  "category": "grocery",
+  "status": "unavailable",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": null,
+  "recommendation": {
+    "provider": null,
+    "label": "none",
+    "reason": "None of the grocery apps can deliver this cart right now.",
+    "savings_vs_selected": null
+  },
+  "coverage": {
+    "checked": [
+      "blinkit",
+      "bigbasket",
+      "swiggy_instamart"
+    ],
+    "failed": [],
+    "complete": true
+  },
+  "provider_results": [
+    {
+      "provider": "blinkit",
+      "availability": "unavailable",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Store closed at your location right now."
+      ]
+    },
+    {
+      "provider": "bigbasket",
+      "availability": "unavailable",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "No delivery slots today."
+      ]
+    },
+    {
+      "provider": "swiggy_instamart",
+      "availability": "unavailable",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Not serviceable at your location."
+      ]
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [],
+  "confidence": "high",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

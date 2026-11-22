@@ -1,0 +1,192 @@
+{
+  "quote_id": "qt_travel_complete",
+  "category": "travel",
+  "status": "complete",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": "uber",
+  "recommendation": {
+    "provider": "rapido",
+    "label": "cheapest",
+    "reason": "Lowest estimated fare for an auto, including booking and peak charges.",
+    "savings_vs_selected": {
+      "amount_minor": 4700,
+      "currency": "INR"
+    }
+  },
+  "coverage": {
+    "checked": [
+      "uber",
+      "ola",
+      "rapido"
+    ],
+    "failed": [],
+    "complete": true
+  },
+  "provider_results": [
+    {
+      "provider": "uber",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "r1",
+          "requested_name": "Auto ride",
+          "matched_name": "Auto ride",
+          "matched_size": null,
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 61200,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 61200,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 61200,
+          "currency": "INR"
+        },
+        "delivery_fee": null,
+        "packaging_fee": null,
+        "platform_fee": null,
+        "small_cart_fee": null,
+        "surge_or_booking_fee": {
+          "amount_minor": 4000,
+          "currency": "INR"
+        },
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 65200,
+        "currency": "INR"
+      },
+      "eta_minutes": 4,
+      "rank": 2,
+      "unavailable_fields": [],
+      "notes": []
+    },
+    {
+      "provider": "ola",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "r1",
+          "requested_name": "Auto ride",
+          "matched_name": "Auto ride",
+          "matched_size": null,
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 59800,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 59800,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 59800,
+          "currency": "INR"
+        },
+        "delivery_fee": null,
+        "packaging_fee": null,
+        "platform_fee": null,
+        "small_cart_fee": null,
+        "surge_or_booking_fee": {
+          "amount_minor": 6500,
+          "currency": "INR"
+        },
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 66300,
+        "currency": "INR"
+      },
+      "eta_minutes": 7,
+      "rank": 3,
+      "unavailable_fields": [],
+      "notes": []
+    },
+    {
+      "provider": "rapido",
+      "availability": "available",
+      "captured_at": "2026-11-22T05:00:00Z",
+      "lines": [
+        {
+          "line_id": "r1",
+          "requested_name": "Auto ride",
+          "matched_name": "Auto ride",
+          "matched_size": null,
+          "quantity": 1,
+          "unit_price": {
+            "amount_minor": 57500,
+            "currency": "INR"
+          },
+          "line_total": {
+            "amount_minor": 57500,
+            "currency": "INR"
+          },
+          "match": "exact",
+          "note": null
+        }
+      ],
+      "components": {
+        "item_subtotal": {
+          "amount_minor": 57500,
+          "currency": "INR"
+        },
+        "delivery_fee": null,
+        "packaging_fee": null,
+        "platform_fee": null,
+        "small_cart_fee": null,
+        "surge_or_booking_fee": {
+          "amount_minor": 3000,
+          "currency": "INR"
+        },
+        "taxes": {
+          "amount_minor": 0,
+          "currency": "INR"
+        },
+        "discounts": null
+      },
+      "total_estimate": {
+        "amount_minor": 60500,
+        "currency": "INR"
+      },
+      "eta_minutes": 6,
+      "rank": 1,
+      "unavailable_fields": [],
+      "notes": []
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [
+    "Auto ride class on all apps",
+    "Tolls not included",
+    "Fares are estimates; final fare is set by the app"
+  ],
+  "confidence": "medium",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

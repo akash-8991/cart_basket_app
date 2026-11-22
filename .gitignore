@@ -1,0 +1,26 @@
+# OS / editors
+.DS_Store
+.idea/
+*.iml
+.vscode/
+
+# Gradle / Android
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Node
+node_modules/
+
+# Secrets — never commit
+.env
+.env.*
+*.pem
+secrets/

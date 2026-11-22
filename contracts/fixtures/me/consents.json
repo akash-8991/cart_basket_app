@@ -1,0 +1,40 @@
+{
+  "consents": [
+    {
+      "key": "ai_processing",
+      "granted": true,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "key": "notifications",
+      "granted": true,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "key": "automation.blinkit",
+      "granted": true,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "key": "automation.zomato",
+      "granted": true,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "key": "history.blinkit",
+      "granted": true,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "key": "history.swiggy",
+      "granted": false,
+      "version": "2026-11",
+      "updated_at": "2026-11-01T10:00:00Z"
+    }
+  ]
+}

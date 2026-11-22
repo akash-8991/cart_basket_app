@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.smartcart.invalid/deep-link.schema.json",
+  "title": "InAppDeepLink",
+  "description": "Internal deep links handled by the app. URIs carry only opaque tokens or app-generated IDs, never personal data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uri"],
+  "properties": {
+    "uri": {
+      "type": "string",
+      "pattern": "^smartcart://(handoff/[A-Za-z0-9_-]{16,128}|task/[A-Za-z0-9_-]{4,64}|history/import/[A-Za-z0-9_-]{4,64}|insights/month/[0-9]{4}-[0-9]{2}|home)$"
+    }
+  }
+}

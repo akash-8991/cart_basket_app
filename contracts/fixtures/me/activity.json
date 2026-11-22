@@ -1,0 +1,45 @@
+{
+  "events": [
+    {
+      "event_id": "evt_5",
+      "at": "2026-11-22T04:30:00Z",
+      "type": "automation_completed",
+      "summary": "Cart prepared in Blinkit (4 items).",
+      "provider": "blinkit",
+      "task_id": "tsk_grocery_01"
+    },
+    {
+      "event_id": "evt_4",
+      "at": "2026-11-22T04:26:00Z",
+      "type": "automation_approved",
+      "summary": "You approved adding 4 items in Blinkit.",
+      "provider": "blinkit",
+      "task_id": "tsk_grocery_01"
+    },
+    {
+      "event_id": "evt_3",
+      "at": "2026-11-18T08:12:00Z",
+      "type": "automation_stopped",
+      "summary": "You pressed Stop during a Swiggy task.",
+      "provider": "swiggy",
+      "task_id": "tsk_food_07"
+    },
+    {
+      "event_id": "evt_2",
+      "at": "2026-11-15T19:40:00Z",
+      "type": "history_imported",
+      "summary": "Imported 18 orders from Blinkit and Zomato.",
+      "provider": null,
+      "task_id": null
+    },
+    {
+      "event_id": "evt_1",
+      "at": "2026-11-01T10:00:00Z",
+      "type": "consent_granted",
+      "summary": "Allowed automation for Blinkit.",
+      "provider": "blinkit",
+      "task_id": null
+    }
+  ],
+  "next_cursor": null
+}

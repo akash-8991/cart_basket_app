@@ -1,0 +1,51 @@
+{
+  "message_id": "msg_a2",
+  "degraded": false,
+  "clarification": null,
+  "cart_draft": {
+    "category": "grocery",
+    "selected_provider": "bigbasket",
+    "lines": [
+      {
+        "line_id": "l1",
+        "name": "Toned milk",
+        "quantity": 2,
+        "size": "1 L",
+        "brand": null,
+        "modifiers": []
+      },
+      {
+        "line_id": "l2",
+        "name": "Brown bread",
+        "quantity": 1,
+        "size": "400 g",
+        "brand": null,
+        "modifiers": []
+      },
+      {
+        "line_id": "l3",
+        "name": "Eggs",
+        "quantity": 1,
+        "size": "12 pack",
+        "brand": null,
+        "modifiers": []
+      },
+      {
+        "line_id": "l4",
+        "name": "Bananas",
+        "quantity": 1,
+        "size": "6 pcs",
+        "brand": null,
+        "modifiers": []
+      }
+    ],
+    "ride": null
+  },
+  "reply_text": "Here is your cart. I will compare the full cart across Blinkit, BigBasket and Swiggy Instamart.",
+  "intent": {
+    "type": "order",
+    "category": "grocery",
+    "confidence": 0.91
+  },
+  "next_step": "compare"
+}

@@ -1,0 +1,31 @@
+extends: ["spectral:oas"]
+rules:
+  # Placeholder servers are intentional until Phase 3 environments exist.
+  oas3-api-servers: off
+  info-contact: off
+  # Operation intent is carried by operationId + response descriptions; long-form docs come in Phase 3.
+  operation-description: off
+  # Every operation must declare the correlation header ($refs are resolved before rules run).
+  operation-correlation-id:
+    description: Every operation must accept X-Correlation-Id.
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: parameters
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          contains:
+            type: object
+            properties:
+              name: { const: "X-Correlation-Id" }
+              in: { const: "header" }
+            required: ["name", "in"]
+  no-password-in-responses:
+    description: Response schemas must not expose password fields.
+    severity: error
+    given: "$.components.schemas[*].properties"
+    then:
+      field: password_hash
+      function: falsy

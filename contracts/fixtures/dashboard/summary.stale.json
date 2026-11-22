@@ -1,0 +1,241 @@
+{
+  "month": "2026-11",
+  "available_months": [
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09",
+    "2026-10",
+    "2026-11"
+  ],
+  "currency": "INR",
+  "kpis": {
+    "total_orders": 14,
+    "total_amount": {
+      "amount_minor": 1247000,
+      "currency": "INR"
+    },
+    "average_order_value": {
+      "amount_minor": 89071,
+      "currency": "INR"
+    },
+    "orders_per_week": 3.3,
+    "days_between_orders": 2.1
+  },
+  "previous_kpis": {
+    "total_orders": 12,
+    "total_amount": {
+      "amount_minor": 1038000,
+      "currency": "INR"
+    },
+    "average_order_value": {
+      "amount_minor": 86500,
+      "currency": "INR"
+    },
+    "orders_per_week": 2.8,
+    "days_between_orders": 2.5
+  },
+  "delta_vs_previous": {
+    "total_orders_pct": 16.7,
+    "total_amount_pct": 20.1,
+    "orders_per_week_pct": 17.9
+  },
+  "provider_split": [
+    {
+      "key": "blinkit",
+      "label": "Blinkit",
+      "orders": 6,
+      "amount": {
+        "amount_minor": 392000,
+        "currency": "INR"
+      }
+    },
+    {
+      "key": "zomato",
+      "label": "Zomato",
+      "orders": 3,
+      "amount": {
+        "amount_minor": 231000,
+        "currency": "INR"
+      }
+    },
+    {
+      "key": "swiggy",
+      "label": "Swiggy",
+      "orders": 1,
+      "amount": {
+        "amount_minor": 28900,
+        "currency": "INR"
+      }
+    }
+  ],
+  "category_split": [
+    {
+      "key": "grocery",
+      "label": "Grocery",
+      "orders": 8,
+      "amount": {
+        "amount_minor": 810000,
+        "currency": "INR"
+      }
+    },
+    {
+      "key": "food",
+      "label": "Food ordering",
+      "orders": 4,
+      "amount": {
+        "amount_minor": 259900,
+        "currency": "INR"
+      }
+    },
+    {
+      "key": "travel",
+      "label": "Travel",
+      "orders": 2,
+      "amount": {
+        "amount_minor": 177100,
+        "currency": "INR"
+      }
+    }
+  ],
+  "freshness": {
+    "status": "stale",
+    "last_imported_at": "2026-10-30T19:40:00Z"
+  },
+  "categories": [
+    {
+      "category": "travel",
+      "title": "Travel",
+      "providers": [
+        "uber",
+        "rapido",
+        "ola"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "food",
+      "title": "Food ordering",
+      "providers": [
+        "zomato",
+        "swiggy"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "grocery",
+      "title": "Grocery",
+      "providers": [
+        "blinkit",
+        "bigbasket",
+        "swiggy_instamart"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "shopping",
+      "title": "Shopping",
+      "providers": [
+        "amazon",
+        "flipkart"
+      ],
+      "status": "setup_required"
+    }
+  ],
+  "suggestions_preview": [
+    {
+      "recommendation_id": "rec_1",
+      "label": "Your usual weekly groceries",
+      "category": "grocery",
+      "confidence": "high",
+      "reason_codes": [
+        "frequent",
+        "regular_interval",
+        "due_soon"
+      ],
+      "explanation": "You ordered milk, eggs and bananas 4 times in the last 4 weeks, usually every 7 days. Your last order was 2 days ago.",
+      "usual_provider": "blinkit",
+      "prefill_lines": [
+        {
+          "line_id": "l1",
+          "name": "Toned milk",
+          "quantity": 2,
+          "size": "1 L",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l3",
+          "name": "Eggs",
+          "quantity": 1,
+          "size": "12 pack",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l4",
+          "name": "Bananas",
+          "quantity": 1,
+          "size": "6 pcs",
+          "brand": null,
+          "modifiers": []
+        }
+      ]
+    },
+    {
+      "recommendation_id": "rec_2",
+      "label": "Atta and dal restock",
+      "category": "grocery",
+      "confidence": "medium",
+      "reason_codes": [
+        "regular_interval"
+      ],
+      "explanation": "You bought atta and toor dal about every 3 weeks. It has been 10 days.",
+      "usual_provider": "bigbasket",
+      "prefill_lines": [
+        {
+          "line_id": "l9",
+          "name": "Atta",
+          "quantity": 1,
+          "size": "5 kg",
+          "brand": null,
+          "modifiers": []
+        },
+        {
+          "line_id": "l10",
+          "name": "Toor dal",
+          "quantity": 1,
+          "size": "1 kg",
+          "brand": null,
+          "modifiers": []
+        }
+      ]
+    }
+  ],
+  "recent_comparisons": [
+    {
+      "quote_id": "qt_grocery_complete",
+      "category": "grocery",
+      "title": "Weekly groceries · 4 items",
+      "recommended_provider": "blinkit",
+      "total_estimate": {
+        "amount_minor": 22900,
+        "currency": "INR"
+      },
+      "created_at": "2026-11-22T05:00:00Z",
+      "status": "complete"
+    },
+    {
+      "quote_id": "qt_travel_complete",
+      "category": "travel",
+      "title": "Auto to Airport T1",
+      "recommended_provider": "rapido",
+      "total_estimate": {
+        "amount_minor": 60500,
+        "currency": "INR"
+      },
+      "created_at": "2026-11-17T03:01:00Z",
+      "status": "complete"
+    }
+  ]
+}

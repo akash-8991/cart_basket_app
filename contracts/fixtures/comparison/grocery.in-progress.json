@@ -1,0 +1,70 @@
+{
+  "quote_id": "qt_grocery_in_progress",
+  "category": "grocery",
+  "status": "in_progress",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": null,
+  "recommendation": {
+    "provider": null,
+    "label": "none",
+    "reason": "Checking prices in your apps.",
+    "savings_vs_selected": null
+  },
+  "coverage": {
+    "checked": [],
+    "failed": [],
+    "complete": false
+  },
+  "provider_results": [
+    {
+      "provider": "blinkit",
+      "availability": "not_checked",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Checking…"
+      ]
+    },
+    {
+      "provider": "bigbasket",
+      "availability": "not_checked",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Checking…"
+      ]
+    },
+    {
+      "provider": "swiggy_instamart",
+      "availability": "not_checked",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Checking…"
+      ]
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [],
+  "confidence": "low",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

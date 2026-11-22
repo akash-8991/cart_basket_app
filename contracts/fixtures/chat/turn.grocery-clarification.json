@@ -1,0 +1,30 @@
+{
+  "message_id": "msg_a1",
+  "degraded": false,
+  "clarification": {
+    "clarification_id": "clr_01",
+    "question": "Which milk should I add?",
+    "options": [
+      {
+        "option_id": "o1",
+        "label": "Toned milk 1 L"
+      },
+      {
+        "option_id": "o2",
+        "label": "Full cream milk 1 L"
+      },
+      {
+        "option_id": "o3",
+        "label": "Toned milk 500 ml"
+      }
+    ]
+  },
+  "cart_draft": null,
+  "reply_text": "Sure. Quick check before I compare prices:",
+  "intent": {
+    "type": "order",
+    "category": "grocery",
+    "confidence": 0.62
+  },
+  "next_step": "clarify"
+}

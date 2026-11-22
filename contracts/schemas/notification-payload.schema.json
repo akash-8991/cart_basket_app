@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.smartcart.invalid/notification-payload.schema.json",
+  "title": "NotificationPayload",
+  "description": "Local notification content. When lock_screen_private is true the public version shows only generic_title/generic_body.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "type", "channel", "generic_title", "generic_body", "lock_screen_private", "target"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "type": { "enum": ["cart_ready", "needs_user_action", "import_complete", "monthly_summary"] },
+    "channel": { "enum": ["tasks", "imports", "summaries"] },
+    "generic_title": { "type": "string", "maxLength": 60 },
+    "generic_body": { "type": "string", "maxLength": 120 },
+    "detail_title": { "type": ["string", "null"], "maxLength": 60 },
+    "detail_body": { "type": ["string", "null"], "maxLength": 160 },
+    "lock_screen_private": { "type": "boolean" },
+    "target": { "$ref": "deep-link.schema.json" }
+  }
+}

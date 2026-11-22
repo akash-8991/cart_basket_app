@@ -1,0 +1,29 @@
+{
+  "session_id": "imp_01",
+  "status": "running",
+  "upload_mode": "normalized_upload",
+  "providers": [
+    {
+      "provider": "blinkit",
+      "status": "completed",
+      "orders_found": 9,
+      "confidence": "high",
+      "message": null
+    },
+    {
+      "provider": "zomato",
+      "status": "running",
+      "orders_found": 4,
+      "confidence": null,
+      "message": null
+    },
+    {
+      "provider": "swiggy",
+      "status": "pending",
+      "orders_found": 0,
+      "confidence": null,
+      "message": null
+    }
+  ],
+  "review_sample": []
+}

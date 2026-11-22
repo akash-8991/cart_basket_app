@@ -1,0 +1,24 @@
+# Frozen feature-flag names and default values. Server-controlled in Phase 3+;
+# the Phase 1 app reads these defaults from the fixture-backed FlagRepository.
+version: 1
+flags:
+  home.category.travel:        { default: true,  owner: product }
+  home.category.food:          { default: true,  owner: product }
+  home.category.grocery:       { default: true,  owner: product }
+  home.category.shopping:      { default: false, owner: product, decision: D-004 }
+  automation.global.enabled:   { default: false, owner: security, note: "Global kill switch for all cart automation." }
+  history.import.enabled:      { default: false, owner: privacy }
+  comparison.enabled:          { default: true,  owner: product }
+  chat.ai.enabled:             { default: true,  owner: engineering, note: "Off = deterministic clarification only." }
+  # Per provider: provider.<key>.enabled and provider.<key>.kill
+  provider.uber.enabled:             { default: false }
+  provider.ola.enabled:              { default: false }
+  provider.rapido.enabled:           { default: false }
+  provider.zomato.enabled:           { default: false }
+  provider.swiggy.enabled:           { default: false }
+  provider.blinkit.enabled:          { default: false }
+  provider.bigbasket.enabled:        { default: false }
+  provider.swiggy_instamart.enabled: { default: false }
+  provider.amazon.enabled:           { default: false }
+  provider.flipkart.enabled:         { default: false }
+  provider.zepto.enabled:            { default: false, hidden: true, decision: D-005 }

@@ -1,0 +1,74 @@
+{
+  "month": "2026-11",
+  "available_months": [
+    "2026-11"
+  ],
+  "currency": "INR",
+  "kpis": {
+    "total_orders": 0,
+    "total_amount": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "average_order_value": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "orders_per_week": 0,
+    "days_between_orders": null
+  },
+  "previous_kpis": null,
+  "delta_vs_previous": {
+    "total_orders_pct": null,
+    "total_amount_pct": null,
+    "orders_per_week_pct": null
+  },
+  "provider_split": [],
+  "category_split": [],
+  "freshness": {
+    "status": "never_imported",
+    "last_imported_at": null
+  },
+  "categories": [
+    {
+      "category": "travel",
+      "title": "Travel",
+      "providers": [
+        "uber",
+        "rapido",
+        "ola"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "food",
+      "title": "Food ordering",
+      "providers": [
+        "zomato",
+        "swiggy"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "grocery",
+      "title": "Grocery",
+      "providers": [
+        "blinkit",
+        "bigbasket",
+        "swiggy_instamart"
+      ],
+      "status": "ready"
+    },
+    {
+      "category": "shopping",
+      "title": "Shopping",
+      "providers": [
+        "amazon",
+        "flipkart"
+      ],
+      "status": "setup_required"
+    }
+  ],
+  "suggestions_preview": [],
+  "recent_comparisons": []
+}

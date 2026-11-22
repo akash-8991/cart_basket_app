@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "user_id_unavailable",
+    "message": "That user ID is not available.",
+    "correlation_id": "6f1c2a90-5a7b-4c1e-9d0a-2b7e4f8c1a33",
+    "retry_after_seconds": null,
+    "field_errors": [
+      {
+        "field": "user_id",
+        "code": "user_id_unavailable"
+      }
+    ]
+  }
+}

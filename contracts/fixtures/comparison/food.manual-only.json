@@ -1,0 +1,56 @@
+{
+  "quote_id": "qt_food_manual",
+  "category": "food",
+  "status": "manual_only",
+  "currency": "INR",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:05:00Z",
+  "objective": "lowest_total",
+  "selected_provider": null,
+  "recommendation": {
+    "provider": null,
+    "label": "none",
+    "reason": "Prices cannot be checked automatically. You can open an app and continue manually.",
+    "savings_vs_selected": null
+  },
+  "coverage": {
+    "checked": [],
+    "failed": [],
+    "complete": false
+  },
+  "provider_results": [
+    {
+      "provider": "zomato",
+      "availability": "not_checked",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Automatic price checks are not available for this app yet."
+      ]
+    },
+    {
+      "provider": "swiggy",
+      "availability": "not_checked",
+      "captured_at": null,
+      "lines": [],
+      "components": {},
+      "total_estimate": null,
+      "eta_minutes": null,
+      "rank": null,
+      "unavailable_fields": [],
+      "notes": [
+        "Automatic price checks are not available for this app yet."
+      ]
+    }
+  ],
+  "missing_fields": [],
+  "assumptions": [],
+  "confidence": "low",
+  "requires_user_confirmation": true,
+  "previous_total_estimate": null
+}

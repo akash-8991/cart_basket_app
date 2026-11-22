@@ -1,0 +1,11 @@
+{
+  "user_id": "priya.k",
+  "session_id": "ses_01",
+  "tokens": {
+    "access_token": "mock-access-token",
+    "refresh_token": "mock-refresh-token",
+    "access_expires_in_seconds": 900
+  },
+  "email_verification_required": false,
+  "session_expires_at": "2026-12-22T05:00:00Z"
+}

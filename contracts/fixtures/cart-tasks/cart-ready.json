@@ -1,0 +1,205 @@
+{
+  "task_id": "tsk_grocery_01",
+  "provider": "blinkit",
+  "quote_id": "qt_grocery_complete",
+  "status": "CART_READY",
+  "created_at": "2026-11-22T05:00:00Z",
+  "expires_at": "2026-11-22T05:30:00Z",
+  "limits": {
+    "max_actions": 25,
+    "max_runtime_seconds": 180,
+    "inactivity_timeout_seconds": 30
+  },
+  "actions_used": 9,
+  "planned_actions": [
+    {
+      "action_id": "a1",
+      "type": "open_app",
+      "description": "Open Blinkit",
+      "risk": "low"
+    },
+    {
+      "action_id": "a2",
+      "type": "search",
+      "description": "Search for each item",
+      "risk": "low"
+    },
+    {
+      "action_id": "a3",
+      "type": "select_item",
+      "description": "Add Toned milk 1 L × 2",
+      "risk": "medium"
+    },
+    {
+      "action_id": "a4",
+      "type": "select_item",
+      "description": "Add Brown bread 400 g × 1",
+      "risk": "medium"
+    },
+    {
+      "action_id": "a5",
+      "type": "select_item",
+      "description": "Add Eggs 12 pack × 1",
+      "risk": "medium"
+    },
+    {
+      "action_id": "a6",
+      "type": "select_item",
+      "description": "Add Bananas 6 pcs × 1",
+      "risk": "medium"
+    },
+    {
+      "action_id": "a7",
+      "type": "verify_cart",
+      "description": "Check the cart matches what you approved",
+      "risk": "low"
+    }
+  ],
+  "events": [
+    {
+      "seq": 1,
+      "at": "2026-11-22T05:00:12Z",
+      "type": "state_changed",
+      "description": "Approved by you",
+      "action_id": null
+    },
+    {
+      "seq": 2,
+      "at": "2026-11-22T05:00:24Z",
+      "type": "state_changed",
+      "description": "Started",
+      "action_id": null
+    },
+    {
+      "seq": 3,
+      "at": "2026-11-22T05:00:36Z",
+      "type": "action_succeeded",
+      "description": "Opened Blinkit",
+      "action_id": "a1"
+    },
+    {
+      "seq": 4,
+      "at": "2026-11-22T05:00:48Z",
+      "type": "action_succeeded",
+      "description": "Added Toned milk 1 L × 2",
+      "action_id": "a3"
+    },
+    {
+      "seq": 5,
+      "at": "2026-11-22T05:01:00Z",
+      "type": "action_started",
+      "description": "Adding Brown bread 400 g × 1",
+      "action_id": "a4"
+    },
+    {
+      "seq": 6,
+      "at": "2026-11-22T05:01:12Z",
+      "type": "action_succeeded",
+      "description": "Added Brown bread 400 g × 1",
+      "action_id": "a4"
+    },
+    {
+      "seq": 7,
+      "at": "2026-11-22T05:01:24Z",
+      "type": "action_succeeded",
+      "description": "Added Eggs 12 pack × 1",
+      "action_id": "a5"
+    },
+    {
+      "seq": 8,
+      "at": "2026-11-22T05:01:36Z",
+      "type": "action_succeeded",
+      "description": "Added Bananas 6 pcs × 1",
+      "action_id": "a6"
+    },
+    {
+      "seq": 9,
+      "at": "2026-11-22T05:01:48Z",
+      "type": "cart_verified",
+      "description": "Cart matches what you approved",
+      "action_id": null
+    }
+  ],
+  "checkpoint": null,
+  "needs_user_action": null,
+  "cart": {
+    "verified": true,
+    "verified_at": "2026-11-22T05:02:00Z",
+    "lines": [
+      {
+        "line_id": "l1",
+        "requested_name": "Toned milk 1 L",
+        "matched_name": "Toned milk",
+        "matched_size": "1 L",
+        "quantity": 2,
+        "unit_price": {
+          "amount_minor": 2800,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 5600,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l2",
+        "requested_name": "Brown bread 400 g",
+        "matched_name": "Brown bread",
+        "matched_size": "400 g",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 4500,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 4500,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l3",
+        "requested_name": "Eggs 12 pack",
+        "matched_name": "Eggs",
+        "matched_size": "12 pack",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 8400,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 8400,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l4",
+        "requested_name": "Bananas 6 pcs",
+        "matched_name": "Bananas",
+        "matched_size": "6 pcs",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 4200,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 4200,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      }
+    ],
+    "total_estimate": {
+      "amount_minor": 22900,
+      "currency": "INR"
+    },
+    "differs_from_quote": false
+  },
+  "failure": null
+}
