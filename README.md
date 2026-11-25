@@ -34,6 +34,17 @@ cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21 ANDROID_HOME=/opt/homebrew/
 
 Debug builds include a **Mock scenario** switcher (Settings → Developer) to show every screen state from the fixtures.
 
+### Device tests (emulators)
+
+`android/app/src/androidTest` holds the instrumented suite: the full register → compare → approve → handoff journey through the real app, Android Keystore session storage, rotation (typed input and the emergency Stop control), and an automated accessibility audit (Google Accessibility Test Framework) of the key screens in light and dark mode. The Compose acceptance tests in `src/sharedTest` run both under Robolectric and on devices.
+
+```bash
+tools/device-matrix.sh          # API 26, 30, 34 and 36, one emulator at a time
+tools/device-matrix.sh 34 36    # selected API levels
+```
+
+Needs the `system-images;android-NN;google_apis;arm64-v8a` images. For each level the script creates a Pixel 6 AVD, boots it headless, runs the suite, re-runs the accessibility audit at 2× font size, and collects JUnit XML and screenshots in `android/build/device-matrix/apiNN/`. Keep the Mac awake while it runs (`caffeinate -dims tools/device-matrix.sh`). Against a single running emulator or phone: `cd android && ./gradlew connectedDebugAndroidTest`.
+
 ## Source documents
 
 - `smart-shopping-chat-prd-and-claude-master-prompt-v1.4.md`: PRD and master prompt

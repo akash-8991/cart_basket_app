@@ -8,6 +8,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -28,7 +33,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
                 SmartCartTheme {
-                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                    // Edge-to-edge: screens handle top/bottom insets themselves; side insets (landscape
+                    // navigation bar, display cutouts) are applied once here so nothing — including the
+                    // emergency Stop control — is drawn under a system bar.
+                    Box(
+                        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+                    ) {
                         AppNavHost(pendingLink = pendingLink, consumeLink = { pendingLink.value = null })
                     }
                 }

@@ -2,6 +2,8 @@ package com.smartcart.app.feature.comparison
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -323,6 +325,7 @@ private fun RecommendationCard(q: ComparisonQuote, p: ProviderKey, busy: Boolean
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderResultCard(
     r: ProviderResult,
@@ -345,10 +348,11 @@ private fun ProviderResultCard(
             ProviderMonogram(r.provider.displayName, size = 36)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Wraps the badges onto the next line rather than splitting them mid-word at large font sizes.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.xxs), itemVerticalAlignment = Alignment.CenterVertically) {
                     Text(r.provider.displayName, style = MaterialTheme.typography.titleSmall)
-                    if (r.provider == quote.selectedProvider) { Spacer(Modifier.width(Spacing.xs)); Pill(stringResource(R.string.cmp_your_pick)) }
-                    if (isRecommended) { Spacer(Modifier.width(Spacing.xs)); Pill(stringResource(R.string.cmp_recommended), tone = Tone.SUCCESS) }
+                    if (r.provider == quote.selectedProvider) Pill(stringResource(R.string.cmp_your_pick))
+                    if (isRecommended) Pill(stringResource(R.string.cmp_recommended), tone = Tone.SUCCESS)
                 }
                 val meta = listOfNotNull(r.etaMinutes?.let { stringResource(R.string.cmp_eta_short, it) }, availability.takeIf { r.availability != Availability.AVAILABLE }).joinToString(" · ")
                 if (meta.isNotEmpty()) Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

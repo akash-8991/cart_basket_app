@@ -16,6 +16,8 @@ android {
         versionCode = 1
         versionName = "0.1.0-mock"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Lets device tests save screenshots that AGP pulls into build/outputs (TestStorage).
+        testInstrumentationRunnerArguments["useTestStorageService"] = "true"
     }
 
     buildTypes {
@@ -41,6 +43,9 @@ android {
 
     // Contract fixtures are packaged as assets under fixtures/ (D-010).
     sourceSets["main"].assets.srcDirs(layout.buildDirectory.dir("generated/fixtureAssets"))
+    // UI acceptance tests run both on the JVM (Robolectric) and on devices/emulators.
+    sourceSets["test"].kotlin.srcDir("src/sharedTest/kotlin")
+    sourceSets["androidTest"].kotlin.srcDir("src/sharedTest/kotlin")
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
@@ -90,4 +95,17 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.espresso.accessibility)
+    // ATF 4.x understands Compose virtual nodes; 3.1.2 (espresso default) only sees the host View.
+    androidTestImplementation(libs.atf)
+    androidTestImplementation(libs.test.storage)
+    androidTestUtil(libs.test.services)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.robolectric.annotations) // @Config in shared tests is inert on devices
 }

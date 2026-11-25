@@ -23,7 +23,6 @@ import com.smartcart.app.security.InMemoryTokenStore
 import com.smartcart.app.ui.common.ActiveTaskBar
 import com.smartcart.app.ui.common.LocalAppContainer
 import com.smartcart.data.ApiResult
-import com.smartcart.data.FileFixtureSource
 import com.smartcart.data.FlagKeys
 import com.smartcart.data.mock.ComparisonScenario
 import com.smartcart.data.mock.LoginScenario
@@ -43,16 +42,19 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.io.File
 
-/** PRD v1.3 §16 acceptance criteria that can be verified against mocks. */
+/**
+ * PRD v1.3 §16 acceptance criteria that can be verified against mocks. Shared source set: runs on
+ * the JVM under Robolectric (testDebugUnitTest) and on emulators/devices (connectedDebugAndroidTest).
+ * @Config only applies under Robolectric.
+ */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "w411dp-h2400dp")
 class UiAcceptanceTest {
     @get:Rule val rule = createComposeRule()
 
     private fun container(cfg: MockConfig = MockConfig(latencyMs = 0)) =
-        AppContainer(null, FileFixtureSource(File(System.getProperty("fixturesDir"))), cfg, InMemoryTokenStore())
+        AppContainer(null, TestFixtures.source(), cfg, InMemoryTokenStore())
 
     private fun show(c: AppContainer, content: @Composable () -> Unit) = rule.setContent {
         CompositionLocalProvider(LocalAppContainer provides c) { SmartCartTheme(darkTheme = false) { content() } }
@@ -100,7 +102,8 @@ class UiAcceptanceTest {
         show(c) { Home() }
         waitForText("Total orders")
         val min = with(rule.density) { 48.dp.toPx() } - 0.5f
-        val small = rule.onAllNodes(hasClickAction()).fetchSemanticsNodes().filter { it.touchBoundsInRoot.height < min }
+        // A control cut off by the screen edge has a small *visible* slice; judge it by its laid-out size.
+        val small = rule.onAllNodes(hasClickAction()).fetchSemanticsNodes().filter { it.touchBoundsInRoot.height < min && it.size.height < min }
         assertTrue("touch targets under 48dp: " + small.map { it.config }, small.isEmpty())
     }
 

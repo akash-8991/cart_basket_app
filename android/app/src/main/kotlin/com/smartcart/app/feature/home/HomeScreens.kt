@@ -2,6 +2,7 @@ package com.smartcart.app.feature.home
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,6 +47,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -262,10 +264,24 @@ private fun KpiSection(s: DashboardSummary, onMonthSelected: (String) -> Unit, o
             Text(Format.month(s.month), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.size(Spacing.sm))
             val prevMonth = s.availableMonths.getOrNull(s.availableMonths.indexOf(s.month) - 1)?.let { Format.monthShort(it) }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                Kpi(stringResource(R.string.kpi_total_orders), s.kpis.totalOrders.toString(), Format.pct(s.deltaVsPrevious.totalOrdersPct), prevMonth, Modifier.weight(1f))
-                Kpi(stringResource(R.string.kpi_total_spent), s.kpis.totalAmount.format(), Format.pct(s.deltaVsPrevious.totalAmountPct), prevMonth, Modifier.weight(1f))
-                Kpi(stringResource(R.string.kpi_orders_per_week), Format.oneDecimal(s.kpis.ordersPerWeek), Format.pct(s.deltaVsPrevious.ordersPerWeekPct), prevMonth, Modifier.weight(1f))
+            val kpis = listOf(
+                Triple(stringResource(R.string.kpi_total_orders), s.kpis.totalOrders.toString(), Format.pct(s.deltaVsPrevious.totalOrdersPct)),
+                Triple(stringResource(R.string.kpi_total_spent), s.kpis.totalAmount.format(), Format.pct(s.deltaVsPrevious.totalAmountPct)),
+                Triple(stringResource(R.string.kpi_orders_per_week), Format.oneDecimal(s.kpis.ordersPerWeek), Format.pct(s.deltaVsPrevious.ordersPerWeekPct)),
+            )
+            // Three columns need roughly 112dp each at normal text size; with large fonts or narrow
+            // screens the figures would break mid-number, so stack them instead.
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val columnWidth = (maxWidth - Spacing.md * 2) / 3
+                if (columnWidth >= 112.dp * LocalDensity.current.fontScale) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        kpis.forEach { (label, value, delta) -> Kpi(label, value, delta, prevMonth, Modifier.weight(1f)) }
+                    }
+                } else {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        kpis.forEach { (label, value, delta) -> Kpi(label, value, delta, prevMonth, Modifier.fillMaxWidth()) }
+                    }
+                }
             }
             Spacer(Modifier.size(Spacing.sm))
             Text(
@@ -300,14 +316,27 @@ private fun Kpi(label: String, value: String, delta: String?, prevMonth: String?
 @Composable
 private fun SplitBars(splits: List<Split>) {
     val total = splits.sumOf { it.amount.amountMinor }.coerceAtLeast(1)
+    val largeText = LocalDensity.current.fontScale >= 1.3f
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         splits.forEach { s ->
             val cd = pluralStringResource(R.plurals.split_cd, s.orders, s.label, s.orders, s.amount.format())
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clearAndSetSemantics { contentDescription = cd }) {
-                Text(s.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(96.dp))
-                LinearProgressIndicator(progress = { s.amount.amountMinor.toFloat() / total }, modifier = Modifier.weight(1f))
-                Spacer(Modifier.width(Spacing.sm))
-                Text(s.amount.format(), style = MaterialTheme.typography.bodySmall)
+            val progress = s.amount.amountMinor.toFloat() / total
+            if (largeText) {
+                // Large fonts: name and amount on one line, bar underneath, so names never split mid-word.
+                Column(Modifier.clearAndSetSemantics { contentDescription = cd }, verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(s.amount.format(), style = MaterialTheme.typography.bodySmall)
+                    }
+                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clearAndSetSemantics { contentDescription = cd }) {
+                    Text(s.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(96.dp))
+                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.weight(1f))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text(s.amount.format(), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }
