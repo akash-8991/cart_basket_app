@@ -39,11 +39,12 @@ Debug builds include a **Mock scenario** switcher (Settings → Developer) to sh
 `android/app/src/androidTest` holds the instrumented suite: the full register → compare → approve → handoff journey through the real app, Android Keystore session storage, rotation (typed input and the emergency Stop control), and an automated accessibility audit (Google Accessibility Test Framework) of the key screens in light and dark mode. The Compose acceptance tests in `src/sharedTest` run both under Robolectric and on devices.
 
 ```bash
-tools/device-matrix.sh          # API 26, 30, 34 and 36, one emulator at a time
-tools/device-matrix.sh 34 36    # selected API levels
+tools/device-matrix.sh                  # Pixel 6 on API 26, 30, 34, 36 and Pixel Tablet on API 36, one emulator at a time
+tools/device-matrix.sh 34 36            # selected API levels (Pixel 6)
+tools/device-matrix.sh 36:pixel_tablet  # API level:avdmanager device profile
 ```
 
-Needs the `system-images;android-NN;google_apis;arm64-v8a` images. For each level the script creates a Pixel 6 AVD, boots it headless, runs the suite, re-runs the accessibility audit at 2× font size, and collects JUnit XML and screenshots in `android/build/device-matrix/apiNN/`. Keep the Mac awake while it runs (`caffeinate -dims tools/device-matrix.sh`). Against a single running emulator or phone: `cd android && ./gradlew connectedDebugAndroidTest`.
+Needs the `system-images;android-NN;google_apis;arm64-v8a` images. For each entry the script creates the AVD, boots it headless, runs the suite, re-runs the accessibility audit at 2× font size, and collects JUnit XML and screenshots in `android/build/device-matrix/apiNN[-device]/`. Keep the Mac awake while it runs (`caffeinate -dims tools/device-matrix.sh`). Against a single running emulator or phone: `cd android && ./gradlew connectedDebugAndroidTest`.
 
 ## Source documents
 

@@ -217,8 +217,10 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
     ) { padding ->
         LazyColumn(
             state = list,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding() + Spacing.sm, bottom = padding.calculateBottomPadding() + Spacing.lg),
+            // The list ends at the top of the input bar (which grows with the keyboard) rather than running
+            // behind it, so "scroll into view" — by the user, TalkBack or auto-scroll — means actually visible.
+            modifier = Modifier.fillMaxSize().padding(bottom = padding.calculateBottomPadding()),
+            contentPadding = PaddingValues(start = Spacing.lg, end = Spacing.lg, top = padding.calculateTopPadding() + Spacing.sm, bottom = Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             item {

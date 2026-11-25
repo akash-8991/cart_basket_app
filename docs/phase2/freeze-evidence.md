@@ -16,7 +16,7 @@ Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs
 | 5 | Mock APIs and fixtures cover all major responses | ✅ | 71 fixtures, Ajv-validated against `contracts/openapi/openapi.yaml`; Prism mock server (`npm run mock`); strict Kotlin decode test |
 | 6 | Analytics event names and payload schemas frozen | ✅ | `contracts/schemas/analytics-event.schema.json` (27 events, closed property list); `LocalAnalyticsCollector` drops non-allowlisted keys and free text (tested) |
 | 7 | Accessibility review: TalkBack, touch targets, focus order, contrast, reduced motion | 🟡 | Automated: Google Accessibility Test Framework over 15 screens/states in light and dark, at 1× and 2× font, on API 34 and 36 — 0 errors (§3a); 48dp touch-target test; content descriptions on icons; merged KPI semantics; live regions on status changes; reduced-motion token. **Manual TalkBack walkthrough and focus-order check on a device have not been done.** |
-| 8 | Device testing: Android versions, screen sizes, orientation, lifecycle interruption | 🟡 | Emulator matrix API 26, 30, 34, 36 (Pixel 6): full journey, Keystore, notifications, rotation — all pass (§3a). **Not yet covered:** small phone, tablet/foldable, physical devices, process death during a task. |
+| 8 | Device testing: Android versions, screen sizes, orientation, lifecycle interruption | 🟡 | Emulator matrix: Pixel 6 on API 26, 30, 34, 36 and Pixel Tablet on API 36 — full journey, Keystore, notifications, rotation, accessibility audit (§3a). **Not yet covered:** small phone, foldable, physical devices, process death during a task. |
 | 9 | Product, design, engineering, security, QA sign-off | ⛔ | §4 below |
 | 10 | Tagged baseline `frontend-freeze-v1.4` | ⛔ | Created only after §4 is complete (command in §5) |
 
@@ -48,16 +48,17 @@ Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs
 | Debug APK | `./gradlew :app:assembleDebug` | builds |
 | Claude API key / secret scan of APK and repo | grep for `sk-ant-`, `ANTHROPIC_API_KEY`, `x-api-key`, `api.anthropic.com` | no matches |
 
-### 3a. Device matrix (run 25 Nov 2026, `tools/device-matrix.sh`)
+### 3a. Device matrix (final run 25 Nov 2026, `tools/device-matrix.sh`, all entries in one run)
 
-Emulators: Pixel 6 profile (1080×2400, 420dpi), `google_apis` arm64 images, animations off. Each level runs the full instrumented suite, then the accessibility audit again at 2× font size.
+Emulators: Pixel 6 (1080×2400, 420dpi) and Pixel Tablet (2560×1600, 320dpi, landscape by default), `google_apis` arm64 images, animations off. Each level runs the full instrumented suite, then the accessibility audit again at 2× font size.
 
-| API | Android | Device suite | A11y audit @1× | A11y audit @2× font |
+| API / device | Android | Device suite | A11y audit @1× | A11y audit @2× font |
 |---|---|---|---|---|
 | 26 | 8.0 | 15/15 pass, audit skipped¹ | skipped¹ | skipped¹ |
 | 30 | 11 | 15/15 pass, audit skipped¹ | skipped¹ | skipped¹ |
 | 34 | 14 | 16/16 pass | 0 errors, 15 screens/states | 0 errors |
 | 36 | 16 | 16/16 pass | 0 errors, 15 screens/states | 0 errors |
+| 36 Pixel Tablet | 16 | 16/16 pass | 0 errors, 15 screens/states | 0 errors |
 
 The device suite (16 tests): the 8 shared Compose acceptance tests, 4 Android Keystore tests (round trip, no plaintext token, tampered ciphertext → signed out and wiped, clear), the end-to-end journey (register → home → grocery chat → clarification → full-cart comparison → switch confirmation → approval → automation → cart ready → notification → handoff) through the real `MainActivity`, two rotation tests (typed input survives; the emergency Stop control survives rotation and cancels the task), and the accessibility audit.
 
@@ -65,7 +66,12 @@ The device suite (16 tests): the 8 shared Compose acceptance tests, 4 Android Ke
 
 Bugs the device run found and fixed:
 1. **Emergency Stop partly hidden in landscape** behind the navigation bar (API 26). Side system-bar and cutout insets are now applied once in `MainActivity`.
-2. **2× font:** spend total broke mid-number ("₹12,47 / 0"); provider names broke mid-word ("BigBask / et"); the "Recommended" badge broke mid-word. KPIs now stack when columns are too narrow, spend bars switch to a two-line layout, and badges wrap as a unit.
+2. **Tablet: "Compare full cart" hidden behind the on-screen keyboard.** The chat list ran behind the input bar, so scrolling to the button left it under the keyboard. The list now ends at the input bar. (Phone emulators use a hardware keyboard, so they never showed it.)
+3. **2× font:** spend total broke mid-number ("₹12,47 / 0"); provider names broke mid-word ("BigBask / et"); the "Recommended" badge broke mid-word. KPIs now stack when columns are too narrow, spend bars switch to a two-line layout, and badges wrap as a unit.
+
+Test-side fixes during the run: rotation now turns the display (as a user does) instead of forcing `requestedOrientation`, which hung intermittently on API 36; the keyboard is hidden without Espresso (which needs window focus); the journey waits for Send to be enabled; failures save a `FAILED-<test>` screenshot.
+
+Observation for design: on the tablet the phone layout stretches to full width (cards and spend bars up to 2,400px wide in landscape). It is usable and passes every check, but there is no tablet-specific layout or maximum content width.
 
 Screenshots of every step and screen, per API level, are written to `android/build/device-matrix/apiNN/` (not committed); a curated set is in `docs/phase2/screenshots/device/`.
 
@@ -78,7 +84,7 @@ Screenshots: `docs/phase2/screenshots/` (welcome, login, home light/dark, compar
 ## 4. Known gaps before sign-off
 
 1. **Manual accessibility pass**: TalkBack walkthrough and focus order on a device. (2× font and automated contrast/touch-target/label checks are done on API 34/36, §3a.)
-2. **Device matrix**: API 26/30/34/36 on a Pixel 6 emulator done (§3a). Still needed: small phone, tablet or foldable, a physical device, and process death during a running task.
+2. **Device matrix**: API 26/30/34/36 on a Pixel 6 emulator done (§3a). Still needed: small phone, foldable, a physical device, and process death during a running task. Tablet (Pixel Tablet, API 36) done; whether tablets need their own layout is a design decision.
 3. ~~Copy lives in Kotlin~~ **Resolved (D-014):** all user-facing copy is in `strings_*.xml` with plurals; a test blocks regressions. Translations themselves are not started.
 4. Conversation history opens a fresh chat in that category; past messages are not replayed (needs `GET /v1/chat/sessions/{id}` wiring).
 5. Encrypted local cache (Room + SQLCipher) deferred to Phase 3 (D-012).

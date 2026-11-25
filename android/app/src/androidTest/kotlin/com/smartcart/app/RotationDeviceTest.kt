@@ -2,7 +2,6 @@ package com.smartcart.app
 
 import android.app.Activity
 import android.app.UiAutomation
-import android.content.res.Configuration
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -44,14 +43,15 @@ class RotationDeviceTest {
     }
 
     /**
-     * Rotates the display the way a user turning the phone does (not via requestedOrientation, which
-     * races activity recreation on API 36 emulators), then waits — with a timeout — for the recreated
-     * activity to report the new orientation.
+     * Turns the display a quarter turn (or back to its natural rotation) the way a user turning the
+     * device does — not via requestedOrientation, which races activity recreation on API 36 emulators —
+     * then waits, with a timeout, for the recreated activity to report the other orientation. Phones
+     * start in portrait and tablets in landscape, so the test only relies on the orientation changing.
      */
-    private fun rotate(landscape: Boolean) {
-        Device.instrumentation.uiAutomation.setRotation(if (landscape) UiAutomation.ROTATION_FREEZE_90 else UiAutomation.ROTATION_FREEZE_0)
-        val want = if (landscape) Configuration.ORIENTATION_LANDSCAPE else Configuration.ORIENTATION_PORTRAIT
-        compose.waitUntil(15_000) { resumedActivity()?.resources?.configuration?.orientation == want }
+    private fun rotate(quarterTurn: Boolean) {
+        val before = resumedActivity()?.resources?.configuration?.orientation
+        Device.instrumentation.uiAutomation.setRotation(if (quarterTurn) UiAutomation.ROTATION_FREEZE_90 else UiAutomation.ROTATION_FREEZE_0)
+        compose.waitUntil(15_000) { resumedActivity()?.resources?.configuration?.orientation.let { it != null && it != before } }
     }
 
     private fun resumedActivity(): Activity? {
@@ -63,46 +63,47 @@ class RotationDeviceTest {
     }
 
     @Test
-    fun typedUserIdSurvivesRotation() {
-        Device.resetApp()
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-        compose.waitForText(Device.str(R.string.welcome_sign_in))
-        compose.clickable(Device.str(R.string.welcome_sign_in)).performClick()
-        compose.waitForText(Device.str(R.string.login_remember))
-        compose.onNode(hasSetTextAction() and hasText(Device.str(R.string.auth_user_id))).performTextInput("priya.k")
-        // Landscape on some versions shows a full-screen keyboard that hides the app; close it first.
-        androidx.test.espresso.Espresso.closeSoftKeyboard()
+    fun typedUserIdSurvivesRotation() = screenshotOnFailure("typedUserIdSurvivesRotation") {
+            Device.resetApp()
+            scenario = ActivityScenario.launch(MainActivity::class.java)
+            compose.waitForText(Device.str(R.string.welcome_sign_in))
+            compose.clickable(Device.str(R.string.welcome_sign_in)).performClick()
+            compose.waitForText(Device.str(R.string.login_remember))
+            compose.onNode(hasSetTextAction() and hasText(Device.str(R.string.auth_user_id))).performTextInput("priya.k")
+            // Landscape on some versions shows a full-screen keyboard that hides the app; close it first.
+            scenario!!.onActivity { hideKeyboard(it) }
+            compose.waitForIdle()
 
-        rotate(landscape = true)
-        compose.waitFor(hasSetTextAction() and hasText("priya.k", substring = true))
-        Device.screenshot("rotation-login-landscape")
-        rotate(landscape = false)
-        compose.waitFor(hasSetTextAction() and hasText("priya.k", substring = true))
+            rotate(quarterTurn = true)
+            compose.waitFor(hasSetTextAction() and hasText("priya.k", substring = true))
+            Device.screenshot("rotation-login-rotated")
+            rotate(quarterTurn = false)
+            compose.waitFor(hasSetTextAction() and hasText("priya.k", substring = true))
     }
 
     @Test
-    fun emergencyStopSurvivesRotationAndStopsTheTask() {
-        Device.grantNotifications()
-        Device.resetApp(MockConfig(latencyMs = 150, task = TaskScenario.CHECKPOINT))
-        val c = Device.app.container
-        val taskId = runBlocking {
-            c.auth.login("priya.k", "correct horse battery", remember = true)
-            val q = (c.comparisons.create(QuoteRequest(Category.GROCERY, eligibleProviders = listOf(ProviderKey.BLINKIT), objective = Objective.LOWEST_TOTAL)) as ApiResult.Success).value
-            val t = (c.tasks.create(q, ProviderKey.BLINKIT) as ApiResult.Success).value
-            c.tasks.approve(t.taskId, t.plannedActions.map { it.actionId })
-            t.taskId
-        }
-        compose.waitUntil(20_000) { c.tasks.activeTask.value?.status == TaskStatus.CHECKPOINT }
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-        val stop = Device.str(R.string.task_bar_stop_cd)
-        compose.waitForDescription(stop)
+    fun emergencyStopSurvivesRotationAndStopsTheTask() = screenshotOnFailure("emergencyStopSurvivesRotationAndStopsTheTask") {
+            Device.grantNotifications()
+            Device.resetApp(MockConfig(latencyMs = 150, task = TaskScenario.CHECKPOINT))
+            val c = Device.app.container
+            val taskId = runBlocking {
+                c.auth.login("priya.k", "correct horse battery", remember = true)
+                val q = (c.comparisons.create(QuoteRequest(Category.GROCERY, eligibleProviders = listOf(ProviderKey.BLINKIT), objective = Objective.LOWEST_TOTAL)) as ApiResult.Success).value
+                val t = (c.tasks.create(q, ProviderKey.BLINKIT) as ApiResult.Success).value
+                c.tasks.approve(t.taskId, t.plannedActions.map { it.actionId })
+                t.taskId
+            }
+            compose.waitUntil(20_000) { c.tasks.activeTask.value?.status == TaskStatus.CHECKPOINT }
+            scenario = ActivityScenario.launch(MainActivity::class.java)
+            val stop = Device.str(R.string.task_bar_stop_cd)
+            compose.waitForDescription(stop)
 
-        rotate(landscape = true)
-        compose.waitForDescription(stop)
-        Device.screenshot("rotation-stop-bar-landscape")
-        compose.onNode(hasContentDescription(stop)).assertIsDisplayed().performClick()
+            rotate(quarterTurn = true)
+            compose.waitForDescription(stop)
+            Device.screenshot("rotation-stop-bar-rotated")
+            compose.onNode(hasContentDescription(stop)).assertIsDisplayed().performClick()
 
-        compose.waitUntil(10_000) { c.tasks.activeTask.value == null }
-        assertEquals(TaskStatus.CANCELLED, runBlocking { c.tasks.observe(taskId).first() }?.status)
+            compose.waitUntil(10_000) { c.tasks.activeTask.value == null }
+            assertEquals(TaskStatus.CANCELLED, runBlocking { c.tasks.observe(taskId).first() }?.status)
     }
 }

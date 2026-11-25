@@ -42,12 +42,28 @@ object Device {
     }
 
     /** Saves a full-screen capture; AGP copies it into build/outputs/connected_android_test_additional_output. */
-    fun screenshot(name: String) {
-        instrumentation.waitForIdleSync()
+    fun screenshot(name: String, waitForIdle: Boolean = true) {
+        if (waitForIdle) instrumentation.waitForIdleSync()
         val bmp: Bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
         val scale = if (fontScale > 1.01f) "-font${fontScale}" else ""
         TestStorage().openOutputFile("screenshots/api$api$scale-$name.png").use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
+}
+
+/** Runs [block]; if it throws, saves a FAILED-<name> screenshot of the screen at that moment, then rethrows. */
+inline fun screenshotOnFailure(name: String, block: () -> Unit) {
+    try {
+        block()
+    } catch (t: Throwable) {
+        runCatching { Device.screenshot("FAILED-$name", waitForIdle = false) }
+        throw t
+    }
+}
+
+/** Hides the soft keyboard without Espresso, which needs window focus and can time out. */
+fun hideKeyboard(activity: android.app.Activity) {
+    val imm = activity.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+    imm.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
 }
 
 fun ComposeTestRule.waitFor(matcher: SemanticsMatcher, timeoutMs: Long = 20_000) =
