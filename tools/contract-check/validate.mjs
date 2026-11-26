@@ -12,7 +12,8 @@ import YAML from 'yaml';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CONTRACTS = resolve(HERE, '../../contracts');
-const openapi = YAML.parse(readFileSync(join(CONTRACTS, 'openapi/openapi.yaml'), 'utf8'));
+// OPENAPI=<file> validates against another copy, e.g. a change-request preview (tools/cr-preview.py).
+const openapi = YAML.parse(readFileSync(process.env.OPENAPI ?? join(CONTRACTS, 'openapi/openapi.yaml'), 'utf8'));
 
 // Rewrite OpenAPI refs to a JSON Schema $defs document.
 const defs = JSON.parse(JSON.stringify(openapi.components.schemas).replaceAll('#/components/schemas/', 'api#/$defs/'));

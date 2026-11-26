@@ -52,6 +52,8 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 
 ### Contract gaps found (for a change request; not changed silently)
 
+Proposed as CR-001–CR-003 plus three decisions: see [`docs/change-requests/`](../change-requests/README.md).
+
 1. **No email-verification endpoint.** `AuthSession.email_verification_required` is `true` after registration, but the contract has no way to complete verification. The flag is reported honestly; nothing is gated on it yet.
 2. **`DeviceInfo` has no device model,** so `DeviceSession.device_label` is derived ("Android 15"). The app's sessions screen was designed with model names ("Pixel 8").
 3. **`approximate_location` is always `null`:** no IP geolocation in Phase 3.
