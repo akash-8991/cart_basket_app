@@ -40,8 +40,7 @@ class RecoveryTest {
             assertEquals(listOf(202, 202, 202), listOf(match, wrongEmail, noUser).map { it.status.value })
             assertEquals(match.normalisedBody(), wrongEmail.normalisedBody())
             assertEquals(match.normalisedBody(), noUser.normalisedBody())
-            assertEquals(1, mail.sent.size, "only the matching account gets a code")
-            assertEquals(MailTemplate.PASSWORD_RESET_CODE, mail.sent.single().template)
+            assertEquals(1, mail.sent.count { it.template == MailTemplate.PASSWORD_RESET_CODE }, "only the matching account gets a code")
         }
     }
 
@@ -50,7 +49,7 @@ class RecoveryTest {
         withApp(testServices(mailer = mail)) {
             val old = client.register()
             val challenge = client.postJson("/v1/auth/forgot-password", forgot("priya.k", "priya@example.com")).challengeId()
-            val code = mail.sent.single().params.getValue("code")
+            val code = mail.sent.single { it.template == MailTemplate.PASSWORD_RESET_CODE }.params.getValue("code")
             val r = client.postJson("/v1/auth/reset-password", resetBody(challenge, code)).assertContract("POST", "/v1/auth/reset-password")
             assertEquals("{\"password_reset\":true,\"all_other_sessions_revoked\":true}", r.bodyAsText())
             assertEquals(401, client.get("/v1/auth/sessions") { bearerAuth(old.tokens.accessToken) }.status.value)
@@ -72,7 +71,7 @@ class RecoveryTest {
                 val r = client.postJson("/v1/auth/reset-password", resetBody(id, "000000")).assertContract("POST", "/v1/auth/reset-password")
                 assertEquals("validation_failed", r.errorCode())
             }
-            val code = if (realAccount) mail.sent.single().params.getValue("code") else "123456"
+            val code = if (realAccount) mail.sent.single { it.template == MailTemplate.PASSWORD_RESET_CODE }.params.getValue("code") else "123456"
             assertEquals("challenge_expired", client.postJson("/v1/auth/reset-password", resetBody(id, code)).assertContract("POST", "/v1/auth/reset-password").errorCode())
         }
     }
@@ -89,7 +88,7 @@ class RecoveryTest {
             val real = client.postJson("/v1/auth/forgot-password", forgot("priya.k", "priya@example.com")).challengeId()
             val fake = client.postJson("/v1/auth/forgot-password", forgot("nobody.here", "x@example.com")).challengeId()
             clock.advance(Duration.ofMinutes(16))
-            assertEquals("challenge_expired", client.postJson("/v1/auth/reset-password", resetBody(real, mail.sent.single().params.getValue("code"))).errorCode())
+            assertEquals("challenge_expired", client.postJson("/v1/auth/reset-password", resetBody(real, mail.sent.single { it.template == MailTemplate.PASSWORD_RESET_CODE }.params.getValue("code"))).errorCode())
             assertEquals("challenge_expired", client.postJson("/v1/auth/reset-password", resetBody(fake, "123456")).errorCode())
         }
     }
@@ -104,7 +103,7 @@ class RecoveryTest {
         withApp(testServices(mailer = mail)) {
             client.register()
             val challenge = client.postJson("/v1/auth/forgot-password", forgot("priya.k", "priya@example.com")).challengeId()
-            val r = client.postJson("/v1/auth/reset-password", resetBody(challenge, mail.sent.single().params.getValue("code"), "1234567890")).assertContract("POST", "/v1/auth/reset-password")
+            val r = client.postJson("/v1/auth/reset-password", resetBody(challenge, mail.sent.single { it.template == MailTemplate.PASSWORD_RESET_CODE }.params.getValue("code"), "1234567890")).assertContract("POST", "/v1/auth/reset-password")
             assertEquals("weak_password", r.errorCode())
         }
     }
@@ -118,7 +117,7 @@ class RecoveryTest {
             val unknown = client.postJson("/v1/auth/forgot-user-id", """{"email":"nobody@example.com"}""").assertContract("POST", "/v1/auth/forgot-user-id")
             assertEquals(known.normalisedBody(), unknown.normalisedBody())
             assertTrue("priya" !in known.bodyAsText(), "the user ID is never in the response")
-            assertEquals("priya.k, priya.work", mail.sent.single().params.getValue("user_ids"))
+            assertEquals("priya.k, priya.work", mail.sent.single { it.template == MailTemplate.USER_ID_REMINDER }.params.getValue("user_ids"))
         }
     }
 

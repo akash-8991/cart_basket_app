@@ -86,7 +86,7 @@ class ChatService(
                     ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "clarification_answer.option_id", "invalid_value")
             }
             else -> {
-                val aiConsent = me.consents(userId).any { it.key == ConsentKeys.AI_PROCESSING && it.granted }
+                val aiConsent = ConsentKeys.AI_PROCESSING in me.grantedKeys(userId)
                 when (val r = gateway.extract(userId, aiConsent, IntentInput(text, session.category, req.context.installedProviders))) {
                     is GatewayResult.Ok -> orchestrator.fromModel(session.category, r.output)
                     is GatewayResult.Fallback -> orchestrator.fallback(session.category, text)

@@ -37,6 +37,8 @@ object Limits {
     val REFRESH_PER_DEVICE = 60 to Duration.ofMinutes(10)
     const val CODE_ATTEMPTS = 5
     const val STEP_UP_ATTEMPTS = 5
+    val VERIFY_PER_USER = 10 to Duration.ofHours(1)
+    val VERIFY_RESEND_PER_USER = 3 to Duration.ofHours(1)
     val CHALLENGE_TTL: Duration = Duration.ofMinutes(15)
     val REMEMBERED_SESSION: Duration = Duration.ofDays(30)
     val SHORT_SESSION: Duration = Duration.ofHours(12)
@@ -63,6 +65,7 @@ class AuthService(
             throw ApiException.field(ErrorCode.USER_ID_UNAVAILABLE, "user_id")
         }
         audit.record("auth.register", "success", ctx, actor = userId)
+        sendEmailVerification(repo.findUser(userId)!!, ctx)
         return openSession(repo.findUser(userId)!!, device, remembered = remember, ctx)
     }
 
@@ -178,6 +181,40 @@ class AuthService(
             throw ApiException(ErrorCode.INVALID_CREDENTIALS)
         }
         limiter.reset("stepup-fail:$userId")
+    }
+
+    // ------------------------------------------------------------------ email verification (CR-003 §2)
+
+    private fun sendEmailVerification(user: User, ctx: RequestContext) {
+        val now = clock.instant()
+        val code = tokens.newCode()
+        repo.putEmailVerification(user.userId, secrets.hmac("email-verification", "${user.userId}:$code"), now, now.plus(Limits.CHALLENGE_TTL))
+        mailer.send(user.email, MailTemplate.EMAIL_VERIFICATION_CODE, mapOf("code" to code))
+        audit.record("auth.email_verification_sent", "sent", ctx, actor = user.userId)
+    }
+
+    /** Sends a new code (the old one stops working). Answers the same way when already verified. */
+    fun resendEmailVerification(userId: String, ctx: RequestContext): String {
+        limit("verify-resend:$userId", Limits.VERIFY_RESEND_PER_USER)
+        val user = repo.findUser(userId) ?: throw ApiException(ErrorCode.UNAUTHENTICATED)
+        if (!user.emailVerified) sendEmailVerification(user, ctx)
+        return secrets.signedChallengeId(clock.instant())
+    }
+
+    /** Same rules as reset codes: single use, 15 minutes, locked after 5 wrong attempts. */
+    fun verifyEmail(userId: String, code: String, ctx: RequestContext) {
+        limit("verify:$userId", Limits.VERIFY_PER_USER)
+        val user = repo.findUser(userId) ?: throw ApiException(ErrorCode.UNAUTHENTICATED)
+        if (user.emailVerified) return
+        val v = repo.emailVerification(userId) ?: throw ApiException(ErrorCode.CHALLENGE_EXPIRED)
+        if (!v.expiresAt.isAfter(clock.instant()) || v.attempts >= Limits.CODE_ATTEMPTS) throw ApiException(ErrorCode.CHALLENGE_EXPIRED)
+        if (!MessageDigest.isEqual(v.codeHash, secrets.hmac("email-verification", "$userId:$code"))) {
+            repo.recordWrongVerificationCode(userId)
+            audit.record("auth.email_verification", "wrong_code", ctx, actor = userId)
+            throw ApiException.field(ErrorCode.VALIDATION_FAILED, "code", "invalid_code")
+        }
+        repo.completeEmailVerification(userId)
+        audit.record("auth.email_verification", "verified", ctx, actor = userId)
     }
 
     // ------------------------------------------------------------------ recovery

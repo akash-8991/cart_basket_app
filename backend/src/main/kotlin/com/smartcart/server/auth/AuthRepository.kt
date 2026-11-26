@@ -135,6 +135,35 @@ class AuthRepository(private val db: DataSource) {
         }
     }
 
+    /** Replaces any earlier code: only the newest one works (CR-003 §2). */
+    fun putEmailVerification(userId: String, codeHash: ByteArray, now: Instant, expiresAt: Instant) = db.connection.use { c ->
+        c.prepareStatement(
+            """insert into email_verifications(user_id, code_hash, created_at, expires_at, attempts) values (?,?,?,?,0)
+               on conflict (user_id) do update set code_hash = excluded.code_hash, created_at = excluded.created_at, expires_at = excluded.expires_at, attempts = 0""",
+        ).use { st ->
+            st.setString(1, userId); st.setBytes(2, codeHash); st.setTimestamp(3, Timestamp.from(now)); st.setTimestamp(4, Timestamp.from(expiresAt)); st.executeUpdate()
+        }
+    }
+
+    data class EmailVerification(val codeHash: ByteArray, val expiresAt: Instant, val attempts: Int)
+
+    fun emailVerification(userId: String): EmailVerification? = db.connection.use { c ->
+        c.prepareStatement("select code_hash, expires_at, attempts from email_verifications where user_id = ?").use { st ->
+            st.setString(1, userId)
+            st.executeQuery().use { rs -> if (rs.next()) EmailVerification(rs.getBytes(1), rs.getTimestamp(2).toInstant(), rs.getInt(3)) else null }
+        }
+    }
+
+    fun recordWrongVerificationCode(userId: String) = db.connection.use { c ->
+        c.prepareStatement("update email_verifications set attempts = attempts + 1 where user_id = ?").use { st -> st.setString(1, userId); st.executeUpdate() }
+    }
+
+    /** Marks the email verified and spends the code, in one transaction. */
+    fun completeEmailVerification(userId: String) = db.transaction { c ->
+        c.prepareStatement("update users set email_verified = true where user_id = ?").use { st -> st.setString(1, userId); st.executeUpdate() }
+        c.prepareStatement("delete from email_verifications where user_id = ?").use { st -> st.setString(1, userId); st.executeUpdate() }
+    }
+
     fun createChallenge(challengeId: String, userId: String, codeHash: ByteArray, now: Instant, expiresAt: Instant) = db.connection.use { c ->
         c.prepareStatement("insert into recovery_challenges(challenge_id, user_id, code_hash, created_at, expires_at) values (?,?,?,?,?)").use { st ->
             st.setString(1, challengeId); st.setString(2, userId); st.setBytes(3, codeHash); st.setTimestamp(4, Timestamp.from(now)); st.setTimestamp(5, Timestamp.from(expiresAt))

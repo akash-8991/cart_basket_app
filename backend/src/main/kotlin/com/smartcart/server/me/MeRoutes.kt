@@ -51,6 +51,8 @@ fun maskEmail(email: String): String {
     return "${local.take(1)}***@${domain.take(1)}***" + if (tld.isNotEmpty()) ".$tld" else ""
 }
 
+fun ProfileRow.wire() = Profile(userId, maskEmail(email), emailVerified, privacyMode, createdAt.wire())
+
 private fun ConsentRow.wire() = Consent(key, granted, version, updatedAt.wire())
 
 /**
@@ -77,14 +79,12 @@ private suspend fun ApplicationCall.onceOnly(s: Services, scope: String, rawBody
 fun Route.meRoutes(s: Services) = authenticate(AUTH_USER) {
     route("/v1/me") {
         get {
-            val p = io { s.me.profile(call.user().userId) }
-            call.respond(Profile(p.userId, maskEmail(p.email), p.emailVerified, p.privacyMode, p.createdAt.wire()))
+            call.respond(io { s.me.profile(call.user().userId) }.wire())
         }
 
         put("/privacy-mode") {
             val req = call.receive<SetPrivacyModeRequest>()
-            val p = io { s.me.setPrivacyMode(call.user().userId, req.privacyMode, call.requestContext(s)) }
-            call.respond(Profile(p.userId, maskEmail(p.email), p.emailVerified, p.privacyMode, p.createdAt.wire()))
+            call.respond(io { s.me.setPrivacyMode(call.user().userId, req.privacyMode, call.requestContext(s)) }.wire())
         }
 
         get("/consents") {

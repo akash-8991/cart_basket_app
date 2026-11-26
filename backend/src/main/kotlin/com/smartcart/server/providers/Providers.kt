@@ -96,7 +96,8 @@ class ProviderService(
 
     fun list(userId: String): List<ProviderView> {
         val approved = approvals.active()
-        val consents = me.consents(userId).associate { it.key to it.granted }
+        // Only grants for the current consent texts count (CR-003 §3).
+        val consents = me.consents(userId).associate { it.key to (it.granted && it.version == com.smartcart.server.me.ConsentKeys.CURRENT_VERSION) }
         return ProviderRegistry.all.map { p ->
             ProviderView(
                 def = p,

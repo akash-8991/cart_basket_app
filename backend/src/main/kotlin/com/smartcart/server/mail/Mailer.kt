@@ -9,6 +9,7 @@ enum class MailTemplate(val key: String) {
     USER_ID_REMINDER("user_id_reminder"),
     DATA_EXPORT("data_export"),
     ACCOUNT_DELETED("account_deleted"),
+    EMAIL_VERIFICATION_CODE("email_verification_code"),
 }
 
 /** Sends transactional email. No provider is chosen in Phase 3; see [OutboxMailer]. */

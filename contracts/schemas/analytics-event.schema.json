@@ -36,7 +36,9 @@
         "suggestion_feedback",
         "privacy_action",
         "session_revoked",
-        "notification_opened"
+        "notification_opened",
+        "consent_changed",
+        "email_verification_result"
       ]
     },
     "at": { "type": "string", "format": "date-time" },
@@ -60,7 +62,7 @@
         "stop_reason": { "enum": ["emergency_stop", "user_cancel", "pause_all"] },
         "decision": { "enum": ["approve", "reject"] },
         "granted": { "type": "boolean" },
-        "consent_scope": { "enum": ["automation", "history", "ai_processing", "notifications"] },
+        "consent_scope": { "enum": ["automation", "history", "ai_processing", "notifications", "terms", "privacy"] },
         "privacy_action": { "enum": ["export", "delete_history", "delete_chat", "delete_account", "clear_cache", "privacy_mode_changed"] },
         "useful": { "type": "boolean" },
         "line_count": { "type": "integer", "minimum": 0 },

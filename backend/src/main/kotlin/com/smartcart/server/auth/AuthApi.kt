@@ -38,6 +38,9 @@ data class ForgotUserIdRequest(val email: String)
 data class ResetPasswordRequest(val challengeId: String, val code: String, val newPassword: String)
 
 @Serializable
+data class VerifyEmailRequest(val code: String)
+
+@Serializable
 data class TokenPair(val accessToken: String, val refreshToken: String, val accessExpiresInSeconds: Int)
 
 @Serializable

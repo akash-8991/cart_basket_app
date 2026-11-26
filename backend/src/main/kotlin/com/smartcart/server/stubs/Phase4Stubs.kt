@@ -109,7 +109,7 @@ class Phase4Stubs(
         if (confirmations["$userId:$quoteId"] != provider) throw ApiException(ErrorCode.CONFLICT)
         // The same gates Phase 4 automation must pass (plan rules 3–4).
         if (!flags.isOn("automation.global.enabled") || !providers.isUsable(provider)) throw ApiException(ErrorCode.PROVIDER_DISABLED)
-        if (me.consents(userId).none { it.key == "automation.$provider" && it.granted }) throw ApiException(ErrorCode.CONSENT_REQUIRED)
+        if ("automation.$provider" !in me.grantedKeys(userId)) throw ApiException(ErrorCode.CONSENT_REQUIRED)
         limit("stub:tasks:$userId", 10, Duration.ofMinutes(10))
         val name = ProviderRegistry.find(provider)!!.displayName
         val id = newId("tsk")
@@ -185,7 +185,7 @@ class Phase4Stubs(
 
     fun startImport(userId: String, providerKeys: List<String>): JsonObject {
         if (!flags.isOn("history.import.enabled")) throw ApiException(ErrorCode.PROVIDER_DISABLED)
-        val consents = me.consents(userId).filter { it.granted }.map { it.key }.toSet()
+        val consents = me.grantedKeys(userId)
         if (providerKeys.any { "history.$it" !in consents }) throw ApiException(ErrorCode.CONSENT_REQUIRED)
         limit("stub:imports:$userId", 5, Duration.ofDays(1))
         val id = newId("imp")

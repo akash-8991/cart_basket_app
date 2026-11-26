@@ -13,7 +13,10 @@ import java.time.Instant
 import java.util.Base64
 import javax.sql.DataSource
 
-data class ProfileRow(val userId: String, val email: String, val emailVerified: Boolean, val privacyMode: String, val createdAt: Instant)
+data class ProfileRow(
+    val userId: String, val email: String, val emailVerified: Boolean, val privacyMode: String, val createdAt: Instant,
+    val termsVersion: String = "", val privacyVersion: String = "",
+)
 
 data class ConsentRow(val key: String, val granted: Boolean, val version: String, val updatedAt: Instant)
 
@@ -34,9 +37,9 @@ class MeRepository(private val db: DataSource) {
     fun newId(prefix: String) = prefix + "_" + b64.encodeToString(ByteArray(12).also(random::nextBytes))
 
     fun profile(userId: String): ProfileRow? = db.connection.use { c ->
-        c.prepareStatement("select user_id, email, email_verified, privacy_mode, created_at from users where user_id = ?").use { st ->
+        c.prepareStatement("select user_id, email, email_verified, privacy_mode, created_at, terms_version, privacy_version from users where user_id = ?").use { st ->
             st.setString(1, userId)
-            st.executeQuery().use { rs -> if (rs.next()) ProfileRow(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getString(4), rs.getTimestamp(5).toInstant()) else null }
+            st.executeQuery().use { rs -> if (rs.next()) ProfileRow(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getString(4), rs.getTimestamp(5).toInstant(), rs.getString(6), rs.getString(7)) else null }
         }
     }
 

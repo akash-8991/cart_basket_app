@@ -24,12 +24,16 @@ object ConsentKeys {
     const val AI_PROCESSING = "ai_processing"
     const val NOTIFICATIONS = "notifications"
     val GLOBAL = listOf(AI_PROCESSING, NOTIFICATIONS)
+    /** Acceptance of the terms and privacy notice, recorded like consents so re-acceptance has a home (CR-003 §3). */
+    const val TERMS = "terms"
+    const val PRIVACY = "privacy"
+    val POLICIES = listOf(TERMS, PRIVACY)
     val PROVIDERS = setOf("uber", "ola", "rapido", "zomato", "swiggy", "blinkit", "bigbasket", "swiggy_instamart", "amazon", "flipkart", "zepto")
     /** Version of the consent texts shipped with the frozen frontend. */
     const val CURRENT_VERSION = "2026-11"
 
     fun isValid(key: String): Boolean =
-        key in GLOBAL || key.substringAfter('.', "") in PROVIDERS && key.substringBefore('.') in setOf("automation", "history")
+        key in GLOBAL || key in POLICIES || key.substringAfter('.', "") in PROVIDERS && key.substringBefore('.') in setOf("automation", "history")
 
     fun provider(key: String): String? = key.substringAfter('.', "").takeIf { it in PROVIDERS }
 }
@@ -55,14 +59,32 @@ class MeService(
     /** Explicit decisions, plus the two global consents (not granted until the user says yes). */
     fun consents(userId: String): List<ConsentRow> {
         val set = repo.consents(userId).associateBy { it.key }
-        val created = profile(userId).createdAt
-        val globals = ConsentKeys.GLOBAL.map { set[it] ?: ConsentRow(it, false, ConsentKeys.CURRENT_VERSION, created) }
-        return globals + set.values.filter { it.key !in ConsentKeys.GLOBAL }.sortedBy { it.key }
+        val p = profile(userId)
+        val globals = ConsentKeys.GLOBAL.map { set[it] ?: ConsentRow(it, false, ConsentKeys.CURRENT_VERSION, p.createdAt) }
+        // Terms and privacy: the latest acceptance, or the versions accepted at registration.
+        val policies = listOf(
+            set[ConsentKeys.TERMS] ?: ConsentRow(ConsentKeys.TERMS, true, p.termsVersion, p.createdAt),
+            set[ConsentKeys.PRIVACY] ?: ConsentRow(ConsentKeys.PRIVACY, true, p.privacyVersion, p.createdAt),
+        )
+        return globals + policies + set.values.filter { it.key !in ConsentKeys.GLOBAL && it.key !in ConsentKeys.POLICIES }.sortedBy { it.key }
     }
+
+    /**
+     * Consents that count right now: granted against the current consent texts. A grant given for older texts
+     * stops counting when they change, so the app's just-in-time screens ask again (CR-003 §3).
+     */
+    fun grantedKeys(userId: String): Set<String> =
+        repo.consents(userId).filter { it.granted && it.version == ConsentKeys.CURRENT_VERSION }.map { it.key }.toSet()
 
     fun setConsent(userId: String, key: String, granted: Boolean, version: String, ctx: RequestContext): ConsentRow {
         if (!ConsentKeys.isValid(key)) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "consent_key", "unknown_consent")
         if (version.isBlank() || version.length > 32) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "version", "invalid_format")
+        if (key in ConsentKeys.POLICIES) {
+            // Terms and privacy can only be accepted, and only in their current version.
+            val current = if (key == ConsentKeys.TERMS) com.smartcart.server.config.PolicyVersions.TERMS else com.smartcart.server.config.PolicyVersions.PRIVACY
+            if (!granted) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "granted", "cannot_withdraw_policy")
+            if (version != current) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "version", "not_current")
+        }
         val now = clock.instant()
         val previous = repo.setConsent(userId, key, granted, version, now, ctx.correlationId)
         audit.record("consent.set", if (granted) "granted" else "revoked", ctx, actor = userId, target = key, detail = mapOf("version" to version))
@@ -124,6 +146,8 @@ class MeService(
         return when {
             key == ConsentKeys.AI_PROCESSING -> "You $verb AI help with your requests."
             key == ConsentKeys.NOTIFICATIONS -> "You $verb notifications."
+            key == ConsentKeys.TERMS -> "You accepted the updated terms."
+            key == ConsentKeys.PRIVACY -> "You accepted the updated privacy notice."
             key.startsWith("automation.") -> "You $verb SmartCart to prepare carts in $provider."
             else -> "You $verb importing order history from $provider."
         }

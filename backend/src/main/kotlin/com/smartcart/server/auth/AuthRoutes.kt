@@ -26,6 +26,7 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import com.smartcart.server.me.wire
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.temporal.ChronoUnit
@@ -167,6 +168,19 @@ fun Route.authRoutes(s: Services) = route("/v1/auth") {
             val u = call.user()
             io { s.auth.revokeSession(u.userId, call.parameters["sessionId"]!!, call.requestContext(s)) }
             call.respond(HttpStatusCode.NoContent)
+        }
+
+        post("/verify-email") {
+            val u = call.user()
+            val req = call.receive<VerifyEmailRequest>()
+            Validator.validate { check(req.code.length in 6..8, "code", "invalid_length") }
+            io { s.auth.verifyEmail(u.userId, req.code, call.requestContext(s)) }
+            call.respond(io { s.me.profile(u.userId) }.wire())
+        }
+
+        post("/verify-email/resend") {
+            val id = io { s.auth.resendEmailVerification(call.user().userId, call.requestContext(s)) }
+            call.respond(HttpStatusCode.Accepted, RecoveryAccepted("If your email still needs verifying, we have sent a new code to it.", id, Limits.CHALLENGE_TTL.seconds.toInt()))
         }
 
         post("/sessions/revoke-all") {

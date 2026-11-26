@@ -45,7 +45,8 @@ class MeTest {
         val body = r.bodyAsText()
         assertTrue("{\"key\":\"ai_processing\",\"granted\":false" in body)
         assertTrue("{\"key\":\"notifications\",\"granted\":false" in body)
-        assertEquals(2, Regex("\"key\"").findAll(body).count())
+        assertTrue("{\"key\":\"terms\",\"granted\":true,\"version\":\"2026-11\"" in body, "terms accepted at registration")
+        assertEquals(4, Regex("\"key\"").findAll(body).count())
     }
 
     @Test fun settingAConsentIsRecordedWithHistoryAndActivity() = withApp { s ->
