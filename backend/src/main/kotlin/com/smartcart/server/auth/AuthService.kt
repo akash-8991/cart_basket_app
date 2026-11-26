@@ -6,6 +6,8 @@ import com.smartcart.server.http.ApiException
 import com.smartcart.server.http.ErrorCode
 import com.smartcart.server.mail.MailTemplate
 import com.smartcart.server.mail.Mailer
+import com.smartcart.server.me.ActivityLog
+import com.smartcart.server.me.ActivityType
 import com.smartcart.server.security.PasswordPolicy
 import com.smartcart.server.security.Passwords
 import com.smartcart.server.security.RateLimiter
@@ -34,6 +36,7 @@ object Limits {
     val RESET_PER_IP = 10 to Duration.ofMinutes(30)
     val REFRESH_PER_DEVICE = 60 to Duration.ofMinutes(10)
     const val CODE_ATTEMPTS = 5
+    const val STEP_UP_ATTEMPTS = 5
     val CHALLENGE_TTL: Duration = Duration.ofMinutes(15)
     val REMEMBERED_SESSION: Duration = Duration.ofDays(30)
     val SHORT_SESSION: Duration = Duration.ofHours(12)
@@ -48,6 +51,7 @@ class AuthService(
     private val mailer: Mailer,
     private val audit: Audit,
     private val clock: Clock,
+    private val activity: ActivityLog,
 ) {
     // ------------------------------------------------------------------ register / login
 
@@ -73,7 +77,7 @@ class AuthService(
         // Lockout is tracked per submitted user ID whether or not it exists, so it reveals nothing.
         limiter.ttlSeconds("lock:$account").takeIf { it > 0 }?.let { throw ApiException(ErrorCode.ACCOUNT_LOCKED, retryAfterSeconds = it) }
 
-        val user = repo.findUser(account)
+        val user = repo.findUser(account)?.takeUnless { it.deletionRequested }
         val ok = passwords.verify(password, user?.passwordHash ?: passwords.dummyHash) && user != null
         if (!ok) {
             val failures = limiter.hit("fail:$account", Int.MAX_VALUE, Limits.FAILURE_WINDOW).let { Int.MAX_VALUE - it.remaining }
@@ -142,14 +146,38 @@ class AuthService(
     fun sessions(userId: String): List<Session> = repo.activeSessions(userId, clock.instant())
 
     fun revokeSession(userId: String, sessionId: String, ctx: RequestContext) {
+        val label = repo.session(sessionId)?.takeIf { it.userId == userId }?.device?.let { d -> d.osVersion?.let { "Android $it" } ?: "an Android device" }
         if (!repo.revokeSession(userId, sessionId, "revoked_by_user", clock.instant())) throw ApiException(ErrorCode.NOT_FOUND)
         audit.record("auth.session_revoked", "success", ctx, actor = userId, target = sessionId)
+        activity.record(userId, ActivityType.SESSION_REVOKED, "You signed out $label.", clock.instant())
     }
 
     fun revokeOthers(userId: String, currentSessionId: String, ctx: RequestContext): Int =
         repo.revokeAll(userId, currentSessionId, "revoke_all", clock.instant()).also {
             audit.record("auth.sessions_revoked_all", "success", ctx, actor = userId, detail = mapOf("count" to it.toString()))
+            if (it > 0) activity.record(userId, ActivityType.SESSION_REVOKED, if (it == 1) "You signed out 1 other device." else "You signed out $it other devices.", clock.instant())
         }
+
+    fun revokeAllForDeletion(userId: String, ctx: RequestContext) {
+        val n = repo.revokeAll(userId, null, "account_deletion", clock.instant())
+        audit.record("auth.sessions_revoked_all", "account_deletion", ctx, actor = userId, detail = mapOf("count" to n.toString()))
+    }
+
+    /**
+     * Re-authentication for sensitive actions (export, deletion). Wrong passwords count toward a short
+     * per-user limit so a stolen session can't be used to guess the password.
+     */
+    fun stepUp(userId: String, password: String, ctx: RequestContext) {
+        limiter.ttlSeconds("stepup-lock:$userId").takeIf { it > 0 }?.let { throw ApiException(ErrorCode.RATE_LIMITED, retryAfterSeconds = it) }
+        val user = repo.findUser(userId) ?: throw ApiException(ErrorCode.UNAUTHENTICATED)
+        if (!passwords.verify(password, user.passwordHash)) {
+            val d = limiter.hit("stepup-fail:$userId", Limits.STEP_UP_ATTEMPTS, Limits.FAILURE_WINDOW)
+            if (d.remaining == 0) limiter.setFlag("stepup-lock:$userId", Limits.FAILURE_WINDOW) // locked from the 5th failure
+            audit.record("auth.step_up", "invalid_credentials", ctx, actor = userId)
+            throw ApiException(ErrorCode.INVALID_CREDENTIALS)
+        }
+        limiter.reset("stepup-fail:$userId")
+    }
 
     // ------------------------------------------------------------------ recovery
 
@@ -159,7 +187,7 @@ class AuthService(
         limit("recovery:target:${userId.lowercase()}", Limits.RECOVERY_PER_TARGET)
         val now = clock.instant()
         val challengeId = secrets.signedChallengeId(now)
-        val user = repo.findUser(userId.lowercase())
+        val user = repo.findUser(userId.lowercase())?.takeUnless { it.deletionRequested }
         if (user != null && user.email.equals(email, ignoreCase = true)) {
             val code = tokens.newCode()
             repo.createChallenge(challengeId, user.userId, codeHash(challengeId, code), now, now.plus(Limits.CHALLENGE_TTL))

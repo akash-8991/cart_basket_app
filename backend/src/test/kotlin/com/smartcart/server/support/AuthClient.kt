@@ -8,6 +8,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.get
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -55,3 +57,14 @@ suspend fun HttpResponse.errorCode(): String? =
 /** Body with the per-request fields (correlation and challenge IDs) blanked, for byte comparisons. */
 suspend fun HttpResponse.normalisedBody(): String =
     bodyAsText().replace(Regex("\"(correlation_id|challenge_id)\":\"[^\"]*\""), "\"$1\":\"*\"")
+
+suspend fun HttpClient.putJson(path: String, body: String, token: String): HttpResponse =
+    put(path) {
+        contentType(ContentType.Application.Json)
+        header(CORRELATION_HEADER, UUID.randomUUID().toString())
+        bearerAuth(token)
+        setBody(body)
+    }
+
+suspend fun HttpClient.getAuthed(path: String, token: String): HttpResponse =
+    get(path) { bearerAuth(token) }

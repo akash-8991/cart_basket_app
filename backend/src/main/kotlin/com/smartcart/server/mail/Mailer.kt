@@ -7,6 +7,8 @@ import javax.sql.DataSource
 enum class MailTemplate(val key: String) {
     PASSWORD_RESET_CODE("password_reset_code"),
     USER_ID_REMINDER("user_id_reminder"),
+    DATA_EXPORT("data_export"),
+    ACCOUNT_DELETED("account_deleted"),
 }
 
 /** Sends transactional email. No provider is chosen in Phase 3; see [OutboxMailer]. */

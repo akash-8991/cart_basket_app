@@ -37,6 +37,15 @@ import com.smartcart.server.security.Secrets
 import com.smartcart.server.security.SigningKeys
 import com.smartcart.server.security.Tokens
 import java.time.Clock
+import com.smartcart.server.me.ActivityLog
+import com.smartcart.server.me.DataRequestProcessor
+import com.smartcart.server.me.MeRepository
+import com.smartcart.server.me.MeService
+import com.smartcart.server.me.meRoutes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.Base64
 
 /** Everything a request handler needs; built once at startup, replaced piecemeal in tests. */
@@ -62,7 +71,11 @@ class Services(
         clock,
     )
     val audit = Audit(db)
-    val auth = AuthService(AuthRepository(db), passwords, tokens, limiter, secrets, mailer, audit, clock)
+    private val meRepo = MeRepository(db)
+    val activity = ActivityLog(meRepo)
+    val auth = AuthService(AuthRepository(db), passwords, tokens, limiter, secrets, mailer, audit, clock, activity)
+    val me = MeService(meRepo, auth, activity, limiter, audit, clock)
+    val dataRequests = DataRequestProcessor(meRepo, mailer, activity, audit, clock)
 }
 
 fun main() {
@@ -72,7 +85,14 @@ fun main() {
     val services = Services(config, pool)
     embeddedServer(Netty, port = config.port, host = config.host) {
         module(services)
-        monitor.subscribe(ApplicationStopped) { pool.close() }
+        // Background worker for export/deletion requests.
+        val worker = launch(Dispatchers.IO) {
+            while (isActive) {
+                runCatching { services.dataRequests.processPending() }
+                delay(30_000)
+            }
+        }
+        monitor.subscribe(ApplicationStopped) { worker.cancel(); pool.close() }
     }.start(wait = true)
 }
 
@@ -83,6 +103,7 @@ fun Application.module(services: Services) {
 
     routing {
         authRoutes(services)
+        meRoutes(services)
 
         // Operational endpoints: not part of the public contract.
         get("/healthz") { call.respondText("""{"status":"ok"}""", ContentType.Application.Json) }

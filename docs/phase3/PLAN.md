@@ -36,12 +36,19 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 | 3.1 Scaffold | ✅ 26 Nov 2026 | 22 tests |
 | 3.2 Auth | ✅ 26 Nov 2026 | 10 operations; 61 tests in total, including A-01 lockout/backoff and per-device/IP limits, A-02 identical recovery responses (and signed challenge IDs so real and made-up challenges expire and lock alike), A-03 refresh reuse → family revoked, A-15 cross-user session access → 404 |
 
+| 3.3 Me & consent | ✅ 26 Nov 2026 | 6 operations; 77 tests in total. Consents: allow-listed keys, current state + append-only history, activity only on real changes. Activity feed with stable cursor paging. Export/delete need the password again (step-up, locks after 5 wrong) and an Idempotency-Key; a background worker emails the export and erases data — account deletion signs out every device at once, then cascades; the audit log keeps only the user ID |
+
 ### Contract gaps found (for a change request; not changed silently)
 
 1. **No email-verification endpoint.** `AuthSession.email_verification_required` is `true` after registration, but the contract has no way to complete verification. The flag is reported honestly; nothing is gated on it yet.
 2. **`DeviceInfo` has no device model,** so `DeviceSession.device_label` is derived ("Android 15"). The app's sessions screen was designed with model names ("Pixel 8").
 3. **`approximate_location` is always `null`:** no IP geolocation in Phase 3.
 4. **Registration has no "remember this device" flag;** registration sessions use the remembered (30-day) lifetime.
+5. **Undocumented 400 responses.** `PUT /v1/me/consents/{consentKey}` (unknown key, blank version), `GET /v1/me/activity` (bad `limit`/`cursor`), `POST /v1/me/data/export` and `/delete` (missing `Idempotency-Key`, bad scope) can only fail validation with a 400, but list none. The server returns the standard `validation_failed` envelope; tests check it is a valid `ErrorEnvelope`.
+6. **`POST /v1/me/data/delete` lists no 429,** although step-up lockout applies to it as it does to export (which lists 429).
+7. **Nothing sets `privacy_mode`.** `Profile` reports it (default `device_only`); presumably history import (Phase 4) will need an operation for it.
+8. **No current consent version in any response.** The app sends the version it showed (`2026-11`); the server records whatever is sent, so there is no way to prompt re-consent when texts change.
+9. **`ActivityEvent.summary` is server-written English,** whereas D-014 keeps all user-facing copy in the app. Either localise on the server or add a template key the app can map.
 
 ## 4. Running locally
 

@@ -80,3 +80,13 @@ suspend fun HttpResponse.assertContract(method: String, pathTemplate: String): H
 }
 
 fun newCorrelationId(): String = UUID.randomUUID().toString()
+
+/**
+ * For error statuses the contract forgets to document on an operation (logged as contract gaps in
+ * docs/phase3/PLAN.md): the body must still be a valid ErrorEnvelope.
+ */
+suspend fun HttpResponse.assertErrorEnvelope(): HttpResponse {
+    val problems = Contract.componentSchema("ErrorEnvelope").validate(Contract.json.readTree(bodyAsText()))
+    if (problems.isNotEmpty()) fail("not an ErrorEnvelope: $problems\nbody: ${bodyAsText()}")
+    return this
+}

@@ -2,14 +2,6 @@
 # without being removed here, or if a contract operation is neither routed nor listed.
 # Must be empty by the end of slice 3.6 (Phase 3 exit gate).
 
-# me — slice 3.3
-GET /v1/me
-GET /v1/me/consents
-PUT /v1/me/consents/{consentKey}
-GET /v1/me/activity
-POST /v1/me/data/export
-POST /v1/me/data/delete
-
 # dashboard — slice 3.6 (Phase 4 stubs)
 GET /v1/dashboard/summary
 GET /v1/dashboard/monthly

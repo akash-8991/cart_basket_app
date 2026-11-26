@@ -7,7 +7,7 @@ import java.sql.Timestamp
 import java.time.Instant
 import javax.sql.DataSource
 
-data class User(val userId: String, val email: String, val emailVerified: Boolean, val passwordHash: String)
+data class User(val userId: String, val email: String, val emailVerified: Boolean, val passwordHash: String, val deletionRequested: Boolean = false)
 
 data class Device(val deviceId: String, val platform: String, val appVersion: String, val osVersion: String?)
 
@@ -50,14 +50,14 @@ class AuthRepository(private val db: DataSource) {
         }
 
     fun findUser(userId: String): User? = db.connection.use { c ->
-        c.prepareStatement("select user_id, email, email_verified, password_hash from users where user_id = ?").use { st ->
+        c.prepareStatement("select user_id, email, email_verified, password_hash, deletion_requested_at is not null from users where user_id = ?").use { st ->
             st.setString(1, userId)
-            st.executeQuery().use { rs -> if (rs.next()) User(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getString(4)) else null }
+            st.executeQuery().use { rs -> if (rs.next()) User(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getString(4), rs.getBoolean(5)) else null }
         }
     }
 
     fun userIdsForEmail(email: String): List<String> = db.connection.use { c ->
-        c.prepareStatement("select user_id from users where lower(email) = lower(?) order by user_id").use { st ->
+        c.prepareStatement("select user_id from users where lower(email) = lower(?) and deletion_requested_at is null order by user_id").use { st ->
             st.setString(1, email)
             st.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
         }
