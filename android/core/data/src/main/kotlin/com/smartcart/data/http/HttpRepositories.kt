@@ -47,6 +47,7 @@ import java.util.Locale
 @Serializable private data class SetConsentRequest(val granted: Boolean, val version: String)
 @Serializable private data class StepUp(val password: String)
 @Serializable private data class SetPrivacyModeRequest(val privacyMode: PrivacyMode)
+@Serializable private data class VerifyEmailRequest(val code: String)
 @Serializable private data class DeleteDataRequest(val scope: String, val password: String)
 @Serializable private data class CreateChatSessionRequest(val category: Category)
 @Serializable private data class ClarificationAnswer(val clarificationId: String, val optionId: String)
@@ -149,11 +150,24 @@ class HttpAuthRepository(
 
     override suspend fun revokeAllOthers(): ApiResult<Int> = api.call("POST", "/v1/auth/sessions/revoke-all", RevokeAllResponse.serializer()).map { it.revokedCount }
 
+    override suspend fun verifyEmail(code: String): ApiResult<Unit> =
+        api.call("POST", "/v1/auth/verify-email", Profile.serializer(), encode(VerifyEmailRequest.serializer(), VerifyEmailRequest(code))).map { p ->
+            (_state.value as? AccountState.SignedIn)?.let { _state.value = it.copy(emailVerificationRequired = !p.emailVerified) }
+        }
+
+    override suspend fun resendEmailVerification(): ApiResult<RecoveryAccepted> =
+        api.call("POST", "/v1/auth/verify-email/resend", RecoveryAccepted.serializer())
+
     /** Signs out locally after the server has signed out every device (account deletion). */
     internal fun forget() = signedOut()
 }
 
-class HttpAccountRepository(private val api: ApiClient, private val auth: HttpAuthRepository) : AccountRepository {
+/** [consentVersion] is the server's current consent-text version (GET /v1/config), so grants count after texts change. */
+class HttpAccountRepository(
+    private val api: ApiClient,
+    private val auth: HttpAuthRepository,
+    private val consentVersion: () -> String = { PolicyVersions.CONSENT },
+) : AccountRepository {
     private val _paused = MutableStateFlow(false)
     override val automationPaused: StateFlow<Boolean> = _paused
 
@@ -162,7 +176,7 @@ class HttpAccountRepository(private val api: ApiClient, private val auth: HttpAu
     override suspend fun consents(): ApiResult<List<Consent>> = api.call("GET", "/v1/me/consents", ConsentList.serializer()).map { it.consents }
 
     override suspend fun setConsent(key: String, granted: Boolean): ApiResult<Consent> =
-        api.call("PUT", "/v1/me/consents/$key", Consent.serializer(), encode(SetConsentRequest.serializer(), SetConsentRequest(granted, PolicyVersions.CONSENT)))
+        api.call("PUT", "/v1/me/consents/$key", Consent.serializer(), encode(SetConsentRequest.serializer(), SetConsentRequest(granted, consentVersion())))
 
     override suspend fun activity(): ApiResult<ActivityPage> = api.call("GET", "/v1/me/activity", ActivityPage.serializer())
 
@@ -180,6 +194,14 @@ class HttpAccountRepository(private val api: ApiClient, private val auth: HttpAu
         api.call("PUT", "/v1/me/privacy-mode", Profile.serializer(), encode(SetPrivacyModeRequest.serializer(), SetPrivacyModeRequest(mode)))
 
     override fun setAutomationPaused(paused: Boolean) { _paused.value = paused }
+
+    override suspend fun acceptPolicy(key: String, version: String): ApiResult<Consent> =
+        api.call("PUT", "/v1/me/consents/$key", Consent.serializer(), encode(SetConsentRequest.serializer(), SetConsentRequest(true, version)))
+}
+
+class HttpConfigRepository(private val api: ApiClient) : com.smartcart.data.ConfigRepository {
+    override suspend fun config(): ApiResult<com.smartcart.model.ClientConfig> =
+        api.call("GET", "/v1/config", com.smartcart.model.ClientConfig.serializer(), authenticated = false)
 }
 
 /** [installed] reports whether a provider's app is on this device; the server can't know (contract: installed is client-filled). */

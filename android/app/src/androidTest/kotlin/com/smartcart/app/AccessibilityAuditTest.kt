@@ -163,6 +163,7 @@ class AccessibilityAuditTest {
         screen = { ProvidersScreen({}) }; audit("providers", s(R.string.providers_intro))
         screen = { PrivacyScreen({}, {}) }; audit("privacy", s(R.string.privacy_user_id))
         screen = { HelpScreen({}) }; audit("help", s(R.string.help_stop_title))
+        screen = { com.smartcart.app.feature.auth.VerifyEmailScreen({}, {}) }; audit("verify-email", s(R.string.verify_body))
 
         assertTrue("Accessibility errors (API ${Device.api}, font ${Device.fontScale}):\n" + problems.distinct().joinToString("\n"), problems.isEmpty())
     }

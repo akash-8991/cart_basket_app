@@ -74,4 +74,19 @@
     <string name="forgot_id_back">Back to sign in</string>
     <string name="forgot_id_intro">Enter your registered email. For your security, your user ID is only ever sent to that email, never shown here.</string>
     <string name="forgot_id_submit">Email my user ID</string>
+
+    <!-- CR-003 §2: email verification -->
+    <string name="verify_title">Verify your email</string>
+    <string name="verify_body">Enter the 6-digit code we sent to your email address. It expires after 15 minutes.</string>
+    <string name="verify_code">Verification code</string>
+    <string name="verify_submit">Verify</string>
+    <string name="verify_resend">Send a new code</string>
+    <string name="verify_resent">We sent a new code. Earlier codes no longer work.</string>
+    <string name="verify_later">Later</string>
+    <string name="verify_done">Email verified</string>
+    <!-- CR-003 §3: updated terms or privacy notice -->
+    <string name="policy_update_title">We\'ve updated our terms</string>
+    <string name="policy_update_body">The terms of service or privacy notice changed since you last accepted them. Please review and accept them to keep using SmartCart.</string>
+    <string name="policy_update_accept">Accept</string>
+    <string name="policy_update_sign_out">Sign out</string>
 </resources>

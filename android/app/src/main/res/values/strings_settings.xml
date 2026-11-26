@@ -103,4 +103,8 @@
     <string name="help_a_otp">SmartCart never enters passwords or OTPs. Do it yourself, then tap Resume.</string>
     <string name="help_q_cart">I can\'t find my cart</string>
     <string name="help_a_cart">Open the app and tap its cart icon. Some apps don\'t support opening the cart directly.</string>
+
+    <!-- CR-003 §1 -->
+    <string name="privacy_ai_help">AI help with your requests</string>
+    <string name="privacy_ai_help_desc">Sends your chat messages, with contact and card numbers removed, to an AI model to understand them. Off means chat reads simple lists only.</string>
 </resources>

@@ -6,6 +6,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.smartcart.data.ApiResult
+import com.smartcart.app.feature.auth.VerifyEmailScreen
+import com.smartcart.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,6 +73,7 @@ object Routes {
     const val UNLOCK = "auth/unlock"
     const val REINSTALL = "auth/reinstall"
     const val FORGOT_PASSWORD = "auth/forgot-password"
+    const val VERIFY_EMAIL = "auth/verify-email"
     const val RESET_PASSWORD = "auth/reset-password/{challengeId}"
     const val FORGOT_USER_ID = "auth/forgot-user-id"
     const val HOME = "home"
@@ -117,6 +128,35 @@ fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navControl
         is AccountState.SignedIn -> Routes.HOME
         is AccountState.Remembered -> Routes.UNLOCK
         else -> Routes.WELCOME
+    }
+
+    // CR-003 §3: if the terms or privacy notice changed since the user accepted them, nothing else is usable
+    // until they accept the new version or sign out.
+    var policyUpdate by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    LaunchedEffect(account) {
+        policyUpdate = emptyList()
+        if (account !is AccountState.SignedIn) return@LaunchedEffect
+        val current = (c.config.config() as? ApiResult.Success)?.value?.policyVersions ?: return@LaunchedEffect
+        val accepted = (c.account.consents() as? ApiResult.Success)?.value?.associate { it.key to it.version } ?: return@LaunchedEffect
+        policyUpdate = listOf("terms" to current.terms, "privacy" to current.privacy).filter { (k, v) -> accepted[k] != null && accepted[k] != v }
+    }
+    if (policyUpdate.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            title = { Text(stringResource(R.string.policy_update_title)) },
+            text = { Text(stringResource(R.string.policy_update_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pending = policyUpdate
+                    scope.launch {
+                        if (pending.all { (k, v) -> c.account.acceptPolicy(k, v) is ApiResult.Success }) policyUpdate = emptyList()
+                        pending.forEach { (k, _) -> c.analytics.track(com.smartcart.data.AnalyticsEventName.CONSENT_CHANGED, mapOf("consent_scope" to k, "granted" to true)) }
+                    }
+                }) { Text(stringResource(R.string.policy_update_accept)) }
+            },
+            dismissButton = { TextButton(onClick = { scope.launch { c.auth.logout() } }) { Text(stringResource(R.string.policy_update_sign_out)) } },
+        )
     }
 
     // Leaving the signed-in state (logout, revoked or expired session) always returns to Welcome.
@@ -207,8 +247,10 @@ fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navControl
                     onConnectHistory = { navController.navigate(Routes.HISTORY_CONNECT) },
                     onSettings = { navController.navigate(Routes.SETTINGS) },
                     onChatHistory = { navController.navigate(Routes.CHAT_HISTORY) },
+                    onVerifyEmail = { navController.navigate(Routes.VERIFY_EMAIL) },
                 )
             }
+            composable(Routes.VERIFY_EMAIL) { VerifyEmailScreen(onDone = back, onBack = back) }
             composable(Routes.MONTH, listOf(navArgument("month") { type = NavType.StringType })) { e ->
                 MonthDetailScreen(month = e.arguments?.getString("month").orEmpty(), onBack = back)
             }

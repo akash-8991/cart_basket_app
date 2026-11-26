@@ -73,6 +73,8 @@ Test-side fixes during the run: rotation now turns the display (as a user does) 
 
 Observation for design: on the tablet the phone layout stretches to full width (cards and spend bars up to 2,400px wide in landscape). It is usable and passes every check, but there is no tablet-specific layout or maximum content width.
 
+**Re-run after CR-001–CR-003 (26 Nov 2026):** device suite now 24 tests per device (adds the CR-003 UI tests — AI-consent question, limited-mode hint, email verification, updated-terms prompt — and the KPI-row regression test); the accessibility audit includes the new verification screen. Pixel 6 API 26/30/34/36 and Pixel Tablet API 36: 24/24 each, audit clean at 1× and 2× on API 34/36. API 34 and the tablet needed one re-run: the tablet journey test now closes the keyboard before tapping "Compare full cart" (the cart card is taller than the space the landscape keyboard leaves), and API 34 hit a one-off Compose test-framework error (`performMeasureAndLayout called during measure layout`) that did not recur.
+
 Screenshots of every step and screen, per API level, are written to `android/build/device-matrix/apiNN/` (not committed); a curated set is in `docs/phase2/screenshots/device/`.
 
 Contract invariants enforced by `validate.mjs`: "cheapest" only with complete coverage and no missing fees; every provider total equals its components; no negative totals; `price_changed` carries the previous total; `CART_READY` requires a verified cart; prohibited actions are never planned; handoff URLs are opaque tokens; recovery responses have identical shapes.

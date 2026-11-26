@@ -31,4 +31,15 @@
     <string name="chat_history_empty_body">Start from a category on the home screen.</string>
     <string name="chat_history_delete">Delete conversation %1$s</string>
     <string name="chat_history_retention">Conversations are kept for 30 days unless you delete them.</string>
+
+    <!-- CR-003 §1: AI-processing consent (asked before the first message). -->
+    <string name="ai_consent_title">Use AI help with your requests?</string>
+    <string name="ai_consent_body">AI helps SmartCart understand what you type, ask about unclear items and build your cart. It suggests; it never orders, pays or changes anything without your approval.</string>
+    <string name="ai_consent_sent">What is sent: your message, with phone numbers, emails and card numbers removed, and which shopping apps you have.</string>
+    <string name="ai_consent_not_sent">What is not sent: your user ID, email, order history or location.</string>
+    <string name="ai_consent_change">You can change this any time in Settings → Privacy.</string>
+    <string name="ai_consent_allow">Use AI help</string>
+    <string name="ai_consent_not_now">Not now</string>
+    <string name="chat_ai_off_hint">AI help is off, so I can only read lists like \"2 x toned milk 1 L\".</string>
+    <string name="chat_ai_turn_on">Turn on AI help</string>
 </resources>

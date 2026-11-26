@@ -114,6 +114,13 @@ class AuthViewModel(private val auth: AuthRepository, private val analytics: Ana
 
     fun reset(challengeId: String, code: String, password: String, onOk: () -> Unit) = run({ auth.resetPassword(challengeId, code.trim(), password) }) { onOk() }
 
+    fun verifyEmail(code: String, onOk: () -> Unit) = run({ auth.verifyEmail(code.trim()) }) {
+        analytics.track(AnalyticsEventName.EMAIL_VERIFICATION_RESULT, mapOf("result" to "success"))
+        onOk()
+    }
+
+    fun resendVerification() = run({ auth.resendEmailVerification() }) { _state.value = SubmitState(message = "resent") }
+
     fun clearError() { _state.value = _state.value.copy(error = null) }
 }
 
@@ -396,6 +403,25 @@ fun ForgotUserIdScreen(onBack: () -> Unit, onLogin: () -> Unit) {
             ErrorBanner(s.error)
             TextInput(email, { email = it }, stringResource(R.string.auth_registered_email), keyboard = KeyboardType.Email, error = emailProblem(if (email.isNotEmpty()) AuthRules.emailError(email) else null), imeAction = ImeAction.Done)
             PrimaryButton(stringResource(R.string.forgot_id_submit), loading = s.busy, enabled = AuthRules.emailError(email) == null, onClick = { vm.forgotUserId(email) })
+        }
+    }
+}
+
+// ---------------------------------------------------------------- S-AUTH-09 (CR-003 §2)
+@Composable
+fun VerifyEmailScreen(onDone: () -> Unit, onBack: () -> Unit) {
+    val vm = authVm()
+    val s by vm.state.collectAsStateWithLifecycle()
+    var code by rememberSaveable { mutableStateOf("") }
+    ScreenScaffold(stringResource(R.string.verify_title), onBack) { padding ->
+        FormColumn(padding) {
+            Text(stringResource(R.string.verify_body), style = MaterialTheme.typography.bodyMedium)
+            if (s.message == "resent") Banner(stringResource(R.string.verify_resent), tone = Tone.SUCCESS)
+            ErrorBanner(s.error)
+            TextInput(code, { code = it.filter(Char::isDigit).take(8) }, stringResource(R.string.verify_code), keyboard = KeyboardType.NumberPassword, imeAction = ImeAction.Done)
+            PrimaryButton(stringResource(R.string.verify_submit), loading = s.busy, enabled = code.length in 6..8, onClick = { vm.verifyEmail(code, onDone) })
+            SecondaryButton(stringResource(R.string.verify_resend), { vm.resendVerification() }, enabled = !s.busy)
+            SecondaryButton(stringResource(R.string.verify_later), onBack)
         }
     }
 }

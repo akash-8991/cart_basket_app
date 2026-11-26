@@ -103,5 +103,5 @@ Analytics (`contracts/schemas/analytics-event.schema.json`): add **`consent_chan
 Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
             (all five confirmed by Akash, project owner, 26 Nov 2026)
 Decision: approved     Decision date: 2026-11-26
-Linked commits / tag:
+Linked commits / tag: commits "CR-003 (backend): …" and "CR-003 (app): …" on main (contract 1.2.0)
 ```

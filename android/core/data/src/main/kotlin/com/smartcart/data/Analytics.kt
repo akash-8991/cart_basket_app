@@ -37,6 +37,8 @@ enum class AnalyticsEventName(val wire: String) {
     PRIVACY_ACTION("privacy_action"),
     SESSION_REVOKED("session_revoked"),
     NOTIFICATION_OPENED("notification_opened"),
+    CONSENT_CHANGED("consent_changed"),
+    EMAIL_VERIFICATION_RESULT("email_verification_result"),
 }
 
 /** Allowed property keys. Anything else is dropped so free text or PII cannot leak. */

@@ -82,11 +82,11 @@ class BackendEndToEndTest {
         assertEquals(AccountState.SignedIn(userId, emailVerificationRequired = true), c.auth.state.value)
         Device.screenshot("backend-e2e-01-home")
 
-        // Consents the frozen UI has no screen for yet (Phase 3 contract gap 12), set through the API.
-        runBlocking {
-            assertTrue(c.account.setConsent("ai_processing", true) is ApiResult.Success)
-            assertTrue(c.providers.setAutomationConsent(ProviderKey.BLINKIT, true) is ApiResult.Success)
-        }
+        // New accounts must verify their email (CR-003 §2).
+        compose.waitForText(s(R.string.home_verify_title))
+        // Automation consent has its own just-in-time screen elsewhere in the journey; set it here so this
+        // test follows the same path every time. AI consent is given through the chat question below.
+        runBlocking { assertTrue(c.providers.setAutomationConsent(ProviderKey.BLINKIT, true) is ApiResult.Success) }
         compose.waitUntil(20_000) { c.providers.providers.value.any { it.key == ProviderKey.BLINKIT && it.status == ProviderStatus.ENABLED && it.consent.automation } }
 
         // Grocery chat: the backend's gateway asks which milk, then builds the cart.
@@ -96,6 +96,10 @@ class BackendEndToEndTest {
         compose.onNode(hasSetTextAction()).performTextInput("Milk, brown bread, eggs and bananas")
         compose.waitFor(hasContentDescription(s(R.string.chat_send)) and isEnabled(), timeoutMs = 30_000)
         compose.onNode(hasContentDescription(s(R.string.chat_send))).performClick()
+        // CR-003 §1: asked before the first message reaches the model.
+        compose.waitForText(s(R.string.ai_consent_title))
+        Device.screenshot("backend-e2e-02a-ai-consent")
+        compose.clickable(s(R.string.ai_consent_allow)).performClick()
         compose.waitForText("Which milk should I add?", timeoutMs = 30_000)
         Device.screenshot("backend-e2e-02-clarify")
         compose.clickable("Toned milk 1 L").performClick()

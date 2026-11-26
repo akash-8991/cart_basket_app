@@ -54,4 +54,9 @@
         <item quantity="other">%1$d orders · %2$s</item>
     </plurals>
     <string name="month_footnote">Totals are calculated from your imported orders, including fees and discounts. Refunded and cancelled orders are excluded.</string>
+
+    <!-- CR-003 §2 -->
+    <string name="home_verify_title">Verify your email</string>
+    <string name="home_verify_body">Confirm your email so you can recover your account if you forget your password.</string>
+    <string name="home_verify_action">Verify</string>
 </resources>

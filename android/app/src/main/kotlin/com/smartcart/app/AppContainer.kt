@@ -36,6 +36,11 @@ import com.smartcart.data.http.HttpAccountRepository
 import com.smartcart.data.http.HttpAuthRepository
 import com.smartcart.data.http.HttpChatRepository
 import com.smartcart.data.http.HttpProviderRepository
+import com.smartcart.data.http.HttpConfigRepository
+import com.smartcart.data.http.PolicyVersions
+import com.smartcart.data.ConfigRepository
+import com.smartcart.data.fake.FakeConfigRepository
+import com.smartcart.app.security.AiConsentPrompts
 import com.smartcart.app.security.DeviceIdentity
 import com.smartcart.model.AccountState
 import com.smartcart.model.DeviceInfo
@@ -81,7 +86,13 @@ class AppContainer(
 
     val auth: AuthRepository = httpAuth ?: FakeAuthRepository(fixtures, mock, tokens)
     val dashboard: DashboardRepository = FakeDashboardRepository(fixtures, mock)
-    val account: AccountRepository = httpAuth?.let { HttpAccountRepository(api!!, it) } ?: FakeAccountRepository(fixtures, mock)
+    /** Current consent-text version from GET /v1/config; grants are recorded against it (CR-003 §3). */
+    @Volatile var consentVersion: String = PolicyVersions.CONSENT
+        private set
+    val config: ConfigRepository = api?.let { HttpConfigRepository(it) } ?: FakeConfigRepository(fixtures, mock)
+    val aiPrompts = AiConsentPrompts(context)
+
+    val account: AccountRepository = httpAuth?.let { HttpAccountRepository(api!!, it) { consentVersion } } ?: FakeAccountRepository(fixtures, mock)
     // Which provider apps are installed needs verified package names, which provider-matrix.md withholds
     // until the Phase 4 device spike; until then the app reports "unknown" (null).
     val providers: ProviderRepository = api?.let { HttpProviderRepository(it, account) } ?: FakeProviderRepository(fixtures, mock)
@@ -102,7 +113,12 @@ class AppContainer(
     /** Server-backed provider status and consents load once the user is signed in. */
     private fun refreshProvidersOnSignIn() {
         scope.launch {
-            auth.state.collect { if (it is AccountState.SignedIn) providers.refresh() }
+            auth.state.collect {
+                if (it is AccountState.SignedIn) {
+                    (config.config() as? com.smartcart.data.ApiResult.Success)?.let { r -> consentVersion = r.value.policyVersions.consent }
+                    providers.refresh()
+                }
+            }
         }
     }
 

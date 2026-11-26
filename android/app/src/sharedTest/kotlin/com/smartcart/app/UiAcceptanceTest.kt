@@ -70,6 +70,17 @@ class UiAcceptanceTest {
     private fun Home() = HomeScreen({}, {}, {}, {}, {}, {}, {})
 
     @Test
+    fun kpisSitSideBySideOnAPhoneAtNormalTextSize() {
+        // The frozen design: three figures in one row on a 411dp phone; they stack only for large text.
+        val c = container()
+        show(c) { Home() }
+        waitForText("Total spent")
+        val orders = rule.onNodeWithText("Total orders", useUnmergedTree = true).top()
+        val spent = rule.onNodeWithText("Total spent", useUnmergedTree = true).top()
+        assertEquals(orders, spent, 1f)
+    }
+
+    @Test
     fun homeShowsKpisFirstThenCategoryCards() {
         val c = container()
         show(c) { Home() }

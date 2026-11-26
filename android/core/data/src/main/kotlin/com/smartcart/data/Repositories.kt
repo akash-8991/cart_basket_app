@@ -52,6 +52,9 @@ interface AuthRepository {
     suspend fun sessions(): ApiResult<List<DeviceSession>>
     suspend fun revokeSession(sessionId: String): ApiResult<Unit>
     suspend fun revokeAllOthers(): ApiResult<Int>
+    /** CR-003: confirm the account email with the emailed code. */
+    suspend fun verifyEmail(code: String): ApiResult<Unit>
+    suspend fun resendEmailVerification(): ApiResult<RecoveryAccepted>
 }
 
 interface DashboardRepository {
@@ -96,6 +99,11 @@ interface CartTaskRepository {
     suspend fun markHandedOff(taskId: String)
 }
 
+/** CR-002 A: client-visible flags and the current policy text versions. */
+interface ConfigRepository {
+    suspend fun config(): ApiResult<com.smartcart.model.ClientConfig>
+}
+
 interface HistoryRepository {
     suspend fun start(providers: List<ProviderKey>, fields: Set<ImportField>, mode: PrivacyMode): ApiResult<ImportSession>
     fun observe(sessionId: String): Flow<ImportSession?>
@@ -119,5 +127,7 @@ interface AccountRepository {
     suspend fun export(password: String): ApiResult<DataRequestAccepted>
     suspend fun delete(scope: DeleteScope, password: String): ApiResult<DataRequestAccepted>
     suspend fun setPrivacyMode(mode: PrivacyMode): ApiResult<Profile>
+    /** CR-003: accept the terms or privacy notice (`key` = "terms" | "privacy") in the given version. */
+    suspend fun acceptPolicy(key: String, version: String): ApiResult<Consent>
     fun setAutomationPaused(paused: Boolean)
 }

@@ -201,8 +201,18 @@ class PrivacyViewModel(private val c: AppContainer) : ViewModel() {
     val result = MutableStateFlow<Pair<Boolean, Int?>?>(null)
     val error = MutableStateFlow<ApiError?>(null)
     val busy = MutableStateFlow(false)
+    /** CR-003 §1: the AI-processing consent, null until loaded. */
+    val aiHelp = MutableStateFlow<Boolean?>(null)
     init { load() }
-    fun load() { viewModelScope.launch { profile.value = c.account.profile().toLoad() } }
+    fun load() {
+        viewModelScope.launch { profile.value = c.account.profile().toLoad() }
+        viewModelScope.launch { aiHelp.value = (c.account.consents() as? ApiResult.Success)?.value?.any { it.key == "ai_processing" && it.granted } }
+    }
+
+    fun setAiHelp(on: Boolean) = viewModelScope.launch {
+        if (c.account.setConsent("ai_processing", on) is ApiResult.Success) aiHelp.value = on
+        c.analytics.track(AnalyticsEventName.CONSENT_CHANGED, mapOf("consent_scope" to "ai_processing", "granted" to on))
+    }
 
     fun setMode(m: PrivacyMode) = viewModelScope.launch {
         c.account.setPrivacyMode(m).let { if (it is ApiResult.Success) profile.value = Load.Ready(it.value) }
@@ -244,6 +254,7 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
     val result by vm.result.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val aiHelp by vm.aiHelp.collectAsStateWithLifecycle()
     var stepUp by remember { mutableStateOf<StepUpAction?>(null) }
     var cacheCleared by remember { mutableStateOf(false) }
 
@@ -271,6 +282,11 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
                         PrivacyMode.entries.forEach { m ->
                             SwitchRow(stringResource(m.labelRes()), p.privacyMode == m, onChange = { if (it) vm.setMode(m) })
                         }
+                    }
+                }
+                aiHelp?.let { on ->
+                    item {
+                        AppCard { SwitchRow(stringResource(R.string.privacy_ai_help), on, onChange = vm::setAiHelp, subtitle = stringResource(R.string.privacy_ai_help_desc)) }
                     }
                 }
                 item { SectionHeader(stringResource(R.string.privacy_your_data)) }

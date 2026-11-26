@@ -60,6 +60,7 @@ deep link: smartcart://handoff/{opaqueToken} → task/{taskId}/ready (after toke
 | S-AUTH-06 | `auth/forgot-password` | User ID + email → generic "if details match" | L S X O R | `auth/forgot-password.*` |
 | S-AUTH-07 | `auth/reset-password` | Code from email + new password; revokes other sessions | L S X R (expired/replayed) | `auth/reset-password.*` |
 | S-AUTH-08 | `auth/forgot-user-id` | Email → generic response; ID sent only by email | L S X O R | `auth/forgot-user-id.*` |
+| S-AUTH-09 | `auth/verify-email` | Code from email; resend; later (CR-003) | L S X R (wrong/expired/locked) | — |
 | S-HOME-01 | `home` | Header + security status, KPI summary (orders, amount, AOV, frequency, MoM delta, freshness), category cards, suggestions, recent comparisons, chat composer | L E S P X O R | `dashboard/summary.*` |
 | S-HOME-02 | `insights/month/{month}` | Monthly detail with provider/category filters, breakdown | L E S X O R | `dashboard/monthly.*` |
 | S-CHAT-01 | `chat/{category}` | Category-scoped chat; clarification chips; action-preview card; comparison trigger | L E S X O R | `chat/*` |

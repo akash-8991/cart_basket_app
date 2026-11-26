@@ -43,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -104,14 +105,47 @@ data class ChatUiState(
     val comparing: Boolean = false,
     val compareError: ApiError? = null,
     val sessionError: ApiError? = null,
+    val aiConsent: AiConsent = AiConsent.UNKNOWN,
+    /** The AI question is on screen, holding back [pendingText] until it is answered (CR-003 §1). */
+    val askingAi: Boolean = false,
+    val pendingText: String? = null,
 )
+
+/** UNKNOWN: couldn't load (chat isn't blocked); ASK: never answered on this device; DECLINED: "Not now". */
+enum class AiConsent { UNKNOWN, GRANTED, ASK, DECLINED }
+
+private const val AI_CONSENT = "ai_processing"
 
 class ChatViewModel(private val c: AppContainer, val category: Category) : ViewModel() {
     private val _state = MutableStateFlow(ChatUiState())
     val state: StateFlow<ChatUiState> = _state
     private var counter = 0
 
-    init { startSession() }
+    init {
+        startSession()
+        loadAiConsent()
+    }
+
+    private val userId: String get() = (c.auth.state.value as? com.smartcart.model.AccountState.SignedIn)?.userId ?: ""
+
+    private fun loadAiConsent() = viewModelScope.launch {
+        val granted = (c.account.consents() as? ApiResult.Success)?.value?.any { it.key == AI_CONSENT && it.granted } ?: return@launch
+        _state.update { it.copy(aiConsent = if (granted) AiConsent.GRANTED else if (c.aiPrompts.asked(userId)) AiConsent.DECLINED else AiConsent.ASK) }
+    }
+
+    /** Records the answer on the server (consent + history) and sends the message that was waiting. */
+    fun answerAi(allow: Boolean) {
+        val pending = _state.value.pendingText
+        _state.update { it.copy(askingAi = false, pendingText = null, aiConsent = if (allow) AiConsent.GRANTED else AiConsent.DECLINED) }
+        c.aiPrompts.markAsked(userId)
+        c.analytics.track(AnalyticsEventName.CONSENT_CHANGED, mapOf("consent_scope" to AI_CONSENT, "granted" to allow))
+        viewModelScope.launch {
+            c.account.setConsent(AI_CONSENT, allow)
+            pending?.let { send(it) }
+        }
+    }
+
+    fun dismissAiQuestion() = _state.update { it.copy(askingAi = false) }
 
     fun startSession() {
         viewModelScope.launch {
@@ -125,6 +159,11 @@ class ChatViewModel(private val c: AppContainer, val category: Category) : ViewM
     fun send(text: String, clarification: Pair<String, String>? = null) {
         val sid = _state.value.sessionId ?: return
         if (text.isBlank() || _state.value.sending) return
+        // Ask before the first message goes anywhere near the model (audit §13.1).
+        if (clarification == null && _state.value.aiConsent == AiConsent.ASK) {
+            _state.update { it.copy(askingAi = true, pendingText = text.trim()) }
+            return
+        }
         _state.update { it.copy(items = it.items.filterNot { i -> i is ChatItem.Failure } + ChatItem.User("u${counter++}", text.trim()), sending = true) }
         c.analytics.track(if (clarification != null) AnalyticsEventName.CHAT_CLARIFICATION_ANSWERED else AnalyticsEventName.CHAT_MESSAGE_SENT, mapOf("category" to category.key))
         viewModelScope.launch {
@@ -191,6 +230,8 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
     val list = rememberLazyListState()
     LaunchedEffect(s.items.size, s.draft) { if (s.items.isNotEmpty()) list.animateScrollToItem(list.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
 
+    if (s.askingAi) AiConsentDialog(onAllow = { vm.answerAi(true) }, onNotNow = { vm.answerAi(false) }, onDismiss = vm::dismissAiQuestion)
+
     ScreenScaffold(
         title = category.title(),
         onBack = onBack,
@@ -241,6 +282,10 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
                     is ChatItem.Assistant -> AssistantBubble(item.turn, onOption = { id, label -> vm.send(label, item.turn.clarification!!.clarificationId to id) })
                     is ChatItem.Failure -> Banner(ErrorCopy.body(item.error), tone = Tone.DANGER, title = ErrorCopy.title(item.error), actionLabel = stringResource(R.string.common_retry), onAction = { vm.retry(item) })
                 }
+            }
+            val lastTurn = (s.items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)?.turn
+            if (lastTurn?.degraded == true && s.aiConsent == AiConsent.DECLINED && !s.sending) {
+                item(key = "ai-off") { Banner(stringResource(R.string.chat_ai_off_hint), tone = Tone.INFO, actionLabel = stringResource(R.string.chat_ai_turn_on), onAction = { vm.answerAi(true) }) }
             }
             if (s.sending) item { Bubble(stringResource(R.string.chat_thinking), mine = false, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
             s.draft?.let { d ->
@@ -373,4 +418,23 @@ fun ChatHistoryScreen(onBack: () -> Unit, onOpen: (Category) -> Unit) {
             }
         }
     }
+}
+
+/** CR-003 §1: asked once, before the first message; states what goes to the model and what doesn't. */
+@Composable
+private fun AiConsentDialog(onAllow: () -> Unit, onNotNow: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ai_consent_title), modifier = Modifier.semantics { heading() }) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(stringResource(R.string.ai_consent_body), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.ai_consent_sent), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.ai_consent_not_sent), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.ai_consent_change), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onAllow, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.ai_consent_allow)) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onNotNow, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.ai_consent_not_now)) } },
+    )
 }

@@ -106,6 +106,18 @@ class FakeAuthRepository(
         ApiResult.Success(Unit)
     }
 
+    override suspend fun verifyEmail(code: String): ApiResult<Unit> = call(0.5) {
+        // Mock rule: 000000 is always wrong, anything else of the right length verifies.
+        if (code == "000000") return@call ApiResult.Failure(com.smartcart.model.ApiError(com.smartcart.model.ErrorCode.VALIDATION_FAILED, "Wrong code.", "mock",
+            fieldErrors = listOf(com.smartcart.model.FieldError("code", "invalid_code"))))
+        (_state.value as? AccountState.SignedIn)?.let { _state.value = it.copy(emailVerificationRequired = false) }
+        ApiResult.Success(Unit)
+    }
+
+    override suspend fun resendEmailVerification(): ApiResult<RecoveryAccepted> = call(0.5) {
+        ApiResult.Success(fixtures.load("auth/forgot-password.accepted.json"))
+    }
+
     override suspend fun revokeAllOthers(): ApiResult<Int> = call {
         val count = fixtures.load<RevokeAllResponse>("auth/revoke-all.json").revokedCount
         sessions = sessions.filter { it.current }

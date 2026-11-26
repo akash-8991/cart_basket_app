@@ -1,6 +1,7 @@
 package com.smartcart.data.fake
 
 import com.smartcart.data.AccountRepository
+import com.smartcart.data.ConfigRepository
 import com.smartcart.data.ApiResult
 import com.smartcart.data.DashboardRepository
 import com.smartcart.data.Fixtures
@@ -142,4 +143,14 @@ class FakeAccountRepository(fixtures: Fixtures, mock: MockControl) : FakeBase(fi
     override fun setAutomationPaused(paused: Boolean) {
         _paused.value = paused
     }
+
+    override suspend fun acceptPolicy(key: String, version: String): ApiResult<Consent> = call(0.3) {
+        val c = Consent(key, true, version, Instant.now().toString())
+        consents = consents.filterNot { it.key == key } + c
+        ApiResult.Success(c)
+    }
+}
+
+class FakeConfigRepository(fixtures: Fixtures, mock: MockControl) : FakeBase(fixtures, mock), ConfigRepository {
+    override suspend fun config(): ApiResult<com.smartcart.model.ClientConfig> = call(0.3) { ApiResult.Success(fixtures.load("config/config.json")) }
 }

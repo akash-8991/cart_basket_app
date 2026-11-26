@@ -145,6 +145,7 @@ fun HomeScreen(
     onConnectHistory: () -> Unit,
     onSettings: () -> Unit,
     onChatHistory: () -> Unit,
+    onVerifyEmail: () -> Unit = {},
 ) {
     val c = LocalAppContainer.current
     val vm = viewModel { HomeViewModel(c.dashboard, c.analytics) }
@@ -175,6 +176,10 @@ fun HomeScreen(
                     Text(who?.let { stringResource(R.string.home_signed_in_as, it) } ?: stringResource(R.string.home_session_protected), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (paused) Banner(stringResource(R.string.home_paused), tone = Tone.WARNING)
+                // CR-003 §2: until the email is confirmed, recovery by email can't be relied on.
+                if ((account as? com.smartcart.model.AccountState.SignedIn)?.emailVerificationRequired == true) {
+                    Banner(stringResource(R.string.home_verify_body), tone = Tone.INFO, title = stringResource(R.string.home_verify_title), actionLabel = stringResource(R.string.home_verify_action), onAction = onVerifyEmail)
+                }
             }
             // 2. KPI summary
             item {
@@ -269,11 +274,11 @@ private fun KpiSection(s: DashboardSummary, onMonthSelected: (String) -> Unit, o
                 Triple(stringResource(R.string.kpi_total_spent), s.kpis.totalAmount.format(), Format.pct(s.deltaVsPrevious.totalAmountPct)),
                 Triple(stringResource(R.string.kpi_orders_per_week), Format.oneDecimal(s.kpis.ordersPerWeek), Format.pct(s.deltaVsPrevious.ordersPerWeekPct)),
             )
-            // Three columns need roughly 112dp each at normal text size; with large fonts or narrow
-            // screens the figures would break mid-number, so stack them instead.
+            // Three columns need about 96dp each at normal text size (a 411dp phone gives ~105dp, so the
+            // designed row stays); larger fonts or narrower screens would break figures mid-number, so stack.
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val columnWidth = (maxWidth - Spacing.md * 2) / 3
-                if (columnWidth >= 112.dp * LocalDensity.current.fontScale) {
+                if (columnWidth >= 96.dp * LocalDensity.current.fontScale) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         kpis.forEach { (label, value, delta) -> Kpi(label, value, delta, prevMonth, Modifier.weight(1f)) }
                     }

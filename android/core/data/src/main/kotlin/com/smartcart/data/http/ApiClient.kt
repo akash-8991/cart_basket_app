@@ -51,9 +51,11 @@ class ApiClient(
         idempotent: Boolean = false,
     ): ApiResult<T> {
         val idempotencyKey = if (idempotent) UUID.randomUUID().toString() else null // same key on the retry
+        // The token this request actually carries, read before sending: if another caller refreshes while
+        // we wait for the response, we must see that and reuse its token, not refresh again.
+        val tokenUsed = tokens?.accessToken
         val first = send(method, path, body, authenticated, idempotencyKey, response)
         if (authenticated && first is ApiResult.Failure && first.error.code == ErrorCode.SESSION_EXPIRED) {
-            val tokenUsed = tokens?.accessToken
             val refreshed = refreshLock.withLock {
                 // Another caller may have refreshed while we waited.
                 if (tokens?.accessToken != tokenUsed) true else tokens?.refresh() == true

@@ -82,6 +82,10 @@ class EndToEndFlowTest {
             compose.waitForText("Toned milk 1 L")
             compose.clickable("Toned milk 1 L").performClick()
             compose.waitForText(s(R.string.chat_compare_cart))
+            // On a landscape tablet the on-screen keyboard leaves less room than the cart card needs; close it,
+            // as a user would, so scrolling to the button really brings it on screen.
+            scenario.onActivity { hideKeyboard(it) }
+            compose.waitForIdle()
             compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.chat_compare_cart)))
             Device.screenshot("e2e-04-chat")
             compose.clickable(s(R.string.chat_compare_cart)).performClick()
