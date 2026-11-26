@@ -31,6 +31,14 @@ import com.smartcart.data.fake.FakeProviderRepository
 import com.smartcart.data.fake.FakeRecommendationRepository
 import com.smartcart.data.mock.MockConfig
 import com.smartcart.data.mock.MockControl
+import com.smartcart.data.http.ApiClient
+import com.smartcart.data.http.HttpAccountRepository
+import com.smartcart.data.http.HttpAuthRepository
+import com.smartcart.data.http.HttpChatRepository
+import com.smartcart.data.http.HttpProviderRepository
+import com.smartcart.app.security.DeviceIdentity
+import com.smartcart.model.AccountState
+import com.smartcart.model.DeviceInfo
 import com.smartcart.model.TaskStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +56,8 @@ class AppContainer(
     mockConfig: MockConfig = MockConfig(),
     tokenStore: TokenStore? = null,
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    /** Phase 3.7: when set, auth, account, providers and chat use the backend; everything else stays on fakes until Phase 4. */
+    val backendUrl: String? = null,
 ) {
     val mock = MockControl(mockConfig)
     val fixtures = Fixtures(fixtureSource)
@@ -60,11 +70,22 @@ class AppContainer(
         ?: context?.let { runCatching { KeystoreTokenStore(it.applicationContext) }.getOrNull() }
         ?: InMemoryTokenStore()
 
-    val auth: AuthRepository = FakeAuthRepository(fixtures, mock, tokens)
+    private val api: ApiClient? = backendUrl?.takeIf { it.isNotBlank() }?.let {
+        require(BuildConfig.DEBUG || it.startsWith("https://")) { "release builds talk to the backend over HTTPS only" }
+        ApiClient(it)
+    }
+    private val httpAuth: HttpAuthRepository? = api?.let { a ->
+        val identity = context?.let { DeviceIdentity(it) }
+        HttpAuthRepository(a, tokens) { identity?.info() ?: DeviceInfo(deviceId = "test-device", appVersion = BuildConfig.VERSION_NAME) }
+    }
+
+    val auth: AuthRepository = httpAuth ?: FakeAuthRepository(fixtures, mock, tokens)
     val dashboard: DashboardRepository = FakeDashboardRepository(fixtures, mock)
-    val providers: ProviderRepository = FakeProviderRepository(fixtures, mock)
-    val account: AccountRepository = FakeAccountRepository(fixtures, mock)
-    val chat: ChatRepository = FakeChatRepository(fixtures, mock)
+    val account: AccountRepository = httpAuth?.let { HttpAccountRepository(api!!, it) } ?: FakeAccountRepository(fixtures, mock)
+    // Which provider apps are installed needs verified package names, which provider-matrix.md withholds
+    // until the Phase 4 device spike; until then the app reports "unknown" (null).
+    val providers: ProviderRepository = api?.let { HttpProviderRepository(it, account) } ?: FakeProviderRepository(fixtures, mock)
+    val chat: ChatRepository = api?.let { HttpChatRepository(it, providers) } ?: FakeChatRepository(fixtures, mock)
     val comparisons: ComparisonRepository = FakeComparisonRepository(fixtures, mock)
     val tasks: CartTaskRepository = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
     val history: HistoryRepository = FakeHistoryRepository(fixtures, mock, providers, scope)
@@ -75,6 +96,14 @@ class AppContainer(
     init {
         notifier?.createChannels()
         watchTasksForNotifications()
+        if (api != null) refreshProvidersOnSignIn()
+    }
+
+    /** Server-backed provider status and consents load once the user is signed in. */
+    private fun refreshProvidersOnSignIn() {
+        scope.launch {
+            auth.state.collect { if (it is AccountState.SignedIn) providers.refresh() }
+        }
     }
 
     /** Posts cart-ready / needs-you notifications even when the user is in another app. */

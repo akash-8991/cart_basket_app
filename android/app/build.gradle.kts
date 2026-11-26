@@ -24,11 +24,16 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             buildConfigField("boolean", "MOCK_SCENARIOS", "true")
+            // Phase 3.7: empty → fixture fakes (default, and all tests); set to talk to a backend, e.g.
+            // ./gradlew installDebug -Psmartcart.backendUrl=http://10.0.2.2:8080 (the emulator's view of the host).
+            buildConfigField("String", "BACKEND_URL", "\"${project.findProperty("smartcart.backendUrl") ?: ""}\"")
         }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("boolean", "MOCK_SCENARIOS", "false")
+            // Production hosts are configured per environment later; release builds accept only HTTPS.
+            buildConfigField("String", "BACKEND_URL", "\"${project.findProperty("smartcart.releaseBackendUrl") ?: ""}\"")
         }
     }
 

@@ -81,6 +81,17 @@ curl -X PUT -H "$A" -H "$O" -H "$J" localhost:8080/admin/providers/blinkit/appro
 
 With `SMARTCART_STUBS_PHASE4=true` (the dev default), comparison, cart tasks, deep links, history, dashboard and recommendations answer from `contracts/fixtures` (D-020), marked `X-SmartCart-Stub: phase4`. The data is canned, but the rules are real: to start a cart task, the operator API must turn on `automation.global.enabled` and `provider.<key>.enabled` (plus an approval record unless approvals are waived in dev), and the user must grant `automation.<key>`; history import needs `history.import.enabled` and `history.<key>`. Reading a running task or import advances it one step. In production every one of these endpoints answers `service_unavailable`.
 
+### Running the app against this backend
+
+```bash
+./gradlew run                                                     # backend on :8080
+cd ../android && ./gradlew installDebug -Psmartcart.backendUrl=http://10.0.2.2:8080   # emulator → host
+```
+
+Without `-Psmartcart.backendUrl` the app keeps using the fixture fakes. With it, auth, account, providers and chat use this backend (D-023). Chat answers deterministically until the user grants `ai_processing` (there is no consent screen for it yet; Phase 3 contract gap 12), and providers stay `disabled` until enabled through the operator API.
+
+`tools/backend-integration.sh` starts a fresh backend and runs the app's HTTP layer against it (JVM); add `device` to also run the full journey on an API 36 emulator.
+
 Operational endpoints (not in the public contract): `/healthz` (process up), `/readyz` (database reachable), `/metrics`.
 
 Every response carries `X-Correlation-Id` (the client's UUID, or a generated one) and `Cache-Control: no-store`. Logs are one JSON object per line with the correlation ID.

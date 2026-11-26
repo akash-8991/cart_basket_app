@@ -44,6 +44,10 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 
 | 3.6 Phase 4 stubs | ✅ 26 Nov 2026 | 17 operations, fixture-backed (D-020), re-dated with fresh IDs, per-user, marked `X-SmartCart-Stub: phase4`, `service_unavailable` when off (production). Real rules enforced even here: full-plan approval only, terminal states final, switch acknowledgement, automation/provider/consent gates, opaque one-time handoff URLs. 128 tests in total |
 
+| 3.7 App integration | ✅ 26 Nov 2026 | `ApiClient` + HTTP repositories for auth, account, providers and chat (D-023), switched on by `-Psmartcart.backendUrl`. 6 client tests (headers, shared refresh, retry with the same idempotency key, sign-out on failed refresh, error mapping), 5 JVM tests and the full device journey (register → AI clarification → cart → comparison → approval → cart ready) against a freshly started backend via `tools/backend-integration.sh device`. Fixture mode unchanged (API 36 suite 17/17) |
+
+**Phase 3 complete (26 Nov 2026).** Phase 4 (vertical integrations) needs its own go-ahead.
+
 **Exit gate met (26 Nov 2026):** all 39 contract operations are routed (`RouteCoverageTest`, empty pending list) and each has at least one test validating a real response against the frozen OpenAPI (`ExitGateTest`). Slice 3.7 (app integration) remains in Phase 3's plan.
 
 ### Contract gaps found (for a change request; not changed silently)
@@ -65,6 +69,7 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 15. **Where does `approval_nonce` come from?** `ApproveCartTaskRequest` requires it, but no response provides one. The server assumes the app generates one per approval and refuses a reused nonce with a different set of actions.
 16. **`service_unavailable` (503) is undocumented on the Phase 4 operations,** which return it whenever their backing feature is off (production until Phase 4, `comparison.enabled` off, no fixture for Shopping). Also undocumented there: 400s for bad query/body values, 404 on `POST …/quotes/{quoteId}/confirm` and `POST /v1/cart-tasks/{taskId}/stop` (unknown or foreign IDs).
 17. **No per-user data for dashboard, orders or recommendations until Phase 4.** The stubs return the same fixture data to every user; filters on `/v1/dashboard/monthly` are validated but not applied.
+18. **Installed apps are unknown.** `Provider.installed` and chat `context.installed_providers` need each app's package name, which provider-matrix.md withholds until verified on a device in the Phase 4 spike; until then the app sends an empty list and Claude never picks a provider.
 
 ## 4. Running locally
 
