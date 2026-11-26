@@ -55,6 +55,7 @@ val contractsDir = rootDir.resolve("../contracts").normalize()
 tasks.processResources {
     from(contractsDir.resolve("feature-flags.yaml")) { into("contracts") }
     from(contractsDir.resolve("schemas/claude")) { into("contracts/claude") }
+    from(contractsDir.resolve("fixtures")) { into("contracts/fixtures") } // Phase 4 stub data (D-020)
 }
 
 tasks.test {

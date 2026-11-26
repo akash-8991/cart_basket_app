@@ -77,6 +77,10 @@ curl -X PUT -H "$A" -H "$O" -H "$J" localhost:8080/admin/providers/blinkit/appro
   -d '{"adapter_version":"1.0.0","approved_by":"product, security, legal","record_url":"https://…","reason":"approval complete"}'
 ```
 
+### Phase 4 stubs (development only)
+
+With `SMARTCART_STUBS_PHASE4=true` (the dev default), comparison, cart tasks, deep links, history, dashboard and recommendations answer from `contracts/fixtures` (D-020), marked `X-SmartCart-Stub: phase4`. The data is canned, but the rules are real: to start a cart task, the operator API must turn on `automation.global.enabled` and `provider.<key>.enabled` (plus an approval record unless approvals are waived in dev), and the user must grant `automation.<key>`; history import needs `history.import.enabled` and `history.<key>`. Reading a running task or import advances it one step. In production every one of these endpoints answers `service_unavailable`.
+
 Operational endpoints (not in the public contract): `/healthz` (process up), `/readyz` (database reachable), `/metrics`.
 
 Every response carries `X-Correlation-Id` (the client's UUID, or a generated one) and `Cache-Control: no-store`. Logs are one JSON object per line with the correlation ID.

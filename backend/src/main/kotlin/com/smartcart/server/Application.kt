@@ -45,6 +45,8 @@ import com.smartcart.server.chat.ClaudeGateway
 import com.smartcart.server.chat.IntentModel
 import com.smartcart.server.chat.RuleBasedIntentModel
 import com.smartcart.server.chat.chatRoutes
+import com.smartcart.server.stubs.Phase4Stubs
+import com.smartcart.server.stubs.stubRoutes
 import com.smartcart.server.admin.adminRoutes
 import com.smartcart.server.flags.Flags
 import com.smartcart.server.providers.ProviderApprovals
@@ -97,6 +99,7 @@ class Services(
     val chat = ChatService(ChatRepository(db), gateway, me, flags, limiter, clock).also { c ->
         dataRequests.onErase("chat") { userId -> c.deleteAll(userId) }
     }
+    val phase4 = Phase4Stubs(flags, providers, me, limiter, clock)
 }
 
 fun main() {
@@ -128,6 +131,7 @@ fun Application.module(services: Services) {
         meRoutes(services)
         providerRoutes(services)
         chatRoutes(services)
+        stubRoutes(services)
         adminRoutes(services)
 
         // Operational endpoints: not part of the public contract.

@@ -42,6 +42,10 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 
 | 3.5 Chat & Claude gateway | ✅ 26 Nov 2026 | 5 operations; 115 tests in total. Gateway per D-022 with a deterministic stand-in model; the live Anthropic client is built and tested against a local stub (request shape, schema, delimiting) but off. Hostile-output tests: permission fields, unsafe claims, links, wrong provider, malformed JSON, refusals, budget, kill switch |
 
+| 3.6 Phase 4 stubs | ✅ 26 Nov 2026 | 17 operations, fixture-backed (D-020), re-dated with fresh IDs, per-user, marked `X-SmartCart-Stub: phase4`, `service_unavailable` when off (production). Real rules enforced even here: full-plan approval only, terminal states final, switch acknowledgement, automation/provider/consent gates, opaque one-time handoff URLs. 128 tests in total |
+
+**Exit gate met (26 Nov 2026):** all 39 contract operations are routed (`RouteCoverageTest`, empty pending list) and each has at least one test validating a real response against the frozen OpenAPI (`ExitGateTest`). Slice 3.7 (app integration) remains in Phase 3's plan.
+
 ### Contract gaps found (for a change request; not changed silently)
 
 1. **No email-verification endpoint.** `AuthSession.email_verification_required` is `true` after registration, but the contract has no way to complete verification. The flag is reported honestly; nothing is gated on it yet.
@@ -58,6 +62,9 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 12. **The app never asks for AI-processing consent.** The audit (§13.1) requires it and the server enforces it, but no frozen screen sets `ai_processing`, so integrated chat will always use the deterministic path until a consent prompt is added (frontend change request).
 13. **More undocumented statuses on chat:** `POST /v1/chat/messages` can return 400 (bad text/context, stale clarification answer) and 404 (session not found or not the caller's); `POST /v1/chat/sessions` can return 400 (bad category) and 403 (category flag off, e.g. Shopping). None are listed.
 14. **No way to keep a chat.** Data classification says chat is kept "30 days unless saved", but there is no save operation, so every chat expires after 30 days without activity.
+15. **Where does `approval_nonce` come from?** `ApproveCartTaskRequest` requires it, but no response provides one. The server assumes the app generates one per approval and refuses a reused nonce with a different set of actions.
+16. **`service_unavailable` (503) is undocumented on the Phase 4 operations,** which return it whenever their backing feature is off (production until Phase 4, `comparison.enabled` off, no fixture for Shopping). Also undocumented there: 400s for bad query/body values, 404 on `POST …/quotes/{quoteId}/confirm` and `POST /v1/cart-tasks/{taskId}/stop` (unknown or foreign IDs), 409 on `POST /v1/cart-tasks/{taskId}/stop` is not needed (stop always succeeds).
+17. **No per-user data for dashboard, orders or recommendations until Phase 4.** The stubs return the same fixture data to every user; filters on `/v1/dashboard/monthly` are validated but not applied.
 
 ## 4. Running locally
 
