@@ -37,6 +37,12 @@ import com.smartcart.server.security.Secrets
 import com.smartcart.server.security.SigningKeys
 import com.smartcart.server.security.Tokens
 import java.time.Clock
+import java.time.Duration
+import com.smartcart.server.admin.adminRoutes
+import com.smartcart.server.flags.Flags
+import com.smartcart.server.providers.ProviderApprovals
+import com.smartcart.server.providers.ProviderService
+import com.smartcart.server.providers.providerRoutes
 import com.smartcart.server.me.ActivityLog
 import com.smartcart.server.me.DataRequestProcessor
 import com.smartcart.server.me.MeRepository
@@ -72,6 +78,9 @@ class Services(
     )
     val audit = Audit(db)
     private val meRepo = MeRepository(db)
+    val flags = Flags(db, clock, Duration.ofSeconds(config.flagCacheSeconds)).also { it.seed(Flags.catalogue()) }
+    val providerApprovals = ProviderApprovals(db)
+    val providers = ProviderService(flags, providerApprovals, meRepo, config.requireProviderApproval)
     val activity = ActivityLog(meRepo)
     val auth = AuthService(AuthRepository(db), passwords, tokens, limiter, secrets, mailer, audit, clock, activity)
     val me = MeService(meRepo, auth, activity, limiter, audit, clock)
@@ -104,6 +113,8 @@ fun Application.module(services: Services) {
     routing {
         authRoutes(services)
         meRoutes(services)
+        providerRoutes(services)
+        adminRoutes(services)
 
         // Operational endpoints: not part of the public contract.
         get("/healthz") { call.respondText("""{"status":"ok"}""", ContentType.Application.Json) }

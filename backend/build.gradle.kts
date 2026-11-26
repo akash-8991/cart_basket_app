@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.java.jwt)
     implementation(libs.bouncycastle)
     implementation(libs.lettuce)
+    implementation(libs.jackson.yaml)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
@@ -49,6 +50,11 @@ dependencies {
 }
 
 val contractsDir = rootDir.resolve("../contracts").normalize()
+
+// The flag catalogue is part of the frozen contract; ship it inside the server.
+tasks.processResources {
+    from(contractsDir.resolve("feature-flags.yaml")) { into("contracts") }
+}
 
 tasks.test {
     useJUnitPlatform()

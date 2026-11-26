@@ -6,8 +6,6 @@
 GET /v1/dashboard/summary
 GET /v1/dashboard/monthly
 
-# providers — slice 3.4
-GET /v1/providers
 
 # chat — slice 3.5
 GET /v1/chat/sessions

@@ -23,18 +23,26 @@ data class AppConfig(
     val jwtPublicKey: String? = null,
     /** e.g. redis://localhost:6379. Absent → in-memory limits (single instance, dev/test only). */
     val redisUrl: String? = null,
+    /** Bearer token for the operator API under /admin (≥ 32 chars). Unset → the admin API doesn't exist. */
+    val adminToken: String? = null,
+    /** Providers need an approval record to be `enabled` (provider-matrix.md). Off only for local development. */
+    val requireProviderApproval: Boolean = true,
+    /** How long an instance may serve a cached flag value. */
+    val flagCacheSeconds: Long = 5,
 ) {
     init {
+        adminToken?.let { require(it.length >= 32) { "SMARTCART_ADMIN_TOKEN must be at least 32 characters" } }
         if (env == Env.PROD) {
             require(!stubsPhase4) { "SMARTCART_STUBS_PHASE4 must be off in production" }
             require(db.password.isNotBlank()) { "SMARTCART_DB_PASSWORD is required in production" }
             require(secretKey != null) { "SMARTCART_SECRET_KEY is required in production" }
             require(jwtPrivateKey != null && jwtPublicKey != null) { "SMARTCART_JWT_PRIVATE_KEY and SMARTCART_JWT_PUBLIC_KEY are required in production" }
             require(redisUrl != null) { "SMARTCART_REDIS_URL is required in production" }
+            require(requireProviderApproval) { "provider approval cannot be waived in production" }
         }
     }
 
-    override fun toString() = "AppConfig(env=$env, host=$host, port=$port, db=${db.url}, stubsPhase4=$stubsPhase4, redis=${redisUrl != null})"
+    override fun toString() = "AppConfig(env=$env, host=$host, port=$port, db=${db.url}, stubsPhase4=$stubsPhase4, redis=${redisUrl != null}, admin=${adminToken != null}, requireProviderApproval=$requireProviderApproval)"
 
 
     companion object {
@@ -56,6 +64,9 @@ data class AppConfig(
                 jwtPrivateKey = env["SMARTCART_JWT_PRIVATE_KEY"],
                 jwtPublicKey = env["SMARTCART_JWT_PUBLIC_KEY"],
                 redisUrl = env["SMARTCART_REDIS_URL"],
+                adminToken = env["SMARTCART_ADMIN_TOKEN"],
+                requireProviderApproval = env["SMARTCART_REQUIRE_PROVIDER_APPROVAL"]?.toBooleanStrict() ?: (mode != Env.DEV),
+                flagCacheSeconds = env["SMARTCART_FLAG_CACHE_SECONDS"]?.toLong() ?: 5,
             )
         }
     }

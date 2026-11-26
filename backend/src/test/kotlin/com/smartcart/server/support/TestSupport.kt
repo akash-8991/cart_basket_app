@@ -44,7 +44,13 @@ fun testConfig(stubsPhase4: Boolean = true) = AppConfig(
     port = 0,
     db = DbConfig("jdbc:unused", "unused", "unused"),
     stubsPhase4 = stubsPhase4,
+    adminToken = ADMIN_TOKEN,
+    requireProviderApproval = true,
+    flagCacheSeconds = 0,
 )
+
+const val ADMIN_TOKEN = "test-admin-token-0123456789abcdef0123"
+
 
 /** A clock tests can move forward. */
 class MutableClock(var now: Instant = Instant.parse("2026-11-26T05:00:00Z")) : Clock() {

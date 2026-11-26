@@ -58,6 +58,24 @@ In development, password-reset codes and user-ID reminders are written to the `e
 psql -U smartcart -d smartcart -c "select recipient, template, params from email_outbox order by id desc limit 5"
 ```
 
+| `SMARTCART_ADMIN_TOKEN` | unset → no admin API | ≥ 32 chars. Enables the operator API under `/admin`. |
+| `SMARTCART_REQUIRE_PROVIDER_APPROVAL` | `false` in dev, else `true` | Providers need an approval record to be `enabled` (D-021). Cannot be `false` in `prod`. |
+| `SMARTCART_FLAG_CACHE_SECONDS` | `5` | Longest time an instance serves a stale flag. |
+
+### Operator API (feature flags, kill switches, provider approvals)
+
+Not part of the public contract; keep it on an internal network. Every call needs the admin token and an `X-Operator` name; every change needs a reason and is written to the audit log.
+
+```bash
+A="Authorization: Bearer $SMARTCART_ADMIN_TOKEN"; O="X-Operator: your.name"; J="Content-Type: application/json"
+curl -H "$A" -H "$O" localhost:8080/admin/flags
+# Kill switch (takes effect on every instance within SMARTCART_FLAG_CACHE_SECONDS):
+curl -X PUT -H "$A" -H "$O" -H "$J" localhost:8080/admin/flags/provider.blinkit.kill -d '{"enabled":true,"reason":"INC-123"}'
+# Record a completed provider approval (docs/phase0/provider-matrix.md template):
+curl -X PUT -H "$A" -H "$O" -H "$J" localhost:8080/admin/providers/blinkit/approval \
+  -d '{"adapter_version":"1.0.0","approved_by":"product, security, legal","record_url":"https://…","reason":"approval complete"}'
+```
+
 Operational endpoints (not in the public contract): `/healthz` (process up), `/readyz` (database reachable), `/metrics`.
 
 Every response carries `X-Correlation-Id` (the client's UUID, or a generated one) and `Cache-Control: no-store`. Logs are one JSON object per line with the correlation ID.
