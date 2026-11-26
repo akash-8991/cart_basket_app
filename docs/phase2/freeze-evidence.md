@@ -1,7 +1,7 @@
 # Frontend Freeze Evidence Pack — candidate for `frontend-freeze-v1.4`
 
 **Prepared:** 22 November 2026 by Claude (engineering assistant)  
-**Status:** **Candidate, not frozen.** The freeze needs the human sign-offs in §4. Phase 3 (backend) does not start until they are recorded.
+**Status:** **Frozen 26 November 2026** as `frontend-freeze-v1.4`. Sign-off confirmed by the project owner (§5). The gaps in §4 carried forward as the post-freeze backlog; frontend changes now follow `docs/phase2/change-request-template.md`.
 
 Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs people or devices
 
@@ -17,14 +17,14 @@ Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs
 | 6 | Analytics event names and payload schemas frozen | ✅ | `contracts/schemas/analytics-event.schema.json` (27 events, closed property list); `LocalAnalyticsCollector` drops non-allowlisted keys and free text (tested) |
 | 7 | Accessibility review: TalkBack, touch targets, focus order, contrast, reduced motion | 🟡 | Automated: Google Accessibility Test Framework over 15 screens/states in light and dark, at 1× and 2× font, on API 34 and 36 — 0 errors (§3a); 48dp touch-target test; content descriptions on icons; merged KPI semantics; live regions on status changes; reduced-motion token. **Manual TalkBack walkthrough and focus-order check on a device have not been done.** |
 | 8 | Device testing: Android versions, screen sizes, orientation, lifecycle interruption | 🟡 | Emulator matrix: Pixel 6 on API 26, 30, 34, 36 and Pixel Tablet on API 36 — full journey, Keystore, notifications, rotation, accessibility audit (§3a). **Not yet covered:** small phone, foldable, physical devices, process death during a task. |
-| 9 | Product, design, engineering, security, QA sign-off | ⛔ | §4 below |
-| 10 | Tagged baseline `frontend-freeze-v1.4` | ⛔ | Created only after §4 is complete (command in §5) |
+| 9 | Product, design, engineering, security, QA sign-off | ✅ | §5: confirmed by the project owner, 26 Nov 2026 |
+| 10 | Tagged baseline `frontend-freeze-v1.4` | ✅ | Tag `frontend-freeze-v1.4` (§5) |
 
 ## 2. Audit addendum v1.1 §3 checklist
 
 | Item | Status |
 |---|---|
-| `frontend-freeze-v1` tag exists | ⛔ To be created as `frontend-freeze-v1.4` (D-008) after sign-off |
+| `frontend-freeze-v1` tag exists | ✅ `frontend-freeze-v1.4` (D-008) |
 | Design-system tokens documented | ✅ `Theme.kt` + this pack |
 | All categories: Travel, Food ordering, Grocery | ✅ plus Shopping behind `home.category.shopping` (D-004) |
 | KPI summary above category selection | ✅ UI test `homeShowsKpisFirstThenCategoryCards` |
@@ -34,7 +34,7 @@ Status key: ✅ evidence exists · 🟡 partial, see note · ⛔ not done, needs
 | Screen readers and focus order tested | 🟡 automated ATF audit on API 34/36; manual TalkBack and focus order pending |
 | Analytics event schemas frozen | ✅ |
 | Deep-link and notification states tested | 🟡 cart-ready notification posted on the tasks channel with a generic lock-screen version (asserted on API 26–36); deep-link resolution needs the backend |
-| Approvals recorded | ⛔ |
+| Approvals recorded | ✅ §5 |
 
 ## 3. Automated evidence (run 22 Nov 2026)
 
@@ -81,7 +81,9 @@ Safety behaviour covered by `FakeCartTaskRepositoryTest` / `AutomationPolicyTest
 
 Screenshots: `docs/phase2/screenshots/` (welcome, login, home light/dark, comparison complete/partial/incomparable, consent, approve, checkpoint, cart ready).
 
-## 4. Known gaps before sign-off
+## 4. Known gaps — carried forward as the post-freeze backlog
+
+Accepted at sign-off as open items, not blockers. Items 4–6 are backend-dependent and land in Phases 3–4; items 1, 2 and 7 need people or hardware and must close before the closed beta (Phase 6). A fix that changes UI goes through a change request.
 
 1. **Manual accessibility pass**: TalkBack walkthrough and focus order on a device. (2× font and automated contrast/touch-target/label checks are done on API 34/36, §3a.)
 2. **Device matrix**: API 26/30/34/36 on a Pixel 6 emulator done (§3a). Still needed: small phone, foldable, a physical device, and process death during a running task. Tablet (Pixel Tablet, API 36) done; whether tablets need their own layout is a design decision.
@@ -95,13 +97,15 @@ Screenshots: `docs/phase2/screenshots/` (welcome, login, home light/dark, compar
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| Product | | | |
-| Design | | | |
-| Engineering | | | |
-| Security | | | |
-| QA | | | |
+| Product | Akash (project owner) | Approved | 26 Nov 2026 |
+| Design | Akash (project owner) | Approved | 26 Nov 2026 |
+| Engineering | Akash (project owner) | Approved | 26 Nov 2026 |
+| Security | Akash (project owner) | Approved | 26 Nov 2026 |
+| QA | Akash (project owner) | Approved | 26 Nov 2026 |
 
-After all five approve:
+The project owner confirmed the sign-off for all five roles on 26 November 2026, accepting the §4 backlog as open. Separate reviewers for each role were not recorded; add them here if the roles are later staffed.
+
+Tag created:
 
 ```bash
 git tag -a frontend-freeze-v1.4 -m "Frontend freeze v1.4 — see docs/phase2/freeze-evidence.md"
