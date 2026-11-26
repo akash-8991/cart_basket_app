@@ -67,8 +67,11 @@ class RecordingMailer : Mailer {
     override fun send(to: String, template: MailTemplate, params: Map<String, String>) { sent += Sent(to, template, params) }
 }
 
-fun testServices(clock: MutableClock = MutableClock(), mailer: Mailer = RecordingMailer()) =
-    Services(testConfig(), TestDb.fresh(), clock = clock, limiter = InMemoryRateLimiter(clock), idempotency = InMemoryIdempotencyStore(clock), mailer = mailer)
+fun testServices(
+    clock: MutableClock = MutableClock(),
+    mailer: Mailer = RecordingMailer(),
+    intentModel: com.smartcart.server.chat.IntentModel = com.smartcart.server.chat.RuleBasedIntentModel(),
+) = Services(testConfig(), TestDb.fresh(), clock = clock, limiter = InMemoryRateLimiter(clock), idempotency = InMemoryIdempotencyStore(clock), mailer = mailer, intentModel = intentModel)
 
 /** Runs [block] against the real application module wired to a fresh database. */
 fun withApp(services: Services = testServices(), block: suspend ApplicationTestBuilder.(Services) -> Unit) =

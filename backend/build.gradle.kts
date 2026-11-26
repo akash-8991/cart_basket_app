@@ -35,14 +35,14 @@ dependencies {
     implementation(libs.bouncycastle)
     implementation(libs.lettuce)
     implementation(libs.jackson.yaml)
+    implementation(libs.json.schema)
+    implementation(libs.anthropic)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.json.schema)
-    testImplementation(libs.jackson.yaml)
     testImplementation(libs.embedded.postgres)
     testImplementation(platform(libs.embedded.postgres.bom))
     testRuntimeOnly(libs.embedded.postgres.darwin.arm64)
@@ -54,6 +54,7 @@ val contractsDir = rootDir.resolve("../contracts").normalize()
 // The flag catalogue is part of the frozen contract; ship it inside the server.
 tasks.processResources {
     from(contractsDir.resolve("feature-flags.yaml")) { into("contracts") }
+    from(contractsDir.resolve("schemas/claude")) { into("contracts/claude") }
 }
 
 tasks.test {

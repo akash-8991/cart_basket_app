@@ -61,6 +61,7 @@ psql -U smartcart -d smartcart -c "select recipient, template, params from email
 | `SMARTCART_ADMIN_TOKEN` | unset → no admin API | ≥ 32 chars. Enables the operator API under `/admin`. |
 | `SMARTCART_REQUIRE_PROVIDER_APPROVAL` | `false` in dev, else `true` | Providers need an approval record to be `enabled` (D-021). Cannot be `false` in `prod`. |
 | `SMARTCART_FLAG_CACHE_SECONDS` | `5` | Longest time an instance serves a stale flag. |
+| `SMARTCART_AI_LIVE` | `false` | Live Claude calls for chat intent extraction (D-022). Off until Phase 4; when on, the Anthropic SDK reads `ANTHROPIC_API_KEY` from the server environment. Off → a deterministic stand-in model. |
 
 ### Operator API (feature flags, kill switches, provider approvals)
 

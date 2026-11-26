@@ -7,13 +7,6 @@ GET /v1/dashboard/summary
 GET /v1/dashboard/monthly
 
 
-# chat — slice 3.5
-GET /v1/chat/sessions
-POST /v1/chat/sessions
-GET /v1/chat/sessions/{sessionId}
-DELETE /v1/chat/sessions/{sessionId}
-POST /v1/chat/messages
-
 # comparison — slice 3.6 (Phase 4 stubs)
 POST /v1/comparison/quotes
 GET /v1/comparison/quotes/{quoteId}

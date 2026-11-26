@@ -16,6 +16,7 @@ jackson = "2.20.0"
 embeddedPostgres = "2.2.3"
 embeddedPostgresBinaries = "16.16.0"
 junit = "5.14.4"
+anthropic = "3.8.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -47,6 +48,7 @@ embedded-postgres = { module = "io.zonky.test:embedded-postgres", version.ref = 
 embedded-postgres-bom = { module = "io.zonky.test.postgres:embedded-postgres-binaries-bom", version.ref = "embeddedPostgresBinaries" }
 embedded-postgres-darwin-arm64 = { module = "io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8" }
 embedded-postgres-linux-amd64 = { module = "io.zonky.test.postgres:embedded-postgres-binaries-linux-amd64" }
+anthropic = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }

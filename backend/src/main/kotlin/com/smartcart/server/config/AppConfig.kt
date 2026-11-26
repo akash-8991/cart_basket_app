@@ -29,6 +29,8 @@ data class AppConfig(
     val requireProviderApproval: Boolean = true,
     /** How long an instance may serve a cached flag value. */
     val flagCacheSeconds: Long = 5,
+    /** Live Claude calls (D-019). Off until Phase 4; the key is read from ANTHROPIC_API_KEY by the SDK. */
+    val aiLiveCalls: Boolean = false,
 ) {
     init {
         adminToken?.let { require(it.length >= 32) { "SMARTCART_ADMIN_TOKEN must be at least 32 characters" } }
@@ -42,7 +44,7 @@ data class AppConfig(
         }
     }
 
-    override fun toString() = "AppConfig(env=$env, host=$host, port=$port, db=${db.url}, stubsPhase4=$stubsPhase4, redis=${redisUrl != null}, admin=${adminToken != null}, requireProviderApproval=$requireProviderApproval)"
+    override fun toString() = "AppConfig(env=$env, host=$host, port=$port, db=${db.url}, stubsPhase4=$stubsPhase4, redis=${redisUrl != null}, admin=${adminToken != null}, requireProviderApproval=$requireProviderApproval, aiLive=$aiLiveCalls)"
 
 
     companion object {
@@ -67,6 +69,7 @@ data class AppConfig(
                 adminToken = env["SMARTCART_ADMIN_TOKEN"],
                 requireProviderApproval = env["SMARTCART_REQUIRE_PROVIDER_APPROVAL"]?.toBooleanStrict() ?: (mode != Env.DEV),
                 flagCacheSeconds = env["SMARTCART_FLAG_CACHE_SECONDS"]?.toLong() ?: 5,
+                aiLiveCalls = env["SMARTCART_AI_LIVE"]?.toBooleanStrict() ?: false,
             )
         }
     }

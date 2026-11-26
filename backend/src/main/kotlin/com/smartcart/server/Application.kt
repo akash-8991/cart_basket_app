@@ -38,6 +38,13 @@ import com.smartcart.server.security.SigningKeys
 import com.smartcart.server.security.Tokens
 import java.time.Clock
 import java.time.Duration
+import com.smartcart.server.chat.AnthropicIntentModel
+import com.smartcart.server.chat.ChatRepository
+import com.smartcart.server.chat.ChatService
+import com.smartcart.server.chat.ClaudeGateway
+import com.smartcart.server.chat.IntentModel
+import com.smartcart.server.chat.RuleBasedIntentModel
+import com.smartcart.server.chat.chatRoutes
 import com.smartcart.server.admin.adminRoutes
 import com.smartcart.server.flags.Flags
 import com.smartcart.server.providers.ProviderApprovals
@@ -63,6 +70,7 @@ class Services(
     val idempotency: IdempotencyStore = config.redisUrl?.let(::RedisIdempotencyStore) ?: InMemoryIdempotencyStore(clock),
     val mailer: Mailer = OutboxMailer(db),
     val passwords: Passwords = Passwords(),
+    val intentModel: IntentModel = if (config.aiLiveCalls) AnthropicIntentModel() else RuleBasedIntentModel(),
 ) {
     init {
         // The outbox stores recovery codes in the database: a development convenience only.
@@ -85,6 +93,10 @@ class Services(
     val auth = AuthService(AuthRepository(db), passwords, tokens, limiter, secrets, mailer, audit, clock, activity)
     val me = MeService(meRepo, auth, activity, limiter, audit, clock)
     val dataRequests = DataRequestProcessor(meRepo, mailer, activity, audit, clock)
+    val gateway = ClaudeGateway(intentModel, flags, limiter, metrics)
+    val chat = ChatService(ChatRepository(db), gateway, me, flags, limiter, clock).also { c ->
+        dataRequests.onErase("chat") { userId -> c.deleteAll(userId) }
+    }
 }
 
 fun main() {
@@ -98,6 +110,7 @@ fun main() {
         val worker = launch(Dispatchers.IO) {
             while (isActive) {
                 runCatching { services.dataRequests.processPending() }
+                runCatching { services.chat.purgeExpired() }
                 delay(30_000)
             }
         }
@@ -114,6 +127,7 @@ fun Application.module(services: Services) {
         authRoutes(services)
         meRoutes(services)
         providerRoutes(services)
+        chatRoutes(services)
         adminRoutes(services)
 
         // Operational endpoints: not part of the public contract.

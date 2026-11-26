@@ -40,6 +40,8 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 
 | 3.4 Flags & providers | ✅ 26 Nov 2026 | `/v1/providers` with status per D-021 and the caller's consents; flags in Postgres seeded from the catalogue plus a kill switch per provider; operator `/admin` API. 90 tests in total |
 
+| 3.5 Chat & Claude gateway | ✅ 26 Nov 2026 | 5 operations; 115 tests in total. Gateway per D-022 with a deterministic stand-in model; the live Anthropic client is built and tested against a local stub (request shape, schema, delimiting) but off. Hostile-output tests: permission fields, unsafe claims, links, wrong provider, malformed JSON, refusals, budget, kill switch |
+
 ### Contract gaps found (for a change request; not changed silently)
 
 1. **No email-verification endpoint.** `AuthSession.email_verification_required` is `true` after registration, but the contract has no way to complete verification. The flag is reported honestly; nothing is gated on it yet.
@@ -53,6 +55,9 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 9. **`ActivityEvent.summary` is server-written English,** whereas D-014 keeps all user-facing copy in the app. Either localise on the server or add a template key the app can map.
 10. **No way for the app to read feature flags.** `home.category.shopping`, `chat.ai.enabled`, `comparison.enabled` and `history.import.enabled` are server-controlled (D-004, flag catalogue) but only `/v1/providers` reaches the app. The app still uses its built-in defaults. Needs e.g. `GET /v1/config` or flags on `Profile`.
 11. **`hidden` isn't in the `Provider` schema.** Zepto is returned as `disabled`; the app must hide it by key rather than by a server field.
+12. **The app never asks for AI-processing consent.** The audit (§13.1) requires it and the server enforces it, but no frozen screen sets `ai_processing`, so integrated chat will always use the deterministic path until a consent prompt is added (frontend change request).
+13. **More undocumented statuses on chat:** `POST /v1/chat/messages` can return 400 (bad text/context, stale clarification answer) and 404 (session not found or not the caller's); `POST /v1/chat/sessions` can return 400 (bad category) and 403 (category flag off, e.g. Shopping). None are listed.
+14. **No way to keep a chat.** Data classification says chat is kept "30 days unless saved", but there is no save operation, so every chat expires after 30 days without activity.
 
 ## 4. Running locally
 
