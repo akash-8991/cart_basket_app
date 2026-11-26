@@ -105,5 +105,6 @@
   "failure": {
     "code": "unknown_screen",
     "message": "Blinkit showed a screen I do not recognise, so I stopped without changing anything else. You can continue manually."
-  }
+  },
+  "approval_nonce": null
 }

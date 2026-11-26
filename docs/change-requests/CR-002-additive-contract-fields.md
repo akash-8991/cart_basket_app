@@ -158,5 +158,5 @@ components:
 Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
             (all five confirmed by Akash, project owner, 26 Nov 2026)
 Decision: approved     Decision date: 2026-11-26
-Linked commits / tag:
+Linked commits / tag: commit "CR-002: …" on main (contract 1.1.0)
 ```

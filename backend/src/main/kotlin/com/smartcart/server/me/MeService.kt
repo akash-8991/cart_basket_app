@@ -73,9 +73,19 @@ class MeService(
                 consentSummary(key, granted),
                 now,
                 provider = ConsentKeys.provider(key),
+                key = (if (granted) "consent_granted." else "consent_revoked.") + key.substringBefore('.'),
+                args = ConsentKeys.provider(key)?.let { mapOf("provider_name" to providerName(it)) },
             )
         }
         return ConsentRow(key, granted, version, now)
+    }
+
+    /** CR-002 D. Changing it is audited; the export already includes it. */
+    fun setPrivacyMode(userId: String, mode: String, ctx: RequestContext): ProfileRow {
+        if (mode !in setOf("device_only", "normalized_upload")) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "privacy_mode", "invalid_value")
+        repo.setPrivacyMode(userId, mode)
+        audit.record("privacy.mode_set", mode, ctx, actor = userId)
+        return profile(userId)
     }
 
     fun activity(userId: String, limit: Int, cursor: String?): Page<ActivityRow> {
@@ -162,7 +172,7 @@ class DataRequestProcessor(
                     else -> {
                         erasers[r.scope].orEmpty().forEach { it(r.userId) }
                         repo.finishRequest(r.requestId, "completed", clock.instant())
-                        activity.record(r.userId, ActivityType.DATA_DELETED, if (r.scope == "chat") "Your chat history was deleted." else "Your order history was deleted.", clock.instant())
+                        activity.record(r.userId, ActivityType.DATA_DELETED, if (r.scope == "chat") "Your chat history was deleted." else "Your order history was deleted.", clock.instant(), key = "data_deleted.${r.scope}")
                     }
                 }
                 audit.record("data.${r.kind}_completed", "success", ctx, actor = r.userId, target = r.requestId, detail = mapOf("scope" to r.scope))

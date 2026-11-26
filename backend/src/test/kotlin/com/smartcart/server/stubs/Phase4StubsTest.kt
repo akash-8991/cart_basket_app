@@ -50,8 +50,12 @@ class Phase4StubsTest {
     private suspend fun HttpClient.newTask(t: String, q: String) =
         postJson("/v1/cart-tasks", """{"quote_id":"$q","provider":"blinkit","task_type":"add_to_cart"}""", key, t).assertContract("POST", "/v1/cart-tasks")
 
-    private fun approval(ids: String = "\"a1\",\"a2\",\"a3\",\"a4\",\"a5\",\"a6\",\"a7\"", nonce: String = UUID.randomUUID().toString()) =
+    private fun approval(ids: String, nonce: String) =
         """{"approved_action_ids":[$ids],"approval_nonce":"$nonce"}"""
+
+    /** The single-use nonce the server issued for this task's plan (CR-002 G). */
+    private suspend fun HttpClient.nonceOf(t: String, task: String): String =
+        Regex("\"approval_nonce\":\"([^\"]+)\"").find(getAuthed("/v1/cart-tasks/$task", t).bodyAsText())!!.groupValues[1]
 
     private suspend fun HttpClient.plannedIds(t: String, task: String): String =
         Regex("\"action_id\":\"([^\"]+)\"").findAll(getAuthed("/v1/cart-tasks/$task", t).bodyAsText()).joinToString(",") { "\"${it.groupValues[1]}\"" }
@@ -75,9 +79,10 @@ class Phase4StubsTest {
 
         val task = client.newTask(t, q).also { assertTrue("\"status\":\"AWAITING_APPROVAL\"" in it.bodyAsText()) }.field("task_id")
         val ids = client.plannedIds(t, task)
-        val partial = client.postJson("/v1/cart-tasks/$task/approve", approval(ids.substringBefore(",")), key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/approve")
+        val nonce = client.nonceOf(t, task)
+        val partial = client.postJson("/v1/cart-tasks/$task/approve", approval(ids.substringBefore(","), nonce), key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/approve")
         assertEquals("task_state_conflict", partial.errorCode(), "partial approval is refused")
-        val running = client.postJson("/v1/cart-tasks/$task/approve", approval(ids), key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/approve")
+        val running = client.postJson("/v1/cart-tasks/$task/approve", approval(ids, nonce), key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/approve")
         assertTrue("\"status\":\"RUNNING\"" in running.bodyAsText())
         val ready = client.getAuthed("/v1/cart-tasks/$task", t).assertContract("GET", "/v1/cart-tasks/{taskId}")
         assertTrue("\"status\":\"CART_READY\"" in ready.bodyAsText() && "\"task_id\":\"$task\"" in ready.bodyAsText())
@@ -115,22 +120,25 @@ class Phase4StubsTest {
         client.unlockBlinkit(t)
         val task = client.newTask(t, client.confirmedQuote(t)).field("task_id")
         val ids = client.plannedIds(t, task)
-        client.postJson("/v1/cart-tasks/$task/approve", approval(ids), key, t)
+        client.postJson("/v1/cart-tasks/$task/approve", approval(ids, client.nonceOf(t, task)), key, t)
         val stopped = client.postJson("/v1/cart-tasks/$task/stop", """{"reason":"emergency_stop"}""", token = t).assertContract("POST", "/v1/cart-tasks/{taskId}/stop")
         assertTrue("\"status\":\"CANCELLED\"" in stopped.bodyAsText())
         assertTrue("\"status\":\"CANCELLED\"" in client.getAuthed("/v1/cart-tasks/$task", t).bodyAsText(), "a stopped task never resumes")
-        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids), key, t).errorCode())
+        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids, "apn_any"), key, t).errorCode())
         val cp = client.postJson("/v1/cart-tasks/$task/checkpoint", """{"checkpoint_id":"cp_01","decision":"approve"}""", key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/checkpoint")
         assertEquals("task_state_conflict", cp.errorCode())
     }
 
-    @Test fun aReusedApprovalNonceWithDifferentActionsIsRefused() = withApp {
+    @Test fun approvalNeedsTheIssuedNonceAndOnlyOnce() = withApp {
         val t = client.register().tokens.accessToken
         client.unlockBlinkit(t)
-        val task = client.newTask(t, client.confirmedQuote(t)).field("task_id")
+        val task = client.newTask(t, client.confirmedQuote(t)).also { assertTrue("\"approval_nonce\":\"apn_" in it.bodyAsText()) }.field("task_id")
         val ids = client.plannedIds(t, task)
-        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids.substringBefore(","), "n-1"), key, t).errorCode())
-        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids, "n-1"), key, t).errorCode())
+        val nonce = client.nonceOf(t, task)
+        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids, "apn_made_up"), key, t).errorCode())
+        val ok = client.postJson("/v1/cart-tasks/$task/approve", approval(ids, nonce), key, t).assertContract("POST", "/v1/cart-tasks/{taskId}/approve")
+        assertTrue("\"approval_nonce\":null" in ok.bodyAsText(), "used up")
+        assertEquals("task_state_conflict", client.postJson("/v1/cart-tasks/$task/approve", approval(ids, nonce), key, t).errorCode(), "no replay")
     }
 
     @Test fun unapprovedTasksAndQuotesExpire() {
@@ -144,7 +152,7 @@ class Phase4StubsTest {
             clock.advance(Duration.ofMinutes(31))
             val t2 = com.smartcart.server.support.loginBody().let { client.postJson("/v1/auth/login", it) }.field("access_token")
             assertTrue("\"status\":\"EXPIRED\"" in client.getAuthed("/v1/cart-tasks/$task", t2).bodyAsText())
-            assertEquals("task_expired", client.postJson("/v1/cart-tasks/$task/approve", approval(ids), key, t2).assertContract("POST", "/v1/cart-tasks/{taskId}/approve").errorCode())
+            assertEquals("task_expired", client.postJson("/v1/cart-tasks/$task/approve", approval(ids, "apn_any"), key, t2).assertContract("POST", "/v1/cart-tasks/{taskId}/approve").errorCode())
             val expired = client.postJson("/v1/comparison/quotes/$staleQuote/confirm", """{"provider":"bigbasket","acknowledged_switch":false}""", key, t2)
                 .assertContract("POST", "/v1/comparison/quotes/{quoteId}/confirm")
             assertEquals("quote_expired", expired.errorCode())

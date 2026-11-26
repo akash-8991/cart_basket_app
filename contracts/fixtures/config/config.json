@@ -1,0 +1,16 @@
+{
+  "flags": {
+    "home.category.travel": true,
+    "home.category.food": true,
+    "home.category.grocery": true,
+    "home.category.shopping": false,
+    "chat.ai.enabled": true,
+    "comparison.enabled": true,
+    "history.import.enabled": false
+  },
+  "policy_versions": {
+    "terms": "2026-11",
+    "privacy": "2026-11",
+    "consent": "2026-11"
+  }
+}

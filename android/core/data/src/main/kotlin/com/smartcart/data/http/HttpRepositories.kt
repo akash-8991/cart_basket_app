@@ -46,6 +46,7 @@ import java.util.Locale
 @Serializable private data class ResetPasswordRequest(val challengeId: String, val code: String, val newPassword: String)
 @Serializable private data class SetConsentRequest(val granted: Boolean, val version: String)
 @Serializable private data class StepUp(val password: String)
+@Serializable private data class SetPrivacyModeRequest(val privacyMode: PrivacyMode)
 @Serializable private data class DeleteDataRequest(val scope: String, val password: String)
 @Serializable private data class CreateChatSessionRequest(val category: Category)
 @Serializable private data class ClarificationAnswer(val clarificationId: String, val optionId: String)
@@ -155,11 +156,8 @@ class HttpAuthRepository(
 class HttpAccountRepository(private val api: ApiClient, private val auth: HttpAuthRepository) : AccountRepository {
     private val _paused = MutableStateFlow(false)
     override val automationPaused: StateFlow<Boolean> = _paused
-    // No contract operation sets privacy mode yet (Phase 3 contract gap 7): kept on the device until there is one.
-    private var localPrivacyMode: PrivacyMode? = null
 
-    override suspend fun profile(): ApiResult<Profile> =
-        api.call("GET", "/v1/me", Profile.serializer()).map { p -> localPrivacyMode?.let { p.copy(privacyMode = it) } ?: p }
+    override suspend fun profile(): ApiResult<Profile> = api.call("GET", "/v1/me", Profile.serializer())
 
     override suspend fun consents(): ApiResult<List<Consent>> = api.call("GET", "/v1/me/consents", ConsentList.serializer()).map { it.consents }
 
@@ -178,10 +176,8 @@ class HttpAccountRepository(private val api: ApiClient, private val auth: HttpAu
         return r
     }
 
-    override suspend fun setPrivacyMode(mode: PrivacyMode): ApiResult<Profile> {
-        localPrivacyMode = mode
-        return profile()
-    }
+    override suspend fun setPrivacyMode(mode: PrivacyMode): ApiResult<Profile> =
+        api.call("PUT", "/v1/me/privacy-mode", Profile.serializer(), encode(SetPrivacyModeRequest.serializer(), SetPrivacyModeRequest(mode)))
 
     override fun setAutomationPaused(paused: Boolean) { _paused.value = paused }
 }

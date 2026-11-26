@@ -8,6 +8,8 @@ data class DeviceInfo(
     val platform: String = "android",
     val appVersion: String,
     val osVersion: String? = null,
+    /** CR-002 B: shown in the sessions list, e.g. "Pixel 8". */
+    val deviceModel: String? = null,
 )
 
 @Serializable
@@ -18,6 +20,8 @@ data class RegisterRequest(
     val acceptedTermsVersion: String,
     val acceptedPrivacyVersion: String,
     val device: DeviceInfo,
+    /** CR-002 C: false gives a 12-hour session. */
+    val rememberDevice: Boolean = true,
 )
 
 @Serializable

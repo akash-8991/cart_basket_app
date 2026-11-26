@@ -31,7 +31,11 @@ import java.time.temporal.ChronoUnit
 @Serializable data class Consent(val key: String, val granted: Boolean, val version: String, val updatedAt: String)
 @Serializable data class ConsentList(val consents: List<Consent>)
 @Serializable data class SetConsentRequest(val granted: Boolean, val version: String)
-@Serializable data class ActivityEvent(val eventId: String, val at: String, val type: String, val summary: String, val provider: String?, val taskId: String?)
+@Serializable data class ActivityEvent(
+    val eventId: String, val at: String, val type: String, val summary: String, val provider: String?, val taskId: String?,
+    val summaryKey: String?, val summaryArgs: Map<String, String>?,
+)
+@Serializable data class SetPrivacyModeRequest(val privacyMode: String)
 @Serializable data class ActivityPage(val events: List<ActivityEvent>, val nextCursor: String?)
 @Serializable data class StepUp(val password: String)
 @Serializable data class DeleteDataRequest(val scope: String, val password: String)
@@ -77,6 +81,12 @@ fun Route.meRoutes(s: Services) = authenticate(AUTH_USER) {
             call.respond(Profile(p.userId, maskEmail(p.email), p.emailVerified, p.privacyMode, p.createdAt.wire()))
         }
 
+        put("/privacy-mode") {
+            val req = call.receive<SetPrivacyModeRequest>()
+            val p = io { s.me.setPrivacyMode(call.user().userId, req.privacyMode, call.requestContext(s)) }
+            call.respond(Profile(p.userId, maskEmail(p.email), p.emailVerified, p.privacyMode, p.createdAt.wire()))
+        }
+
         get("/consents") {
             call.respond(ConsentList(io { s.me.consents(call.user().userId) }.map { it.wire() }))
         }
@@ -91,7 +101,7 @@ fun Route.meRoutes(s: Services) = authenticate(AUTH_USER) {
         get("/activity") {
             val limit = call.request.queryParameters["limit"]?.let { it.toIntOrNull()?.takeIf { n -> n in 1..50 } ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "limit", "out_of_range") } ?: 20
             val page = io { s.me.activity(call.user().userId, limit, call.request.queryParameters["cursor"]) }
-            call.respond(ActivityPage(page.items.map { ActivityEvent(it.eventId, it.at.wire(), it.type, it.summary, it.provider, it.taskId) }, page.nextCursor))
+            call.respond(ActivityPage(page.items.map { ActivityEvent(it.eventId, it.at.wire(), it.type, it.summary, it.provider, it.taskId, it.summaryKey, it.summaryArgs) }, page.nextCursor))
         }
 
         post("/data/export") {

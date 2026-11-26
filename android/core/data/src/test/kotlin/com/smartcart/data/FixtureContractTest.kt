@@ -58,6 +58,7 @@ class FixtureContractTest {
         "ActivityPage" to ActivityPage.serializer(),
         "DataRequestAccepted" to DataRequestAccepted.serializer(),
         "ProviderList" to ProviderList.serializer(),
+        "ClientConfig" to com.smartcart.model.ClientConfig.serializer(),
         "ComparisonQuote" to ComparisonQuote.serializer(),
         "ChatSession" to ChatSession.serializer(),
         "ChatSessionPage" to ChatSessionPage.serializer(),

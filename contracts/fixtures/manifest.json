@@ -232,6 +232,11 @@
       "status": 201
     },
     {
+      "file": "config/config.json",
+      "schema": "ClientConfig",
+      "status": 200
+    },
+    {
       "file": "dashboard/monthly.json",
       "schema": "MonthlyMetrics",
       "status": 200

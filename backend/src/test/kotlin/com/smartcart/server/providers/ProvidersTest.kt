@@ -77,7 +77,7 @@ class ProvidersTest {
         assertEquals("pending_approval", client.statusOf(t, "blinkit"))
         client.approve("blinkit")
         assertEquals("enabled", client.statusOf(t, "blinkit"))
-        assertTrue("\"key\":\"blinkit\"" in client.getAuthed("/v1/providers", t).bodyAsText().let { Regex("\\{\"key\":\"blinkit\".*?\"adapter_version\":\"1.2.0\"\\}").find(it)!!.value })
+        assertTrue("\"key\":\"blinkit\"" in client.getAuthed("/v1/providers", t).bodyAsText().let { Regex("\\{\"key\":\"blinkit\".*?\"adapter_version\":\"1.2.0\",\"hidden\":false\\}").find(it)!!.value })
 
         assertEquals(204, client.admin("DELETE", "/admin/providers/blinkit/approval", """{"reason":"partner terms changed"}""").status.value)
         assertEquals("pending_approval", client.statusOf(t, "blinkit"))

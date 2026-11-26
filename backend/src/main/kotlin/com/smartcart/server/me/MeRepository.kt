@@ -1,6 +1,11 @@
 package com.smartcart.server.me
 
 import com.smartcart.server.db.transaction
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.security.SecureRandom
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -14,7 +19,10 @@ data class ConsentRow(val key: String, val granted: Boolean, val version: String
 
 data class ConsentEventRow(val key: String, val granted: Boolean, val version: String, val at: Instant)
 
-data class ActivityRow(val eventId: String, val at: Instant, val type: String, val summary: String, val provider: String?, val taskId: String?)
+data class ActivityRow(
+    val eventId: String, val at: Instant, val type: String, val summary: String, val provider: String?, val taskId: String?,
+    val summaryKey: String? = null, val summaryArgs: Map<String, String>? = null,
+)
 
 data class DataRequestRow(val requestId: String, val userId: String, val kind: String, val scope: String, val status: String, val createdAt: Instant)
 
@@ -69,11 +77,15 @@ class MeRepository(private val db: DataSource) {
         previous
     }
 
-    fun addActivity(userId: String, type: String, summary: String, at: Instant, provider: String? = null, taskId: String? = null): String = db.connection.use { c ->
+    fun addActivity(
+        userId: String, type: String, summary: String, at: Instant, provider: String? = null, taskId: String? = null,
+        summaryKey: String? = null, summaryArgs: Map<String, String>? = null,
+    ): String = db.connection.use { c ->
         val id = newId("evt")
-        c.prepareStatement("insert into activity_events(event_id, user_id, at, type, summary, provider, task_id) values (?,?,?,?,?,?,?)").use { st ->
+        c.prepareStatement("insert into activity_events(event_id, user_id, at, type, summary, provider, task_id, summary_key, summary_args) values (?,?,?,?,?,?,?,?,?::jsonb)").use { st ->
             st.setString(1, id); st.setString(2, userId); st.setTimestamp(3, Timestamp.from(at)); st.setString(4, type)
-            st.setString(5, summary); st.setString(6, provider); st.setString(7, taskId)
+            st.setString(5, summary); st.setString(6, provider); st.setString(7, taskId); st.setString(8, summaryKey)
+            st.setString(9, summaryArgs?.let { a -> JsonObject(a.mapValues { JsonPrimitive(it.value) }).toString() })
             st.executeUpdate()
         }
         id
@@ -81,7 +93,7 @@ class MeRepository(private val db: DataSource) {
 
     /** Newest first; [after] is the (at, event_id) of the last row on the previous page. */
     fun activity(userId: String, limit: Int, after: Pair<Instant, String>?): List<ActivityRow> = db.connection.use { c ->
-        val sql = "select event_id, at, type, summary, provider, task_id from activity_events where user_id = ?" +
+        val sql = "select event_id, at, type, summary, provider, task_id, summary_key, summary_args::text from activity_events where user_id = ?" +
             (if (after != null) " and (at, event_id) < (?, ?)" else "") + " order by at desc, event_id desc limit ?"
         c.prepareStatement(sql).use { st ->
             var i = 1
@@ -130,13 +142,24 @@ class MeRepository(private val db: DataSource) {
         c.prepareStatement("delete from users where user_id = ?").use { st -> st.setString(1, userId); st.executeUpdate() }
     }
 
-    private fun ResultSet.toActivity() = ActivityRow(getString(1), getTimestamp(2).toInstant(), getString(3), getString(4), getString(5), getString(6))
+    private fun ResultSet.toActivity() = ActivityRow(
+        getString(1), getTimestamp(2).toInstant(), getString(3), getString(4), getString(5), getString(6), getString(7),
+        getString(8)?.let { Json.parseToJsonElement(it).jsonObject.mapValues { (_, v) -> v.jsonPrimitive.content } },
+    )
+
+    fun setPrivacyMode(userId: String, mode: String) = db.connection.use { c ->
+        c.prepareStatement("update users set privacy_mode = ? where user_id = ?").use { st -> st.setString(1, mode); st.setString(2, userId); st.executeUpdate() }
+    }
 }
 
 /** Records user-facing activity; other features (auth, tasks, history) call this. */
 class ActivityLog(private val repo: MeRepository) {
-    fun record(userId: String, type: ActivityType, summary: String, at: Instant, provider: String? = null, taskId: String? = null) {
-        repo.addActivity(userId, type.wire, summary, at, provider, taskId)
+    /** [key] and [args] (CR-002 E) let the app show its own copy; [args] must never hold personal data. */
+    fun record(
+        userId: String, type: ActivityType, summary: String, at: Instant, provider: String? = null, taskId: String? = null,
+        key: String? = null, args: Map<String, String>? = null,
+    ) {
+        repo.addActivity(userId, type.wire, summary, at, provider, taskId, key ?: type.wire, args)
     }
 }
 

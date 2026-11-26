@@ -92,10 +92,10 @@ fun Route.authRoutes(s: Services) = route("/v1/auth") {
             Claim.InProgress -> throw ApiException(ErrorCode.CONFLICT)
             // A retry of a registration that already succeeded: a fresh session, never stored tokens.
             is Claim.Replay ->
-                if (claim.response.requestHash == fingerprint) io { s.auth.sessionForReplayedRegistration(claim.response.body, req.device.toDevice(), ctx) }
+                if (claim.response.requestHash == fingerprint) io { s.auth.sessionForReplayedRegistration(claim.response.body, req.device.toDevice(), ctx, req.rememberDevice) }
                 else throw ApiException(ErrorCode.CONFLICT)
             Claim.Claimed -> try {
-                io { s.auth.register(req.userId, req.email, req.password, req.acceptedTermsVersion, req.acceptedPrivacyVersion, req.device.toDevice(), ctx) }
+                io { s.auth.register(req.userId, req.email, req.password, req.acceptedTermsVersion, req.acceptedPrivacyVersion, req.device.toDevice(), ctx, req.rememberDevice) }
                     .also { io { s.idempotency.complete(scope, key, StoredResponse(fingerprint, 201, it.userId)) } }
             } catch (t: Throwable) {
                 io { s.idempotency.release(scope, key) }
@@ -152,7 +152,7 @@ fun Route.authRoutes(s: Services) = route("/v1/auth") {
             val list = io { s.auth.sessions(u.userId) }.map {
                 DeviceSession(
                     sessionId = it.sessionId,
-                    deviceLabel = it.device.osVersion?.let { os -> "Android $os" } ?: "Android device",
+                    deviceLabel = it.device.label,
                     platform = it.device.platform,
                     appVersion = it.device.appVersion,
                     approximateLocation = null, // no IP geolocation in Phase 3

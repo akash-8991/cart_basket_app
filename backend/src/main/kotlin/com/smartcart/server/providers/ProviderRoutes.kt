@@ -22,6 +22,8 @@ import kotlinx.serialization.Serializable
     val installed: Boolean?,
     val consent: ProviderConsent,
     val adapterVersion: String?,
+    /** CR-002 F: registry-only provider the app must not show. */
+    val hidden: Boolean,
 )
 @Serializable data class ProviderList(val providers: List<Provider>)
 
@@ -34,6 +36,7 @@ fun ProviderView.wire() = Provider(
     installed = null,
     consent = ProviderConsent(automationConsent, historyConsent),
     adapterVersion = adapterVersion,
+    hidden = com.smartcart.server.flags.Flags.isHidden("provider.${def.key}.enabled"),
 )
 
 fun Route.providerRoutes(s: Services) = authenticate(AUTH_USER) {

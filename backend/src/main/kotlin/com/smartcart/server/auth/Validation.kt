@@ -19,6 +19,7 @@ class Validator {
         check(d.platform == "android", "$prefix.platform", "invalid_value")
         nonBlank(d.appVersion, "$prefix.app_version", 32)
         d.osVersion?.let { check(it.length <= 32, "$prefix.os_version", "invalid_format") }
+        d.deviceModel?.let { check(it.length <= 64, "$prefix.device_model", "invalid_format") }
     }
 
     fun throwIfInvalid() { if (errors.isNotEmpty()) throw ApiException(ErrorCode.VALIDATION_FAILED, errors.toList()) }

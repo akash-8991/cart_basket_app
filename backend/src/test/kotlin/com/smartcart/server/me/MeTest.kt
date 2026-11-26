@@ -63,8 +63,8 @@ class MeTest {
             assertFailsWith<PSQLException> { c.createStatement().execute("update consent_events set granted = true") }
         }
         val activity = client.getAuthed("/v1/me/activity", t).assertContract("GET", "/v1/me/activity").bodyAsText()
-        assertEquals(1, Regex("consent_granted").findAll(activity).count(), "a repeated grant isn't a new event")
-        assertEquals(1, Regex("consent_revoked").findAll(activity).count())
+        assertEquals(1, Regex("\"type\":\"consent_granted\"").findAll(activity).count(), "a repeated grant isn't a new event")
+        assertEquals(1, Regex("\"type\":\"consent_revoked\"").findAll(activity).count())
         assertTrue("\"provider\":\"blinkit\"" in activity)
         assertTrue("You turned off SmartCart to prepare carts in Blinkit." in activity)
     }

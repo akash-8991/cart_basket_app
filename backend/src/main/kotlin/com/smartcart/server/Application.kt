@@ -2,6 +2,7 @@ package com.smartcart.server
 
 import com.smartcart.server.config.AppConfig
 import com.smartcart.server.config.Env
+import com.smartcart.server.config.configRoutes
 import com.smartcart.server.db.Database
 import com.smartcart.server.http.installHttp
 import io.ktor.http.ContentType
@@ -127,6 +128,7 @@ fun Application.module(services: Services) {
     installAuthentication(services)
 
     routing {
+        configRoutes(services)
         authRoutes(services)
         meRoutes(services)
         providerRoutes(services)

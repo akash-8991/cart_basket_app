@@ -142,6 +142,8 @@ data class CartTask(
     val needsUserAction: NeedsUserAction? = null,
     val cart: VerifiedCart? = null,
     val failure: TaskFailure? = null,
+    /** CR-002 G: issued while AWAITING_APPROVAL; the approval must send it back, once. */
+    val approvalNonce: String? = null,
 )
 
 @Serializable

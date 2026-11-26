@@ -5,6 +5,11 @@
       "at": "2026-11-22T04:30:00Z",
       "type": "automation_completed",
       "summary": "Cart prepared in Blinkit (4 items).",
+      "summary_key": "automation_completed",
+      "summary_args": {
+        "provider_name": "Blinkit",
+        "count": "4"
+      },
       "provider": "blinkit",
       "task_id": "tsk_grocery_01"
     },
@@ -13,6 +18,11 @@
       "at": "2026-11-22T04:26:00Z",
       "type": "automation_approved",
       "summary": "You approved adding 4 items in Blinkit.",
+      "summary_key": "automation_approved",
+      "summary_args": {
+        "provider_name": "Blinkit",
+        "count": "4"
+      },
       "provider": "blinkit",
       "task_id": "tsk_grocery_01"
     },
@@ -21,6 +31,10 @@
       "at": "2026-11-18T08:12:00Z",
       "type": "automation_stopped",
       "summary": "You pressed Stop during a Swiggy task.",
+      "summary_key": "automation_stopped",
+      "summary_args": {
+        "provider_name": "Swiggy"
+      },
       "provider": "swiggy",
       "task_id": "tsk_food_07"
     },
@@ -29,6 +43,11 @@
       "at": "2026-11-15T19:40:00Z",
       "type": "history_imported",
       "summary": "Imported 18 orders from Blinkit and Zomato.",
+      "summary_key": "history_imported",
+      "summary_args": {
+        "count": "18",
+        "provider_names": "Blinkit and Zomato"
+      },
       "provider": null,
       "task_id": null
     },
@@ -37,6 +56,10 @@
       "at": "2026-11-01T10:00:00Z",
       "type": "consent_granted",
       "summary": "Allowed automation for Blinkit.",
+      "summary_key": "consent_granted.automation",
+      "summary_args": {
+        "provider_name": "Blinkit"
+      },
       "provider": "blinkit",
       "task_id": null
     }

@@ -61,9 +61,9 @@ data class Provider(
     val installed: Boolean? = null,
     val consent: ProviderConsent,
     val adapterVersion: String? = null,
+    /** CR-002 F: registry-only provider the app must not show (Zepto, D-005). */
+    val hidden: Boolean = false,
 ) {
-    /** Zepto is registry-only (D-005). */
-    val hidden: Boolean get() = key == ProviderKey.ZEPTO
 
     val automationAvailable: Boolean
         get() = status == ProviderStatus.ENABLED &&

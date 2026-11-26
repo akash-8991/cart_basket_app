@@ -10,6 +10,7 @@ India-first (DPDP-aware) baseline. Source: audit §7, §13; PRD v1.4 §11.
 | Access / refresh token | Secret | Android Keystore-backed encrypted prefs | Yes, as auth header | Access ≤15 min; refresh rotating | Logs, analytics, URLs, crash reports |
 | User ID | Personal | Server DB; client session | Yes | Account lifetime | Analytics (use pseudonymous ID) |
 | Email | Personal | Server DB (encrypted / access-controlled) | Yes, at registration/recovery | Account lifetime | Logs, analytics, Claude |
+| Device model (CR-002) | Personal (low) | Server DB, per session | Yes, at sign-in | Session lifetime, then with the account | Logs, analytics, Claude |
 | Chat content | Personal / sensitive | Server (redacted), client memory | Yes | 30 days unless saved | Logs (raw), analytics |
 | Order history (normalized) | Sensitive personal | Device; server only with upload consent | Only with consent | Until user deletes | Claude (raw), logs |
 | Raw partner screen text | Sensitive | Device memory during parse only | **No** (default) | Discarded after parse | Anywhere persistent |

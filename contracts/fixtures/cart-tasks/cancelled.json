@@ -102,5 +102,6 @@
   "checkpoint": null,
   "needs_user_action": null,
   "cart": null,
-  "failure": null
+  "failure": null,
+  "approval_nonce": null
 }

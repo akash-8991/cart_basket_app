@@ -1,3 +1,5 @@
 # Contract operations not yet implemented. RouteCoverageTest fails if one of these gets a route
 # without being removed here, or if a contract operation is neither routed nor listed.
 # Empty since slice 3.6 (Phase 3 exit gate); ExitGateTest keeps it that way.
+
+# CR-002 / CR-003 additions are implemented in the same change; nothing pending.

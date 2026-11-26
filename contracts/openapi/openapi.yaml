@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.0.1
+  version: 1.1.0
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -33,6 +33,7 @@ tags:
   - name: history
   - name: recommendations
 
+  - { name: config, description: Client configuration readable before sign-in. }
 paths:
   /v1/auth/register:
     post:
@@ -805,6 +806,43 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         default: { $ref: '#/components/responses/Error' }
+  /v1/config:
+    get:
+      operationId: getClientConfig
+      tags: [config]
+      summary: Client-visible feature flags and current policy text versions.
+      description: "Public (no sign-in) so the app can read it before registration. Only flags on the server's client allow-list appear; provider flags and kill switches never do. Cache for at most 5 minutes.\n"
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Current configuration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientConfig' }
+        default: { $ref: '#/components/responses/Error' }
+  /v1/me/privacy-mode:
+    put:
+      operationId: setPrivacyMode
+      tags: [me]
+      summary: Choose whether normalised order history may be uploaded.
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetPrivacyModeRequest' }
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
 components:
   securitySchemes:
@@ -942,6 +980,10 @@ components:
         platform: { type: string, enum: [android] }
         app_version: { type: string }
         os_version: { type: [string, 'null'] }
+        device_model:
+          type: [string, 'null']
+          maxLength: 64
+          description: Marketing model name from the OS (e.g. "Pixel 8"), shown in the sessions list. Optional.
 
     # ---------- auth ----------
     RegisterRequest:
@@ -955,6 +997,10 @@ components:
         accepted_terms_version: { type: string }
         accepted_privacy_version: { type: string }
         device: { $ref: '#/components/schemas/DeviceInfo' }
+        remember_device:
+          type: boolean
+          default: true
+          description: false gives a 12-hour session instead of 30 days, as on login.
     LoginRequest:
       type: object
       additionalProperties: false
@@ -1103,6 +1149,14 @@ components:
         summary: { type: string }
         provider: { oneOf: [{ $ref: '#/components/schemas/ProviderKey' }, { type: 'null' }] }
         task_id: { type: [string, 'null'] }
+        summary_key:
+          type: [string, 'null']
+          pattern: ^[a-z_.]+$
+          description: "Stable template key for the app's own copy, e.g. consent_granted.automation, consent_revoked.ai_processing, session_revoked.one, session_revoked.others, data_exported, data_deleted.chat, data_deleted.history. `summary` remains the English fallback.\n"
+        summary_args:
+          type: [object, 'null']
+          additionalProperties: { type: string }
+          description: Values for the template, e.g. {"provider_name":"Blinkit","count":"2"}. No personal data.
     ActivityPage:
       type: object
       additionalProperties: false
@@ -1277,6 +1331,10 @@ components:
             automation: { type: boolean }
             history: { type: boolean }
         adapter_version: { type: [string, 'null'] }
+        hidden:
+          type: boolean
+          default: false
+          description: Registry-only provider the app must not show (e.g. Zepto, D-005).
     ProviderList:
       type: object
       additionalProperties: false
@@ -1651,6 +1709,9 @@ components:
           properties:
             code: { type: string, enum: [unknown_screen, package_mismatch, max_actions_reached, runtime_exceeded, inactivity_timeout, cart_verification_failed, provider_kill_switch, network_lost, app_not_installed, policy_blocked] }
             message: { type: string }
+        approval_nonce:
+          type: [string, 'null']
+          description: "Single-use value issued while status is AWAITING_APPROVAL; POST /approve must send it back. A wrong or reused nonce returns 409 task_state_conflict. Null in every other state.\n"
     CreateCartTaskRequest:
       type: object
       additionalProperties: false
@@ -1809,3 +1870,26 @@ components:
       required: [useful]
       properties:
         useful: { type: boolean }
+    ClientConfig:
+      type: object
+      additionalProperties: false
+      required: [flags, policy_versions]
+      properties:
+        flags:
+          type: object
+          description: "Allow-listed flags only: home.category.travel, home.category.food, home.category.grocery, home.category.shopping, chat.ai.enabled, comparison.enabled, history.import.enabled.\n"
+          additionalProperties: { type: boolean }
+        policy_versions:
+          type: object
+          additionalProperties: false
+          required: [terms, privacy, consent]
+          properties:
+            terms: { type: string }
+            privacy: { type: string }
+            consent: { type: string, description: Version of the consent texts; a granted consent with an older version should be asked again. }
+    SetPrivacyModeRequest:
+      type: object
+      additionalProperties: false
+      required: [privacy_mode]
+      properties:
+        privacy_mode: { $ref: '#/components/schemas/PrivacyMode' }

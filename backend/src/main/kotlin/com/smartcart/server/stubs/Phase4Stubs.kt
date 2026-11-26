@@ -41,7 +41,6 @@ class Phase4Stubs(
     private val random = SecureRandom()
     private val store = ConcurrentHashMap<String, JsonObject>()          // "<kind>:<user>:<id>" → object
     private val confirmations = ConcurrentHashMap<String, String>()      // "<user>:<quote>" → provider
-    private val nonces = ConcurrentHashMap<String, String>()             // "<user>:<task>:<nonce>" → action ids
     private val deletedOrders = ConcurrentHashMap.newKeySet<String>()    // "<user>:<order>"
 
     private fun fixture(path: String): JsonObject =
@@ -118,7 +117,9 @@ class Phase4Stubs(
         val actions = JsonArray(base["planned_actions"]!!.jsonArray.map { a ->
             a.jsonObject.with("description", a.jsonObject.str("description")!!.replace("Blinkit", name))
         })
-        return save("task", userId, id, base.with("task_id", id).with("quote_id", quoteId).with("provider", provider).with("planned_actions", actions))
+        // CR-002 G: a single-use nonce ties the approval to exactly this plan.
+        val nonce = "apn_" + Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(16).also(random::nextBytes))
+        return save("task", userId, id, base.with("task_id", id).with("quote_id", quoteId).with("provider", provider).with("planned_actions", actions).with("approval_nonce", nonce))
     }
 
     /** Reading a running task advances the canned run by one step: RUNNING → CART_READY. */
@@ -130,11 +131,6 @@ class Phase4Stubs(
     fun approve(userId: String, taskId: String, actionIds: List<String>, nonce: String): JsonObject {
         val t = expireIfDue(userId, own("task", userId, taskId))
         if (nonce.isBlank() || nonce.length > 128) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "approval_nonce", "invalid_format")
-        val key = "$userId:$taskId:$nonce"
-        nonces.putIfAbsent(key, actionIds.sorted().joinToString(","))?.let { seen ->
-            // Same nonce, same approval: a retry. Same nonce, different actions: a replay.
-            if (seen == actionIds.sorted().joinToString(",")) return t else throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
-        }
         when (t.str("status")) {
             "AWAITING_APPROVAL" -> {}
             "EXPIRED" -> throw ApiException(ErrorCode.TASK_EXPIRED)
@@ -143,6 +139,8 @@ class Phase4Stubs(
         val planned = t["planned_actions"]!!.jsonArray.map { it.jsonObject.str("action_id")!! }.toSet()
         // Every planned step is approved, or none is: partial approval is refused.
         if (actionIds.toSet() != planned) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
+        // The nonce must be the one issued for this plan; it is cleared once used, so it can't be replayed.
+        if (!java.security.MessageDigest.isEqual(nonce.toByteArray(), (t.str("approval_nonce") ?: "").toByteArray())) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
         return transition(userId, t, "cart-tasks/running.json")
     }
 

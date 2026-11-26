@@ -105,5 +105,6 @@
   "failure": {
     "code": "policy_blocked",
     "message": "A payment screen appeared. I never handle payments, so I stopped. Your cart is unchanged from the last verified step."
-  }
+  },
+  "approval_nonce": null
 }

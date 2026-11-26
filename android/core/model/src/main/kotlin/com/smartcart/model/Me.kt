@@ -46,6 +46,9 @@ data class ActivityEvent(
     val summary: String,
     val provider: ProviderKey? = null,
     val taskId: String? = null,
+    /** CR-002 E: stable template key and values for app-side copy; [summary] is the English fallback. */
+    val summaryKey: String? = null,
+    val summaryArgs: Map<String, String>? = null,
 )
 
 @Serializable

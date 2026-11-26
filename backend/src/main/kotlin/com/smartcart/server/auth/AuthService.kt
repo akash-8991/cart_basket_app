@@ -55,7 +55,7 @@ class AuthService(
 ) {
     // ------------------------------------------------------------------ register / login
 
-    fun register(userId: String, email: String, password: String, terms: String, privacy: String, device: Device, ctx: RequestContext): IssuedSession {
+    fun register(userId: String, email: String, password: String, terms: String, privacy: String, device: Device, ctx: RequestContext, remember: Boolean = true): IssuedSession {
         limit("register:ip:${ctx.ipHash}", Limits.REGISTER_PER_IP)
         if (PasswordPolicy.isWeak(password, userId, email)) throw ApiException.field(ErrorCode.WEAK_PASSWORD, "password")
         if (!repo.createUser(userId, email, passwords.hash(password), terms, privacy)) {
@@ -63,12 +63,12 @@ class AuthService(
             throw ApiException.field(ErrorCode.USER_ID_UNAVAILABLE, "user_id")
         }
         audit.record("auth.register", "success", ctx, actor = userId)
-        return openSession(repo.findUser(userId)!!, device, remembered = true, ctx)
+        return openSession(repo.findUser(userId)!!, device, remembered = remember, ctx)
     }
 
     /** New session for an account created by an earlier attempt with the same Idempotency-Key and body. */
-    fun sessionForReplayedRegistration(userId: String, device: Device, ctx: RequestContext): IssuedSession =
-        openSession(repo.findUser(userId) ?: throw ApiException(ErrorCode.CONFLICT), device, remembered = true, ctx)
+    fun sessionForReplayedRegistration(userId: String, device: Device, ctx: RequestContext, remember: Boolean = true): IssuedSession =
+        openSession(repo.findUser(userId) ?: throw ApiException(ErrorCode.CONFLICT), device, remembered = remember, ctx)
 
     fun login(userId: String, password: String, device: Device, remember: Boolean, ctx: RequestContext): IssuedSession {
         limit("login:ip:${ctx.ipHash}", Limits.LOGIN_PER_IP)
@@ -146,16 +146,17 @@ class AuthService(
     fun sessions(userId: String): List<Session> = repo.activeSessions(userId, clock.instant())
 
     fun revokeSession(userId: String, sessionId: String, ctx: RequestContext) {
-        val label = repo.session(sessionId)?.takeIf { it.userId == userId }?.device?.let { d -> d.osVersion?.let { "Android $it" } ?: "an Android device" }
+        val label = repo.session(sessionId)?.takeIf { it.userId == userId }?.device?.label ?: "a device"
         if (!repo.revokeSession(userId, sessionId, "revoked_by_user", clock.instant())) throw ApiException(ErrorCode.NOT_FOUND)
         audit.record("auth.session_revoked", "success", ctx, actor = userId, target = sessionId)
-        activity.record(userId, ActivityType.SESSION_REVOKED, "You signed out $label.", clock.instant())
+        activity.record(userId, ActivityType.SESSION_REVOKED, "You signed out $label.", clock.instant(), key = "session_revoked.one", args = mapOf("device_label" to label))
     }
 
     fun revokeOthers(userId: String, currentSessionId: String, ctx: RequestContext): Int =
         repo.revokeAll(userId, currentSessionId, "revoke_all", clock.instant()).also {
             audit.record("auth.sessions_revoked_all", "success", ctx, actor = userId, detail = mapOf("count" to it.toString()))
-            if (it > 0) activity.record(userId, ActivityType.SESSION_REVOKED, if (it == 1) "You signed out 1 other device." else "You signed out $it other devices.", clock.instant())
+            if (it > 0) activity.record(userId, ActivityType.SESSION_REVOKED, if (it == 1) "You signed out 1 other device." else "You signed out $it other devices.", clock.instant(),
+                key = "session_revoked.others", args = mapOf("count" to it.toString()))
         }
 
     fun revokeAllForDeletion(userId: String, ctx: RequestContext) {

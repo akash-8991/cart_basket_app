@@ -201,5 +201,6 @@
     },
     "differs_from_quote": false
   },
-  "failure": null
+  "failure": null,
+  "approval_nonce": null
 }

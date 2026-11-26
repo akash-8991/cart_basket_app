@@ -56,11 +56,12 @@ const consentKeys = ['ai_processing', 'notifications', 'automation.blinkit', 'au
 out('me/consents.json', 'ConsentList', { consents: consentKeys.map((key, i) => ({ key, granted: i !== 5, version: '2026-11', updated_at: '2026-11-01T10:00:00Z' })) });
 out('me/activity.json', 'ActivityPage', {
   events: [
-    { event_id: 'evt_5', at: at(-30), type: 'automation_completed', summary: 'Cart prepared in Blinkit (4 items).', provider: 'blinkit', task_id: 'tsk_grocery_01' },
-    { event_id: 'evt_4', at: at(-34), type: 'automation_approved', summary: 'You approved adding 4 items in Blinkit.', provider: 'blinkit', task_id: 'tsk_grocery_01' },
-    { event_id: 'evt_3', at: '2026-11-18T08:12:00Z', type: 'automation_stopped', summary: 'You pressed Stop during a Swiggy task.', provider: 'swiggy', task_id: 'tsk_food_07' },
-    { event_id: 'evt_2', at: '2026-11-15T19:40:00Z', type: 'history_imported', summary: 'Imported 18 orders from Blinkit and Zomato.', provider: null, task_id: null },
-    { event_id: 'evt_1', at: '2026-11-01T10:00:00Z', type: 'consent_granted', summary: 'Allowed automation for Blinkit.', provider: 'blinkit', task_id: null },
+    // summary_key / summary_args (CR-002 E) let the app render its own copy; summary is the English fallback.
+    { event_id: 'evt_5', at: at(-30), type: 'automation_completed', summary: 'Cart prepared in Blinkit (4 items).', summary_key: 'automation_completed', summary_args: { provider_name: 'Blinkit', count: '4' }, provider: 'blinkit', task_id: 'tsk_grocery_01' },
+    { event_id: 'evt_4', at: at(-34), type: 'automation_approved', summary: 'You approved adding 4 items in Blinkit.', summary_key: 'automation_approved', summary_args: { provider_name: 'Blinkit', count: '4' }, provider: 'blinkit', task_id: 'tsk_grocery_01' },
+    { event_id: 'evt_3', at: '2026-11-18T08:12:00Z', type: 'automation_stopped', summary: 'You pressed Stop during a Swiggy task.', summary_key: 'automation_stopped', summary_args: { provider_name: 'Swiggy' }, provider: 'swiggy', task_id: 'tsk_food_07' },
+    { event_id: 'evt_2', at: '2026-11-15T19:40:00Z', type: 'history_imported', summary: 'Imported 18 orders from Blinkit and Zomato.', summary_key: 'history_imported', summary_args: { count: '18', provider_names: 'Blinkit and Zomato' }, provider: null, task_id: null },
+    { event_id: 'evt_1', at: '2026-11-01T10:00:00Z', type: 'consent_granted', summary: 'Allowed automation for Blinkit.', summary_key: 'consent_granted.automation', summary_args: { provider_name: 'Blinkit' }, provider: 'blinkit', task_id: null },
   ],
   next_cursor: null,
 });
@@ -90,9 +91,19 @@ function provider(key) {
     status, installed: null,
     consent: { automation: ['blinkit', 'zomato'].includes(key), history: ['blinkit', 'zomato'].includes(key) },
     adapter_version: status === 'enabled' ? '0.1.0-mock' : null,
+    hidden: key === 'zepto', // CR-002 F (D-005)
   };
 }
 out('providers/capabilities.json', 'ProviderList', { providers: Object.keys(P).map(provider) });
+
+// ---------------------------------------------------------------- config (CR-002 A)
+out('config/config.json', 'ClientConfig', {
+  flags: {
+    'home.category.travel': true, 'home.category.food': true, 'home.category.grocery': true,
+    'home.category.shopping': false, 'chat.ai.enabled': true, 'comparison.enabled': true, 'history.import.enabled': false,
+  },
+  policy_versions: { terms: '2026-11', privacy: '2026-11', consent: '2026-11' },
+});
 
 // ---------------------------------------------------------------- comparison
 const GROCERY_LINES = [
@@ -283,7 +294,8 @@ const runEvents = [
   ev(4, 'action_succeeded', 'Added Toned milk 1 L × 2', 'a3'),
   ev(5, 'action_started', 'Adding Brown bread 400 g × 1', 'a4'),
 ];
-const task = (status, o = {}) => ({ task_id: 'tsk_grocery_01', provider: 'blinkit', quote_id: 'qt_grocery_complete', status, created_at: NOW, expires_at: '2026-11-22T05:30:00Z', limits, actions_used: 0, planned_actions: planned, events: [], checkpoint: null, needs_user_action: null, cart: null, failure: null, ...o });
+// approval_nonce (CR-002 G): issued only while the task awaits approval; single use.
+const task = (status, o = {}) => ({ task_id: 'tsk_grocery_01', provider: 'blinkit', quote_id: 'qt_grocery_complete', status, created_at: NOW, expires_at: '2026-11-22T05:30:00Z', limits, actions_used: 0, planned_actions: planned, events: [], checkpoint: null, needs_user_action: null, cart: null, failure: null, approval_nonce: status === 'AWAITING_APPROVAL' ? 'apn_mock_7Qm2xK' : null, ...o });
 const cartLines = gBlinkit().lines;
 out('cart-tasks/awaiting-approval.json', 'CartTask', task('AWAITING_APPROVAL'), 201);
 out('cart-tasks/running.json', 'CartTask', task('RUNNING', { actions_used: 4, events: runEvents }));

@@ -17,5 +17,5 @@ class DeviceIdentity(context: Context) {
         prefs.edit().putString("device_id", it).apply()
     }
 
-    fun info() = DeviceInfo(deviceId = deviceId, appVersion = BuildConfig.VERSION_NAME, osVersion = Build.VERSION.RELEASE)
+    fun info() = DeviceInfo(deviceId = deviceId, appVersion = BuildConfig.VERSION_NAME, osVersion = Build.VERSION.RELEASE, deviceModel = Build.MODEL.take(64))
 }

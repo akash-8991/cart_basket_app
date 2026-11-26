@@ -76,9 +76,12 @@ class Flags(private val db: DataSource, private val clock: Clock, private val ca
             return defaults + kills
         }
 
-        fun isHidden(key: String): Boolean {
-            val yaml = Flags::class.java.getResourceAsStream("/contracts/feature-flags.yaml") ?: return false
-            return ObjectMapper(YAMLFactory()).readTree(yaml).path("flags").path(key).path("hidden").asBoolean(false)
+        /** Flags marked `hidden: true` in the catalogue (e.g. provider.zepto.enabled, D-005). */
+        private val hidden: Set<String> by lazy {
+            val yaml = Flags::class.java.getResourceAsStream("/contracts/feature-flags.yaml") ?: return@lazy emptySet()
+            ObjectMapper(YAMLFactory()).readTree(yaml).path("flags").properties().filter { it.value.path("hidden").asBoolean(false) }.map { it.key }.toSet()
         }
+
+        fun isHidden(key: String): Boolean = key in hidden
     }
 }

@@ -9,7 +9,10 @@ import javax.sql.DataSource
 
 data class User(val userId: String, val email: String, val emailVerified: Boolean, val passwordHash: String, val deletionRequested: Boolean = false)
 
-data class Device(val deviceId: String, val platform: String, val appVersion: String, val osVersion: String?)
+data class Device(val deviceId: String, val platform: String, val appVersion: String, val osVersion: String?, val model: String? = null) {
+    /** What the sessions list shows: the model when the app sends one (CR-002 B), else the OS. */
+    val label: String get() = model ?: osVersion?.let { "Android $it" } ?: "Android device"
+}
 
 data class Session(
     val sessionId: String,
@@ -66,11 +69,11 @@ class AuthRepository(private val db: DataSource) {
     fun createSession(sessionId: String, userId: String, device: Device, remembered: Boolean, now: Instant, expiresAt: Instant, refreshHash: ByteArray) =
         db.transaction { c ->
             c.prepareStatement(
-                "insert into sessions(session_id, user_id, device_id, platform, app_version, os_version, remembered, created_at, last_seen_at, expires_at) values (?,?,?,?,?,?,?,?,?,?)",
+                "insert into sessions(session_id, user_id, device_id, platform, app_version, os_version, remembered, created_at, last_seen_at, expires_at, device_model) values (?,?,?,?,?,?,?,?,?,?,?)",
             ).use { st ->
                 st.setString(1, sessionId); st.setString(2, userId); st.setString(3, device.deviceId); st.setString(4, device.platform)
                 st.setString(5, device.appVersion); st.setString(6, device.osVersion); st.setBoolean(7, remembered)
-                st.setTimestamp(8, Timestamp.from(now)); st.setTimestamp(9, Timestamp.from(now)); st.setTimestamp(10, Timestamp.from(expiresAt))
+                st.setTimestamp(8, Timestamp.from(now)); st.setTimestamp(9, Timestamp.from(now)); st.setTimestamp(10, Timestamp.from(expiresAt)); st.setString(11, device.model)
                 st.executeUpdate()
             }
             insertRefresh(c, refreshHash, sessionId, now)
@@ -180,7 +183,7 @@ class AuthRepository(private val db: DataSource) {
     private fun ResultSet.toSession() = Session(
         sessionId = getString("session_id"),
         userId = getString("user_id"),
-        device = Device(getString("device_id"), getString("platform"), getString("app_version"), getString("os_version")),
+        device = Device(getString("device_id"), getString("platform"), getString("app_version"), getString("os_version"), getString("device_model")),
         remembered = getBoolean("remembered"),
         lastSeenAt = getTimestamp("last_seen_at").toInstant(),
         expiresAt = getTimestamp("expires_at").toInstant(),
@@ -188,6 +191,6 @@ class AuthRepository(private val db: DataSource) {
     )
 
     private companion object {
-        const val SESSION_SELECT = "select session_id, user_id, device_id, platform, app_version, os_version, remembered, last_seen_at, expires_at, revoked_at from sessions"
+        const val SESSION_SELECT = "select session_id, user_id, device_id, platform, app_version, os_version, device_model, remembered, last_seen_at, expires_at, revoked_at from sessions"
     }
 }

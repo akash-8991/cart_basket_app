@@ -91,5 +91,6 @@
     "message": "Blinkit needs you to sign in. Sign in yourself, then tap Resume. I never enter passwords or OTPs."
   },
   "cart": null,
-  "failure": null
+  "failure": null,
+  "approval_nonce": null
 }

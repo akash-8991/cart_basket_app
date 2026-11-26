@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 // rejected, matching `additionalProperties: false`.
 
 @Serializable
-data class DeviceInfo(val deviceId: String, val platform: String, val appVersion: String, val osVersion: String? = null) {
-    fun toDevice() = Device(deviceId, platform, appVersion, osVersion)
+data class DeviceInfo(val deviceId: String, val platform: String, val appVersion: String, val osVersion: String? = null, val deviceModel: String? = null) {
+    fun toDevice() = Device(deviceId, platform, appVersion, osVersion, deviceModel?.trim()?.ifBlank { null })
 }
 
 @Serializable
@@ -18,6 +18,8 @@ data class RegisterRequest(
     val acceptedTermsVersion: String,
     val acceptedPrivacyVersion: String,
     val device: DeviceInfo,
+    /** CR-002 C: false gives a 12-hour session, as on login. */
+    val rememberDevice: Boolean = true,
 )
 
 @Serializable

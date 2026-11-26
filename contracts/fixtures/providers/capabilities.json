@@ -16,7 +16,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "ola",
@@ -34,7 +35,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "rapido",
@@ -52,7 +54,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "zomato",
@@ -70,7 +73,8 @@
         "automation": true,
         "history": true
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "swiggy",
@@ -88,7 +92,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "blinkit",
@@ -106,7 +111,8 @@
         "automation": true,
         "history": true
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "bigbasket",
@@ -124,7 +130,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "swiggy_instamart",
@@ -142,7 +149,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": "0.1.0-mock"
+      "adapter_version": "0.1.0-mock",
+      "hidden": false
     },
     {
       "key": "amazon",
@@ -160,7 +168,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": null
+      "adapter_version": null,
+      "hidden": false
     },
     {
       "key": "flipkart",
@@ -178,7 +187,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": null
+      "adapter_version": null,
+      "hidden": false
     },
     {
       "key": "zepto",
@@ -196,7 +206,8 @@
         "automation": false,
         "history": false
       },
-      "adapter_version": null
+      "adapter_version": null,
+      "hidden": true
     }
   ]
 }

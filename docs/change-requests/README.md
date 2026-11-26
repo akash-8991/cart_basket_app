@@ -5,7 +5,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | CR | Title | Kind | Status | Depends on |
 |---|---|---|---|---|
 | [CR-001](CR-001-document-error-responses.md) | Document the error responses the server already returns | Contract documentation only | Approved and implemented 26 Nov 2026 (contract 1.0.1) | — |
-| [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Approved 26 Nov 2026 | — |
+| [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.1.0) | — |
 | [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved 26 Nov 2026 | CR-002 (`GET /v1/config`) |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
