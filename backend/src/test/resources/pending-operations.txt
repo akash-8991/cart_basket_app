@@ -2,18 +2,6 @@
 # without being removed here, or if a contract operation is neither routed nor listed.
 # Must be empty by the end of slice 3.6 (Phase 3 exit gate).
 
-# auth — slice 3.2
-POST /v1/auth/register
-POST /v1/auth/login
-POST /v1/auth/refresh
-POST /v1/auth/logout
-POST /v1/auth/forgot-password
-POST /v1/auth/reset-password
-POST /v1/auth/forgot-user-id
-GET /v1/auth/sessions
-DELETE /v1/auth/sessions/{sessionId}
-POST /v1/auth/sessions/revoke-all
-
 # me — slice 3.3
 GET /v1/me
 GET /v1/me/consents

@@ -16,13 +16,26 @@ data class AppConfig(
     /** Fixture-backed handlers for Phase 4 endpoints (D-020). Never on in production. */
     val stubsPhase4: Boolean,
     val metricsEnabled: Boolean = true,
+    /** Base64, ≥ 32 bytes. Dev/test generate a random one per process when absent. */
+    val secretKey: String? = null,
+    /** Base64 DER ES256 keys for access tokens. Dev/test generate a pair per process when absent. */
+    val jwtPrivateKey: String? = null,
+    val jwtPublicKey: String? = null,
+    /** e.g. redis://localhost:6379. Absent → in-memory limits (single instance, dev/test only). */
+    val redisUrl: String? = null,
 ) {
     init {
         if (env == Env.PROD) {
             require(!stubsPhase4) { "SMARTCART_STUBS_PHASE4 must be off in production" }
             require(db.password.isNotBlank()) { "SMARTCART_DB_PASSWORD is required in production" }
+            require(secretKey != null) { "SMARTCART_SECRET_KEY is required in production" }
+            require(jwtPrivateKey != null && jwtPublicKey != null) { "SMARTCART_JWT_PRIVATE_KEY and SMARTCART_JWT_PUBLIC_KEY are required in production" }
+            require(redisUrl != null) { "SMARTCART_REDIS_URL is required in production" }
         }
     }
+
+    override fun toString() = "AppConfig(env=$env, host=$host, port=$port, db=${db.url}, stubsPhase4=$stubsPhase4, redis=${redisUrl != null})"
+
 
     companion object {
         fun fromEnv(env: Map<String, String> = System.getenv()): AppConfig {
@@ -39,6 +52,10 @@ data class AppConfig(
                 ),
                 stubsPhase4 = env["SMARTCART_STUBS_PHASE4"]?.toBooleanStrict() ?: (mode == Env.DEV),
                 metricsEnabled = env["SMARTCART_METRICS"]?.toBooleanStrict() ?: true,
+                secretKey = env["SMARTCART_SECRET_KEY"],
+                jwtPrivateKey = env["SMARTCART_JWT_PRIVATE_KEY"],
+                jwtPublicKey = env["SMARTCART_JWT_PUBLIC_KEY"],
+                redisUrl = env["SMARTCART_REDIS_URL"],
             )
         }
     }

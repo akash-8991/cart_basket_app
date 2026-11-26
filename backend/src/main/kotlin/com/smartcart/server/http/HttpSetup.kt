@@ -65,7 +65,14 @@ fun Application.installHttp() {
     }
 
     install(StatusPages) {
-        exception<ApiException> { call, e -> call.respondError(e.code, e.fieldErrors, e.retryAfterSeconds) }
+        exception<ApiException> { call, e ->
+            e.rateLimit?.let { d ->
+                call.response.header("RateLimit-Limit", d.limit.toString())
+                call.response.header("RateLimit-Remaining", d.remaining.toString())
+                call.response.header("RateLimit-Reset", d.resetSeconds.toString())
+            }
+            call.respondError(e.code, e.fieldErrors, e.retryAfterSeconds)
+        }
         exception<BadRequestException> { call, _ -> call.respondError(ErrorCode.VALIDATION_FAILED) }
         exception<SerializationException> { call, _ -> call.respondError(ErrorCode.VALIDATION_FAILED) }
         exception<Throwable> { call, e ->

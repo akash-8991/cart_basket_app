@@ -29,6 +29,11 @@ dependencies {
     implementation(libs.hikari)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgres)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.java.jwt)
+    implementation(libs.bouncycastle)
+    implementation(libs.lettuce)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))

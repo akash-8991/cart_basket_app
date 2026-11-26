@@ -29,13 +29,27 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 | 3.6 | **Phase 4 stubs** | Comparison, cart-tasks, deep-links, history, dashboard, recommendations served from `contracts/fixtures` behind `stubs.phase4` (dev only; off in prod → `service_unavailable`) | Every OpenAPI operation has a handler and a passing contract test (exit gate) |
 | 3.7 | **App integration** | Android HTTP repositories for auth/me/sessions/providers/chat behind a build flag, talking to the local backend; fixture fakes stay the default for tests | End-to-end device test passes against the real local backend |
 
-## 3. Running locally
+## 3. Progress
+
+| Slice | Status | Notes |
+|---|---|---|
+| 3.1 Scaffold | ✅ 26 Nov 2026 | 22 tests |
+| 3.2 Auth | ✅ 26 Nov 2026 | 10 operations; 61 tests in total, including A-01 lockout/backoff and per-device/IP limits, A-02 identical recovery responses (and signed challenge IDs so real and made-up challenges expire and lock alike), A-03 refresh reuse → family revoked, A-15 cross-user session access → 404 |
+
+### Contract gaps found (for a change request; not changed silently)
+
+1. **No email-verification endpoint.** `AuthSession.email_verification_required` is `true` after registration, but the contract has no way to complete verification. The flag is reported honestly; nothing is gated on it yet.
+2. **`DeviceInfo` has no device model,** so `DeviceSession.device_label` is derived ("Android 15"). The app's sessions screen was designed with model names ("Pixel 8").
+3. **`approximate_location` is always `null`:** no IP geolocation in Phase 3.
+4. **Registration has no "remember this device" flag;** registration sessions use the remembered (30-day) lifetime.
+
+## 4. Running locally
 
 ```bash
 cd backend && ./gradlew test        # embedded Postgres; no Docker needed
 cd backend && ./gradlew run         # needs local Postgres + Redis (Homebrew) — see backend/README.md
 ```
 
-## 4. Security notes carried from the threat model
+## 5. Security notes carried from the threat model
 
 A-01 credential stuffing → per-account/IP/device limits + backoff (3.2). A-02 enumeration → byte-identical recovery responses and equalised timing (3.2). A-03 refresh replay → rotation, reuse detection revokes the family, device binding (3.2). A-05 prompt injection → delimiting + schema validation + deterministic authority (3.5). A-15 BOLA → ownership check in every repository query, cross-user test suite (3.2–3.6). Secrets only from the environment; never logged (redaction test in 3.1).

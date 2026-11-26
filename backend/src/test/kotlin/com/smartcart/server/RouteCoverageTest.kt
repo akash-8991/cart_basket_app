@@ -29,7 +29,10 @@ class RouteCoverageTest {
                 module(Services(testConfig(), TestDb.fresh()))
                 routes = pluginOrNull(RoutingRoot)!!.getAllRoutes().mapNotNull { r ->
                     // e.g. "/v1/auth/sessions/{sessionId}/(method:DELETE)"
-                    Regex("^(.*)/\\(method:([A-Z]+)\\)$").find(r.toString())?.let { m -> "${m.groupValues[2]} ${m.groupValues[1]}" }
+                    Regex("^(.*)/\\(method:([A-Z]+)\\)$").find(r.toString())?.let { m ->
+                        // Drop non-path selectors such as "(authenticate user)".
+                        "${m.groupValues[2]} ${m.groupValues[1].replace(Regex("/\\([^)]*\\)"), "")}"
+                    }
                 }.toSet()
             }
             startApplication()

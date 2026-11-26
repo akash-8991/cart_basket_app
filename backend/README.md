@@ -19,7 +19,7 @@ What the suite guarantees:
 
 ## Run locally
 
-Needs PostgreSQL 16 (Homebrew: `brew services start postgresql@16`). One-time setup:
+Needs PostgreSQL 16 (Homebrew: `brew services start postgresql@16`); Redis is optional in development (`brew services start redis`). One-time setup:
 
 ```bash
 createuser smartcart && createdb -O smartcart smartcart
@@ -39,6 +39,24 @@ Then:
 | `SMARTCART_DB_USER` / `SMARTCART_DB_PASSWORD` | `smartcart` / empty | Password required in `prod`. |
 | `SMARTCART_STUBS_PHASE4` | `true` in dev, else `false` | Fixture-backed Phase 4 endpoints (D-020); rejected in `prod`. |
 | `SMARTCART_METRICS` | `true` | Prometheus text at `/metrics`. Keep it off the public network. |
+| `SMARTCART_SECRET_KEY` | random per process | Base64, ≥ 32 bytes. Keys IP hashes, recovery codes, idempotency fingerprints, challenge IDs. Required in `prod`. |
+| `SMARTCART_JWT_PRIVATE_KEY` / `SMARTCART_JWT_PUBLIC_KEY` | generated per process | Base64 DER (PKCS#8 / X.509) ES256 pair. Required in `prod`; dev tokens die on restart. |
+| `SMARTCART_REDIS_URL` | unset → in-memory | e.g. `redis://localhost:6379`. Rate limits, lockouts, idempotency keys. Required in `prod`. |
+
+Generate production keys:
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out jwt.pem
+openssl pkcs8 -topk8 -nocrypt -in jwt.pem -outform DER | base64     # SMARTCART_JWT_PRIVATE_KEY
+openssl ec -in jwt.pem -pubout -outform DER | base64                 # SMARTCART_JWT_PUBLIC_KEY
+openssl rand -base64 48                                              # SMARTCART_SECRET_KEY
+```
+
+In development, password-reset codes and user-ID reminders are written to the `email_outbox` table instead of being emailed (no mail provider yet); the service refuses to start in `prod` with that sink:
+
+```bash
+psql -U smartcart -d smartcart -c "select recipient, template, params from email_outbox order by id desc limit 5"
+```
 
 Operational endpoints (not in the public contract): `/healthz` (process up), `/readyz` (database reachable), `/metrics`.
 

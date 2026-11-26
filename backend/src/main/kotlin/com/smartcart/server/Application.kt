@@ -1,6 +1,7 @@
 package com.smartcart.server
 
 import com.smartcart.server.config.AppConfig
+import com.smartcart.server.config.Env
 import com.smartcart.server.db.Database
 import com.smartcart.server.http.installHttp
 import io.ktor.http.ContentType
@@ -17,10 +18,51 @@ import io.ktor.server.routing.routing
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import javax.sql.DataSource
+import com.smartcart.server.audit.Audit
+import com.smartcart.server.audit.IpHasher
+import com.smartcart.server.auth.AuthRepository
+import com.smartcart.server.auth.AuthService
+import com.smartcart.server.auth.authRoutes
+import com.smartcart.server.auth.installAuthentication
+import com.smartcart.server.mail.Mailer
+import com.smartcart.server.mail.OutboxMailer
+import com.smartcart.server.security.IdempotencyStore
+import com.smartcart.server.security.InMemoryIdempotencyStore
+import com.smartcart.server.security.InMemoryRateLimiter
+import com.smartcart.server.security.Passwords
+import com.smartcart.server.security.RateLimiter
+import com.smartcart.server.security.RedisIdempotencyStore
+import com.smartcart.server.security.RedisRateLimiter
+import com.smartcart.server.security.Secrets
+import com.smartcart.server.security.SigningKeys
+import com.smartcart.server.security.Tokens
+import java.time.Clock
+import java.util.Base64
 
-/** Everything a request handler needs; built once at startup, replaced wholesale in tests. */
-class Services(val config: AppConfig, val db: DataSource) {
+/** Everything a request handler needs; built once at startup, replaced piecemeal in tests. */
+class Services(
+    val config: AppConfig,
+    val db: DataSource,
+    val clock: Clock = Clock.systemUTC(),
+    val limiter: RateLimiter = config.redisUrl?.let(::RedisRateLimiter) ?: InMemoryRateLimiter(clock),
+    val idempotency: IdempotencyStore = config.redisUrl?.let(::RedisIdempotencyStore) ?: InMemoryIdempotencyStore(clock),
+    val mailer: Mailer = OutboxMailer(db),
+    val passwords: Passwords = Passwords(),
+) {
+    init {
+        // The outbox stores recovery codes in the database: a development convenience only.
+        require(config.env != Env.PROD || mailer !is OutboxMailer) { "configure a real Mailer for production" }
+    }
+
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val secrets: Secrets = config.secretKey?.let { Secrets(Base64.getDecoder().decode(it)) } ?: Secrets.random()
+    val ipHasher = IpHasher(secrets.subKey("ip"))
+    val tokens = Tokens(
+        config.jwtPrivateKey?.let { SigningKeys.fromBase64(it, config.jwtPublicKey!!) } ?: SigningKeys.generate(),
+        clock,
+    )
+    val audit = Audit(db)
+    val auth = AuthService(AuthRepository(db), passwords, tokens, limiter, secrets, mailer, audit, clock)
 }
 
 fun main() {
@@ -37,8 +79,11 @@ fun main() {
 fun Application.module(services: Services) {
     installHttp()
     install(MicrometerMetrics) { registry = services.metrics }
+    installAuthentication(services)
 
     routing {
+        authRoutes(services)
+
         // Operational endpoints: not part of the public contract.
         get("/healthz") { call.respondText("""{"status":"ok"}""", ContentType.Application.Json) }
         get("/readyz") {

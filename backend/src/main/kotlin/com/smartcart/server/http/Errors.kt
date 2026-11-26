@@ -57,5 +57,12 @@ class ApiException(
     val code: ErrorCode,
     val fieldErrors: List<FieldError>? = null,
     val retryAfterSeconds: Int? = null,
+    /** Set for rate-limit refusals: rendered as RateLimit-* headers. */
+    val rateLimit: com.smartcart.server.security.Decision? = null,
     message: String? = null,
-) : RuntimeException(message ?: code.wire)
+) : RuntimeException(message ?: code.wire) {
+    companion object {
+        fun field(code: ErrorCode, field: String, fieldCode: String = code.wire) = ApiException(code, listOf(FieldError(field, fieldCode)))
+        fun limited(code: ErrorCode, d: com.smartcart.server.security.Decision) = ApiException(code, retryAfterSeconds = d.retryAfterSeconds, rateLimit = d)
+    }
+}

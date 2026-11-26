@@ -13,6 +13,15 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import java.util.UUID
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import com.smartcart.server.mail.MailTemplate
+import com.smartcart.server.mail.Mailer
+import com.smartcart.server.security.InMemoryIdempotencyStore
+import com.smartcart.server.security.InMemoryRateLimiter
 import javax.sql.DataSource
 import kotlin.test.fail
 
@@ -37,8 +46,26 @@ fun testConfig(stubsPhase4: Boolean = true) = AppConfig(
     stubsPhase4 = stubsPhase4,
 )
 
+/** A clock tests can move forward. */
+class MutableClock(var now: Instant = Instant.parse("2026-11-26T05:00:00Z")) : Clock() {
+    override fun instant(): Instant = now
+    override fun getZone(): ZoneId = ZoneOffset.UTC
+    override fun withZone(zone: ZoneId?): Clock = this
+    fun advance(d: Duration) { now = now.plus(d) }
+}
+
+/** Captures mail instead of sending it. */
+class RecordingMailer : Mailer {
+    data class Sent(val to: String, val template: MailTemplate, val params: Map<String, String>)
+    val sent = java.util.concurrent.CopyOnWriteArrayList<Sent>()
+    override fun send(to: String, template: MailTemplate, params: Map<String, String>) { sent += Sent(to, template, params) }
+}
+
+fun testServices(clock: MutableClock = MutableClock(), mailer: Mailer = RecordingMailer()) =
+    Services(testConfig(), TestDb.fresh(), clock = clock, limiter = InMemoryRateLimiter(clock), idempotency = InMemoryIdempotencyStore(clock), mailer = mailer)
+
 /** Runs [block] against the real application module wired to a fresh database. */
-fun withApp(services: Services = Services(testConfig(), TestDb.fresh()), block: suspend ApplicationTestBuilder.(Services) -> Unit) =
+fun withApp(services: Services = testServices(), block: suspend ApplicationTestBuilder.(Services) -> Unit) =
     testApplication {
         application { module(services) }
         block(services)
