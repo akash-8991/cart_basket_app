@@ -1,0 +1,34 @@
+<configuration>
+    <!-- One JSON object per line, with the correlation ID from MDC. Secrets and personal data are masked
+         by field name and by value pattern before anything leaves the process (LogRedactionTest). -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>correlation_id</includeMdcKeyName>
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <defaultMask>[redacted]</defaultMask>
+                <path>password</path>
+                <path>new_password</path>
+                <path>current_password</path>
+                <path>refresh_token</path>
+                <path>access_token</path>
+                <path>authorization</path>
+                <path>Authorization</path>
+                <path>reset_token</path>
+                <path>email</path>
+                <path>api_key</path>
+                <value>(?i)bearer\s+[A-Za-z0-9._~+/=-]+</value>
+                <value>sk-ant-[A-Za-z0-9_-]+</value>
+                <value>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}</value>
+            </jsonGeneratorDecorator>
+        </encoder>
+    </appender>
+
+    <logger name="io.netty" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    <logger name="io.zonky" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="JSON"/>
+    </root>
+</configuration>

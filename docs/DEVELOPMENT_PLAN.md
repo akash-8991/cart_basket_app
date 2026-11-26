@@ -45,7 +45,7 @@ contracts/
   fixtures/            Mock responses used by the Android app and the mock server
 tools/contract-check/  Spectral lint, Ajv fixture validation, Prism mock server
 android/               Gradle project (core modules + app with feature packages)
-backend/               Added in Phase 3 only
+backend/               Ktor service (Phase 3) — see backend/README.md
 ```
 
 ## 4. Approved defaults

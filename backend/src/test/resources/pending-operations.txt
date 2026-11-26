@@ -1,0 +1,62 @@
+# Contract operations not yet implemented. RouteCoverageTest fails if one of these gets a route
+# without being removed here, or if a contract operation is neither routed nor listed.
+# Must be empty by the end of slice 3.6 (Phase 3 exit gate).
+
+# auth — slice 3.2
+POST /v1/auth/register
+POST /v1/auth/login
+POST /v1/auth/refresh
+POST /v1/auth/logout
+POST /v1/auth/forgot-password
+POST /v1/auth/reset-password
+POST /v1/auth/forgot-user-id
+GET /v1/auth/sessions
+DELETE /v1/auth/sessions/{sessionId}
+POST /v1/auth/sessions/revoke-all
+
+# me — slice 3.3
+GET /v1/me
+GET /v1/me/consents
+PUT /v1/me/consents/{consentKey}
+GET /v1/me/activity
+POST /v1/me/data/export
+POST /v1/me/data/delete
+
+# dashboard — slice 3.6 (Phase 4 stubs)
+GET /v1/dashboard/summary
+GET /v1/dashboard/monthly
+
+# providers — slice 3.4
+GET /v1/providers
+
+# chat — slice 3.5
+GET /v1/chat/sessions
+POST /v1/chat/sessions
+GET /v1/chat/sessions/{sessionId}
+DELETE /v1/chat/sessions/{sessionId}
+POST /v1/chat/messages
+
+# comparison — slice 3.6 (Phase 4 stubs)
+POST /v1/comparison/quotes
+GET /v1/comparison/quotes/{quoteId}
+POST /v1/comparison/quotes/{quoteId}/confirm
+
+# cart-tasks — slice 3.6 (Phase 4 stubs)
+POST /v1/cart-tasks
+GET /v1/cart-tasks/{taskId}
+POST /v1/cart-tasks/{taskId}/approve
+POST /v1/cart-tasks/{taskId}/checkpoint
+POST /v1/cart-tasks/{taskId}/stop
+
+# deep-links — slice 3.6 (Phase 4 stubs)
+POST /v1/deep-links
+
+# history — slice 3.6 (Phase 4 stubs)
+POST /v1/history/import
+GET /v1/history/import/{sessionId}
+GET /v1/history/orders
+DELETE /v1/history/orders/{orderId}
+
+# recommendations — slice 3.6 (Phase 4 stubs)
+GET /v1/recommendations
+POST /v1/recommendations/{recommendationId}/feedback
