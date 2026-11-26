@@ -195,14 +195,14 @@ class Phase4StubsTest {
         val recs = client.getAuthed("/v1/recommendations?category=grocery", t).assertContract("GET", "/v1/recommendations").bodyAsText()
         assertFalse("\"category\":\"food\"" in recs)
         assertEquals(204, client.postJson("/v1/recommendations/rec_1/feedback", """{"useful":true}""", token = t).assertContract("POST", "/v1/recommendations/{recommendationId}/feedback").status.value)
-        assertEquals("validation_failed", client.getAuthed("/v1/dashboard/summary?month=November", t).assertErrorEnvelope().errorCode())
+        assertEquals("validation_failed", client.getAuthed("/v1/dashboard/summary?month=November", t).assertContract("GET", "/v1/dashboard/summary").errorCode())
     }
 
     @Test fun productionHasNoStubs() = withApp(Services(testConfig(stubsPhase4 = false), TestDb.fresh())) {
         val t = client.register().tokens.accessToken
-        for ((method, path) in listOf("GET" to "/v1/dashboard/summary", "GET" to "/v1/recommendations", "GET" to "/v1/history/orders", "GET" to "/v1/cart-tasks/tsk_x")) {
-            val r = client.getAuthed(path, t).assertErrorEnvelope()
-            assertEquals("service_unavailable", r.errorCode(), "$method $path")
+        for ((path, template) in listOf("/v1/dashboard/summary" to "/v1/dashboard/summary", "/v1/recommendations" to "/v1/recommendations", "/v1/history/orders" to "/v1/history/orders", "/v1/cart-tasks/tsk_x" to "/v1/cart-tasks/{taskId}")) {
+            val r = client.getAuthed(path, t).assertContract("GET", template)
+            assertEquals("service_unavailable", r.errorCode(), path)
             assertEquals(null, r.headers["X-SmartCart-Stub"])
         }
         assertEquals("service_unavailable", client.postJson("/v1/comparison/quotes", quoteBody, key, t).errorCode())

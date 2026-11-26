@@ -50,7 +50,8 @@ object Contract {
     fun responseProblems(method: String, pathTemplate: String, status: Int, contentType: String?, body: String): List<String> {
         val op = openApi.path("paths").path(pathTemplate).path(method.lowercase())
         if (op.isMissingNode) return listOf("$method $pathTemplate is not in the contract")
-        var resp = op.path("responses").path(status.toString()).let { if (it.isMissingNode) op.path("responses").path("default") else it }
+        // `default` (CR-001) covers error statuses only; an undocumented success status is always a problem.
+        var resp = op.path("responses").path(status.toString()).let { if (it.isMissingNode && status >= 400) op.path("responses").path("default") else it }
         if (resp.isMissingNode) return listOf("$method $pathTemplate does not document status $status")
         resp.path("\$ref").takeIf { it.isTextual }?.let { resp = resolve(it.asText()) }
         val media = resp.path("content").path("application/json")

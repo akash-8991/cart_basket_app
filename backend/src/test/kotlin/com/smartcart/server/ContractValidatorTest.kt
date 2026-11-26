@@ -25,8 +25,14 @@ class ContractValidatorTest {
     @Test fun rejectsABadDateTime() =
         assertTrue(problems(fixture.replace("2026-12-22T05:00:00Z", "next tuesday")).isNotEmpty())
 
-    @Test fun rejectsAnUndocumentedStatus() =
-        assertTrue(problems(fixture, status = 418).any { "does not document status 418" in it })
+    @Test fun rejectsAnUndocumentedSuccessStatus() =
+        assertTrue(problems(fixture, status = 203).any { "does not document status 203" in it })
+
+    @Test fun otherErrorStatusesMustBeAnErrorEnvelope() {
+        val envelope = Contract.contractsDir.resolve("fixtures/errors/service-unavailable.json").readText()
+        assertTrue(problems(envelope, status = 503).isEmpty(), "covered by `default`")
+        assertTrue(problems(fixture, status = 503).isNotEmpty(), "but only with an error body")
+    }
 
     @Test fun rejectsNonJsonContentType() =
         assertTrue(Contract.responseProblems("POST", "/v1/auth/login", 200, "text/html", fixture).isNotEmpty())

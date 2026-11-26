@@ -64,7 +64,7 @@ class ChatTest {
 
     @Test fun categoriesBehindAFlagCantBeOpened() = withApp {
         val t = client.register().tokens.accessToken
-        val r = client.postJson("/v1/chat/sessions", """{"category":"shopping"}""", key, t).assertErrorEnvelope()
+        val r = client.postJson("/v1/chat/sessions", """{"category":"shopping"}""", key, t).assertContract("POST", "/v1/chat/sessions")
         assertEquals("forbidden", r.errorCode())
         client.setFlag("home.category.shopping", true)
         client.newChat(t, "shopping")
@@ -85,7 +85,7 @@ class ChatTest {
         assertEquals(4, Regex("\"line_id\"").findAll(second).count())
 
         // A clarification answers once.
-        assertEquals("validation_failed", client.postJson("/v1/chat/messages", messageBody(id, "again", clr to "o2"), key, t).assertErrorEnvelope().errorCode())
+        assertEquals("validation_failed", client.postJson("/v1/chat/messages", messageBody(id, "again", clr to "o2"), key, t).assertContract("POST", "/v1/chat/messages").errorCode())
 
         val detail = client.getAuthed("/v1/chat/sessions/$id", t).assertContract("GET", "/v1/chat/sessions/{sessionId}").bodyAsText()
         assertEquals(4, Regex("\"role\":\"(user|assistant)\"").findAll(detail).count())
@@ -118,7 +118,7 @@ class ChatTest {
         client.say(priya, id, "2 x eggs")
         assertEquals(404, client.getAuthed("/v1/chat/sessions/$id", ravi).status.value)
         assertEquals(404, client.delete("/v1/chat/sessions/$id") { bearerAuth(ravi) }.status.value)
-        assertEquals("not_found", client.postJson("/v1/chat/messages", messageBody(id, "add milk"), key, ravi).assertErrorEnvelope().errorCode())
+        assertEquals("not_found", client.postJson("/v1/chat/messages", messageBody(id, "add milk"), key, ravi).assertContract("POST", "/v1/chat/messages").errorCode())
         assertFalse(id in client.getAuthed("/v1/chat/sessions", ravi).bodyAsText())
     }
 

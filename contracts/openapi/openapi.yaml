@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.0.0-draft
+  version: 1.0.1
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -56,6 +56,7 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/login:
     post:
@@ -75,8 +76,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuthSession' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/refresh:
     post:
@@ -96,8 +99,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TokenPair' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/logout:
     post:
@@ -108,6 +113,7 @@ paths:
       responses:
         '204': { description: Session ended. }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/forgot-password:
     post:
@@ -129,6 +135,7 @@ paths:
               schema: { $ref: '#/components/schemas/RecoveryAccepted' }
         '400': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/reset-password:
     post:
@@ -151,6 +158,7 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '410': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/forgot-user-id:
     post:
@@ -172,6 +180,7 @@ paths:
               schema: { $ref: '#/components/schemas/RecoveryAccepted' }
         '400': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/sessions:
     get:
@@ -186,6 +195,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SessionList' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/sessions/{sessionId}:
     delete:
@@ -201,6 +211,7 @@ paths:
         '204': { description: Revoked. }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/auth/sessions/revoke-all:
     post:
@@ -215,6 +226,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/RevokeAllResponse' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me:
     get:
@@ -229,6 +241,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Profile' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me/consents:
     get:
@@ -243,6 +256,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ConsentList' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me/consents/{consentKey}:
     put:
@@ -265,7 +279,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Consent' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me/activity:
     get:
@@ -281,7 +297,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ActivityPage' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me/data/export:
     post:
@@ -301,8 +319,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/DataRequestAccepted' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/me/data/delete:
     post:
@@ -322,7 +342,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/DataRequestAccepted' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/dashboard/summary:
     get:
@@ -340,7 +363,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/DashboardSummary' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/dashboard/monthly:
     get:
@@ -358,7 +383,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MonthlyMetrics' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/providers:
     get:
@@ -373,6 +400,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ProviderList' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/chat/sessions:
     get:
@@ -388,7 +416,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ChatSessionPage' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
     post:
       tags: [chat]
       operationId: createChatSession
@@ -406,8 +436,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ChatSession' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/chat/sessions/{sessionId}:
     get:
@@ -424,6 +457,7 @@ paths:
               schema: { $ref: '#/components/schemas/ChatSessionDetail' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
     delete:
       tags: [chat]
       operationId: deleteChatSession
@@ -434,6 +468,7 @@ paths:
         '204': { description: Deleted. }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/chat/messages:
     post:
@@ -453,9 +488,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AssistantTurn' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '503': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/comparison/quotes:
     post:
@@ -475,8 +513,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ComparisonQuote' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/comparison/quotes/{quoteId}:
     get:
@@ -493,6 +533,7 @@ paths:
               schema: { $ref: '#/components/schemas/ComparisonQuote' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/comparison/quotes/{quoteId}/confirm:
     post:
@@ -513,9 +554,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/QuoteConfirmation' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
         '410': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/cart-tasks:
     post:
@@ -535,10 +579,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CartTask' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/cart-tasks/{taskId}:
     get:
@@ -555,6 +601,7 @@ paths:
               schema: { $ref: '#/components/schemas/CartTask' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/cart-tasks/{taskId}/approve:
     post:
@@ -575,9 +622,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CartTask' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
         '410': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/cart-tasks/{taskId}/checkpoint:
     post:
@@ -598,8 +647,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CartTask' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/cart-tasks/{taskId}/stop:
     post:
@@ -619,7 +670,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CartTask' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/deep-links:
     post:
@@ -639,8 +693,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Handoff' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/history/import:
     post:
@@ -660,9 +716,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ImportSession' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/history/import/{sessionId}:
     get:
@@ -679,6 +737,7 @@ paths:
               schema: { $ref: '#/components/schemas/ImportSession' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/history/orders:
     get:
@@ -695,7 +754,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OrderPage' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/history/orders/{orderId}:
     delete:
@@ -708,6 +769,7 @@ paths:
         '204': { description: Deleted. }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/recommendations:
     get:
@@ -722,7 +784,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/RecommendationList' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
   /v1/recommendations/{recommendationId}/feedback:
     post:
@@ -738,7 +802,9 @@ paths:
             schema: { $ref: '#/components/schemas/RecommendationFeedback' }
       responses:
         '204': { description: Recorded. }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
 
 components:
   securitySchemes:

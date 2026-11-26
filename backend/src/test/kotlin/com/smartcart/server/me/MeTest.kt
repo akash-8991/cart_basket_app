@@ -72,7 +72,7 @@ class MeTest {
     @Test fun onlyKnownConsentKeysAreAccepted() = withApp {
         val t = client.register().tokens.accessToken
         for (key in listOf("marketing", "automation.paytm", "automation.", "history", "is_admin")) {
-            val r = client.putJson("/v1/me/consents/$key", consent(true), t).assertErrorEnvelope()
+            val r = client.putJson("/v1/me/consents/$key", consent(true), t).assertContract("PUT", "/v1/me/consents/{consentKey}")
             assertEquals("validation_failed", r.errorCode(), key)
         }
         assertEquals("validation_failed", client.putJson("/v1/me/consents/ai_processing", consent(true, ""), t).errorCode())
@@ -107,7 +107,7 @@ class MeTest {
 
     @Test fun badPagingParametersAreRejected() = withApp {
         val t = client.register().tokens.accessToken
-        assertEquals("validation_failed", client.getAuthed("/v1/me/activity?limit=0", t).assertErrorEnvelope().errorCode())
+        assertEquals("validation_failed", client.getAuthed("/v1/me/activity?limit=0", t).assertContract("GET", "/v1/me/activity").errorCode())
         assertEquals("validation_failed", client.getAuthed("/v1/me/activity?limit=51", t).errorCode())
         assertEquals("validation_failed", client.getAuthed("/v1/me/activity?cursor=not-a-cursor", t).errorCode())
     }

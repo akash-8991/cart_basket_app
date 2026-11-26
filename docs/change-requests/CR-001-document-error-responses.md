@@ -119,8 +119,8 @@ paths:
 - `npm run check` (Spectral + fixtures) passes; backend `ExitGateTest` and `RouteCoverageTest` pass; no backend test uses `assertErrorEnvelope()` for a status that is now documented.
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-            (Engineering and QA sufficient: no UX, data or flow change)
-Decision: approved / rejected / deferred     Decision date:
-Linked commits / tag:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 26 Nov 2026)
+Decision: approved     Decision date: 2026-11-26
+Linked commits / tag: commit "CR-001: …" on main (contract 1.0.1)
 ```

@@ -62,7 +62,7 @@ class DataRequestsTest {
         repeat(2) { assertEquals(202, client.postJson("/v1/me/data/export", stepUp(), key, t).status.value) }
         val limited = client.postJson("/v1/me/data/export", stepUp(), key, t).assertContract("POST", "/v1/me/data/export")
         assertEquals("rate_limited", limited.errorCode())
-        assertEquals("validation_failed", client.postJson("/v1/me/data/export", stepUp(), null, t).assertErrorEnvelope().errorCode())
+        assertEquals("validation_failed", client.postJson("/v1/me/data/export", stepUp(), null, t).assertContract("POST", "/v1/me/data/export").errorCode())
     }
 
     @Test fun repeatedWrongStepUpPasswordsLockStepUp() = withApp {
@@ -110,7 +110,7 @@ class DataRequestsTest {
 
     @Test fun deletionValidatesScopeAndPassword() = withApp {
         val t = client.register().tokens.accessToken
-        assertEquals("validation_failed", client.postJson("/v1/me/data/delete", delete("everything"), key, t).assertErrorEnvelope().errorCode())
+        assertEquals("validation_failed", client.postJson("/v1/me/data/delete", delete("everything"), key, t).assertContract("POST", "/v1/me/data/delete").errorCode())
         assertEquals("invalid_credentials", client.postJson("/v1/me/data/delete", delete("account", "wrong password"), key, t).assertContract("POST", "/v1/me/data/delete").errorCode())
         assertEquals(200, client.getAuthed("/v1/me", t).status.value, "a failed request changes nothing")
     }

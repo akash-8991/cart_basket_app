@@ -2,11 +2,11 @@
 
 Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md` §"Contract gaps found"). Each follows `docs/phase2/change-request-template.md` and needs the approvals it lists before anything in the frozen contract or screens changes.
 
-| CR | Title | Kind | Approvals needed | Depends on |
+| CR | Title | Kind | Status | Depends on |
 |---|---|---|---|---|
-| [CR-001](CR-001-document-error-responses.md) | Document the error responses the server already returns | Contract documentation only | Engineering, QA | — |
-| [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Product, Engineering, Security, QA | — |
-| [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | All five | CR-002 (`GET /v1/config`) |
+| [CR-001](CR-001-document-error-responses.md) | Document the error responses the server already returns | Contract documentation only | Approved and implemented 26 Nov 2026 (contract 1.0.1) | — |
+| [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Approved 26 Nov 2026 | — |
+| [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved 26 Nov 2026 | CR-002 (`GET /v1/config`) |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -34,7 +34,7 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 | 18 | Installed apps unknown | Phase 4 device spike (verified package names); no CR |
 | — | Login/refresh 400 and a `default` error on every operation (found while drafting) | CR-001 |
 
-## Decisions needed (no CR drafted)
+## Decisions needed (no CR drafted; still open)
 
 - **D1 — Approximate location on the sessions screen.** Recommendation: keep `approximate_location` null. Showing a city needs IP geolocation, a new processing purpose and a third-party database, for little user value. If accepted, no change is needed (the field is already nullable).
 - **D2 — "Kept 30 days unless saved".** Recommendation: change `docs/phase0/data-classification.md` to a flat 30 days after last activity and drop "unless saved". A save feature would be a new screen state and a longer retention purpose to justify. If product wants saved chats instead, that becomes its own CR.

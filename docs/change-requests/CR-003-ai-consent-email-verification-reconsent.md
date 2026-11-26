@@ -100,7 +100,8 @@ Analytics (`contracts/schemas/analytics-event.schema.json`): add **`consent_chan
 - `BackendEndToEndTest` passes with consent given through the UI.
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-Decision: approved / rejected / deferred     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 26 Nov 2026)
+Decision: approved     Decision date: 2026-11-26
 Linked commits / tag:
 ```

@@ -155,8 +155,8 @@ components:
 - An approval without the issued nonce, or with a reused one, is refused with 409.
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-            (Design not required: no screen change in this CR)
-Decision: approved / rejected / deferred     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 26 Nov 2026)
+Decision: approved     Decision date: 2026-11-26
 Linked commits / tag:
 ```
