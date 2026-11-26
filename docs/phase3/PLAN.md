@@ -50,9 +50,9 @@ Android app ──HTTPS/JSON──▶ Ktor service (backend/) ──▶ PostgreS
 6. **`POST /v1/me/data/delete` lists no 429,** although step-up lockout applies to it as it does to export (which lists 429).
 7. **Nothing sets `privacy_mode`.** `Profile` reports it (default `device_only`); presumably history import (Phase 4) will need an operation for it.
 8. **No current consent version in any response.** The app sends the version it showed (`2026-11`); the server records whatever is sent, so there is no way to prompt re-consent when texts change.
+9. **`ActivityEvent.summary` is server-written English,** whereas D-014 keeps all user-facing copy in the app. Either localise on the server or add a template key the app can map.
 10. **No way for the app to read feature flags.** `home.category.shopping`, `chat.ai.enabled`, `comparison.enabled` and `history.import.enabled` are server-controlled (D-004, flag catalogue) but only `/v1/providers` reaches the app. The app still uses its built-in defaults. Needs e.g. `GET /v1/config` or flags on `Profile`.
 11. **`hidden` isn't in the `Provider` schema.** Zepto is returned as `disabled`; the app must hide it by key rather than by a server field.
-9. **`ActivityEvent.summary` is server-written English,** whereas D-014 keeps all user-facing copy in the app. Either localise on the server or add a template key the app can map.
 
 ## 4. Running locally
 
