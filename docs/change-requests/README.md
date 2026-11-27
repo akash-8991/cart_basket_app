@@ -7,6 +7,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-001](CR-001-document-error-responses.md) | Document the error responses the server already returns | Contract documentation only | Approved and implemented 26 Nov 2026 (contract 1.0.1) | — |
 | [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.1.0) | — |
 | [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.2.0) | CR-002 (`GET /v1/config`) |
+| [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Awaiting approval | — |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -16,7 +17,7 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 |---|---|---|
 | 1 | No email-verification endpoint | CR-003 §2 |
 | 2 | No device model in `DeviceInfo` | CR-002 B |
-| 3 | `approximate_location` always null | Decision D1 below (no CR proposed) |
+| 3 | `approximate_location` always null | D1: stays empty by design; user-entered addresses in CR-004 |
 | 4 | Registration can't choose a short session | CR-002 C |
 | 5 | Undocumented 400s on `/v1/me/*` | CR-001 |
 | 6 | Delete lists no 429 | CR-001 |
@@ -27,7 +28,7 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 | 11 | No `hidden` on `Provider` | CR-002 F |
 | 12 | App never asks for AI consent | CR-003 §1 |
 | 13 | Undocumented statuses on chat | CR-001 |
-| 14 | No way to keep a chat beyond 30 days | Decision D2 below |
+| 14 | No way to keep a chat beyond 30 days | D2: flat 30 days, wording corrected |
 | 15 | Nothing issues `approval_nonce` | CR-002 G |
 | 16 | 503/400/404 undocumented on Phase 4 operations | CR-001 |
 | 17 | Dashboard, orders, recommendations are the same canned data for everyone | Phase 4 scope (real history import and metrics); no CR |
@@ -41,11 +42,11 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 - **CR-003 §1, "not now" on this device.** The server can't tell "never asked" from "said no" (both are `granted: false`), so the app remembers per user and device that it asked; the decision itself is stored on the server.
 - **Found while implementing:** a token-refresh race in the app's HTTP client (concurrent expired calls could refresh twice), fixed; and the 2×-font layout fix from the device run had made the KPI figures stack at normal size on a standard phone — fixed, with a regression test.
 
-## Decisions needed (no CR drafted; still open)
+## Decisions (settled 27 Nov 2026 by the project owner)
 
-- **D1 — Approximate location on the sessions screen.** Recommendation: keep `approximate_location` null. Showing a city needs IP geolocation, a new processing purpose and a third-party database, for little user value. If accepted, no change is needed (the field is already nullable).
-- **D2 — "Kept 30 days unless saved".** Recommendation: change `docs/phase0/data-classification.md` to a flat 30 days after last activity and drop "unless saved". A save feature would be a new screen state and a longer retention purpose to justify. If product wants saved chats instead, that becomes its own CR.
-- **D3 — Account recovery for unverified emails** (raised by CR-003). Today a reset code goes to the registered address whether or not it was verified. Restricting recovery to verified addresses is safer against typo'd or mistyped emails but can lock out users who never verified. Recommendation: keep current behaviour until CR-003 has been live long enough to know the verification rate.
+- **D1 — Location.** No automatic location: the server never derives where someone is (no IP geolocation), so the sessions list keeps `approximate_location` empty. Where an address matters, the user enters it themselves — proposed as [CR-004](CR-004-user-entered-delivery-addresses.md).
+- **D2 — Chat retention.** A flat 30 days after last activity; there are no "saved" chats. `data-classification.md` corrected; the backend already behaves this way.
+- **D3 — Recovery for unverified emails.** Unchanged: reset codes go to the registered address whether or not it was verified. Revisit when there is data on how many users verify.
 
 ## Checking the proposed contract text
 

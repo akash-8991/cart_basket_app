@@ -113,7 +113,8 @@ def main():
     args = ap.parse_args()
 
     text = pathlib.Path(args.cr).read_text()
-    if not re.search(r"^Decision: approved\b", text, re.M):
+    # A filled-in decision, not the template's "approved / rejected / deferred" placeholder.
+    if not re.search(r"^Decision: approved\s+Decision date: \d{4}-\d{2}-\d{2}", text, re.M):
         sys.exit(f"{args.cr} is not approved; refusing to change the frozen contract")
     original = CONTRACT.read_text()
     spec = yaml.load(original)
