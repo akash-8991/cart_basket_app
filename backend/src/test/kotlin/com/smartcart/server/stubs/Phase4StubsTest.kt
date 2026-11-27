@@ -94,6 +94,20 @@ class Phase4StubsTest {
         assertEquals("conflict", client.postJson("/v1/deep-links", """{"task_id":"$task"}""", key, t).assertContract("POST", "/v1/deep-links").errorCode(), "one handoff per cart")
     }
 
+    @Test fun theChosenAddressLabelAppearsInTheAssumptions() = withApp { s ->
+        // CR-004: only the label of the user's saved address reaches the server.
+        val t = client.register().tokens.accessToken
+        val withLabel = quoteBody.dropLast(1) + ",\"delivery_label\":\"Work\"}"
+        val q = client.postJson("/v1/comparison/quotes", withLabel, key, t).assertContract("POST", "/v1/comparison/quotes")
+        assertTrue("Delivery to your saved address \\\"Work\\\"" in q.bodyAsText(), q.bodyAsText())
+        val tooLong = quoteBody.dropLast(1) + ",\"delivery_label\":\"${"x".repeat(41)}\"}"
+        assertEquals("validation_failed", client.postJson("/v1/comparison/quotes", tooLong, key, t).assertContract("POST", "/v1/comparison/quotes").errorCode())
+        s.db.connection.use { c ->
+            val rs = c.createStatement().executeQuery("select count(*) from audit_log where detail::text like '%Work%'")
+            rs.next(); assertEquals(0, rs.getInt(1), "the label isn't stored")
+        }
+    }
+
     @Test fun tasksNeedTheKillSwitchesOffTheProviderApprovedAndConsent() = withApp {
         val t = client.register().tokens.accessToken
         val q = client.confirmedQuote(t)

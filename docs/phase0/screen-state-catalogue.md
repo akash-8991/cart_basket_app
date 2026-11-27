@@ -38,6 +38,7 @@ auth/unlock (remembered device) ────────┤
                                              ├─ history/connect ─ history/import/{id} ─ history/review/{id}
                                              ├─ history/orders
                                              └─ settings ─┬─ settings/providers
+                                                          ├─ settings/addresses (CR-004)
                                                           ├─ settings/privacy
                                                           ├─ settings/sessions
                                                           ├─ settings/notifications
@@ -85,6 +86,7 @@ deep link: smartcart://handoff/{opaqueToken} → task/{taskId}/ready (after toke
 | S-SET-05 | `settings/notifications` | Per-category toggles; lock-screen privacy | S | — |
 | S-SET-06 | `settings/activity` | Recent automation and consent events | L E S X | `me/activity.*` |
 | S-SET-07 | `help` | Pause all automation, troubleshooting, contact | S | — |
+| S-SET-08 | `settings/addresses` | Saved delivery addresses typed by the user: list, add / edit form with field errors, default, delete one, delete all (CR-004). Kept on the device only; the cart card on `S-CHAT-01` gains a *Deliver to* picker, and Compare opens the add form when none is saved | E S X (field errors, duplicate label) | — (on-device only) |
 
 ## 4. Cross-cutting UI rules
 

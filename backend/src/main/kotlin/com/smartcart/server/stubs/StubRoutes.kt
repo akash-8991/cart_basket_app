@@ -35,6 +35,8 @@ import kotlinx.serialization.json.JsonObject
     val selectedProvider: String? = null,
     val objective: String,
     val chatSessionId: String? = null,
+    /** CR-004: label of the user's saved address ("Home"). The address itself stays on the phone. */
+    val deliveryLabel: String? = null,
 )
 @Serializable data class ConfirmQuoteRequest(val provider: String, val acknowledgedSwitch: Boolean)
 @Serializable data class CreateCartTaskRequest(val quoteId: String, val provider: String, val taskType: String)
@@ -92,8 +94,9 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         if (req.eligibleProviders.isEmpty()) bad("eligible_providers", "required")
         req.eligibleProviders.forEach { provider(it, "eligible_providers") }
         provider(req.selectedProvider, "selected_provider")
+        req.deliveryLabel?.let { if (it.isBlank() || it.length > 40) bad("delivery_label", "invalid_length") }
         call.onceOnly(s, "quote:${u.userId}", ApiJson.encodeToString(QuoteRequest.serializer(), req), HttpStatusCode.Created) {
-            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective) }
+            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective, req.deliveryLabel?.trim()) }
         }
     }
     get("/v1/comparison/quotes/{quoteId}") {

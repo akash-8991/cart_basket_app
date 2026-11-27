@@ -107,4 +107,41 @@
     <!-- CR-003 §1 -->
     <string name="privacy_ai_help">AI help with your requests</string>
     <string name="privacy_ai_help_desc">Sends your chat messages, with contact and card numbers removed, to an AI model to understand them. Off means chat reads simple lists only.</string>
+
+    <!-- CR-004: saved delivery addresses (S-SET-08) -->
+    <string name="set_addresses">Delivery addresses</string>
+    <string name="set_addresses_sub">Kept on this phone only</string>
+    <string name="addr_title">Delivery addresses</string>
+    <string name="addr_on_phone">Addresses stay on this phone, encrypted. When you compare prices, only the label you choose, like \"Home\", is sent.</string>
+    <string name="addr_empty_title">No saved addresses</string>
+    <string name="addr_empty_body">Add the address you want orders delivered to. You type it in; the app never looks up where you are.</string>
+    <string name="addr_add">Add an address</string>
+    <string name="addr_default">Default</string>
+    <string name="addr_edit_cd">Edit %1$s</string>
+    <string name="addr_delete_all">Delete all saved addresses</string>
+    <string name="addr_delete_all_title">Delete all saved addresses?</string>
+    <string name="addr_delete_all_body">Every saved address is removed from this phone. This can\'t be undone.</string>
+    <string name="addr_delete_all_confirm">Delete all</string>
+    <string name="addr_new_title">New address</string>
+    <string name="addr_edit_title">Edit address</string>
+    <string name="addr_label">Label</string>
+    <string name="addr_label_hint">For example Home or Work. This is the only part that is sent.</string>
+    <string name="addr_label_home">Home</string>
+    <string name="addr_label_work">Work</string>
+    <string name="addr_flat">Flat / house</string>
+    <string name="addr_street">Street / area</string>
+    <string name="addr_landmark">Landmark (optional)</string>
+    <string name="addr_city">City</string>
+    <string name="addr_pin">PIN code</string>
+    <string name="addr_make_default">Use as my default address</string>
+    <string name="addr_save">Save address</string>
+    <string name="addr_delete">Delete this address</string>
+    <string name="addr_delete_title">Delete %1$s?</string>
+    <string name="addr_delete_body">It\'s removed from this phone.</string>
+    <string name="addr_delete_confirm">Delete</string>
+    <string name="addr_problem_required">Required</string>
+    <string name="addr_problem_too_long">Too long. Keep it shorter.</string>
+    <string name="addr_problem_pin">Enter a 6-digit PIN code</string>
+    <string name="addr_problem_duplicate">You already have an address with this label</string>
+    <string name="privacy_addresses_note">Saved delivery addresses stay on this phone and aren\'t in your export, because we never receive them. Signing out (unless you chose to stay signed in) or deleting your account removes them.</string>
 </resources>

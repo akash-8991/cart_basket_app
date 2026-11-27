@@ -74,7 +74,7 @@ class Phase4Stubs(
 
     // ------------------------------------------------------------------ comparison
 
-    fun createQuote(userId: String, category: String, selectedProvider: String?, objective: String): JsonObject {
+    fun createQuote(userId: String, category: String, selectedProvider: String?, objective: String, deliveryLabel: String? = null): JsonObject {
         if (!flags.isOn("comparison.enabled")) throw ApiException(ErrorCode.SERVICE_UNAVAILABLE)
         limit("stub:quotes:$userId", 20, Duration.ofMinutes(1))
         val file = when (category) {
@@ -86,8 +86,17 @@ class Phase4Stubs(
         val id = newId("qt")
         val quote = fixture(file).redated().with("quote_id", id).with("objective", objective)
             .let { q -> selectedProvider?.let { q.with("selected_provider", it) } ?: q }
+            .let { q -> deliveryLabel?.let { label -> q.withDeliveryLabel(label) } ?: q }
         return save("quote", userId, id, quote)
     }
+
+    /** CR-004: the assumptions name the address the user chose (by label only). */
+    private fun JsonObject.withDeliveryLabel(label: String): JsonObject = with(
+        "assumptions",
+        JsonArray(this["assumptions"]!!.jsonArray.map { a ->
+            if (a.jsonPrimitive.content.startsWith("Delivery to")) JsonPrimitive("Delivery to your saved address \"$label\"") else a
+        }),
+    )
 
     fun quote(userId: String, quoteId: String) = own("quote", userId, quoteId)
 

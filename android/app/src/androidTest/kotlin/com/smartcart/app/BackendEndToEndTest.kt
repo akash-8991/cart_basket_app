@@ -109,6 +109,8 @@ class BackendEndToEndTest {
         val serverChats = runBlocking { c.chat.sessions() }
         assertTrue("the conversation is stored on the backend", (serverChats as ApiResult.Success).value.isNotEmpty())
         compose.clickable(s(R.string.chat_compare_cart)).performClick()
+        // CR-004: no saved address yet, so Compare asks for one first, then carries on.
+        compose.addHomeAddress()
 
         // Comparison and automation are still on-device fakes, gated by the backend's provider status and consent.
         compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)

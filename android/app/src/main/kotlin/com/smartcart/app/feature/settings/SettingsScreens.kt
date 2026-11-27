@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PrivacyTip
@@ -127,6 +128,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
     ScreenScaffold(stringResource(R.string.set_title), onBack) { padding ->
         LazyColumn(contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = Spacing.xxl)) {
             item { NavRow(Icons.Outlined.Apps, stringResource(R.string.set_providers), stringResource(R.string.set_providers_sub)) { onNavigate(Routes.SET_PROVIDERS) } }
+            item { NavRow(Icons.Outlined.Home, stringResource(R.string.set_addresses), stringResource(R.string.set_addresses_sub)) { onNavigate(Routes.SET_ADDRESSES) } }
             item { NavRow(Icons.Outlined.PrivacyTip, stringResource(R.string.set_privacy), stringResource(R.string.set_privacy_sub)) { onNavigate(Routes.SET_PRIVACY) } }
             item { NavRow(Icons.Outlined.Devices, stringResource(R.string.set_sessions), stringResource(R.string.set_sessions_sub)) { onNavigate(Routes.SET_SESSIONS) } }
             item { NavRow(Icons.Outlined.Notifications, stringResource(R.string.set_notifications)) { onNavigate(Routes.SET_NOTIFICATIONS) } }
@@ -139,7 +141,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
                     scope.launch {
                         c.tasks.stopAll(StopReason.USER_CANCEL)
                         c.analytics.track(AnalyticsEventName.AUTH_LOGOUT)
-                        c.auth.logout()
+                        c.signOut()
                     }
                 }
             }
@@ -230,7 +232,7 @@ class PrivacyViewModel(private val c: AppContainer) : ViewModel() {
                 is ApiResult.Success -> {
                     result.value = (action == "export") to r.value.slaDays
                     c.analytics.track(AnalyticsEventName.PRIVACY_ACTION, mapOf("privacy_action" to action))
-                    if (action == "delete_account") { c.tasks.stopAll(StopReason.USER_CANCEL); c.auth.logout() }
+                    if (action == "delete_account") { c.tasks.stopAll(StopReason.USER_CANCEL); c.signOutDeletedAccount() }
                 }
                 is ApiResult.Failure -> error.value = r.error
             }
@@ -295,6 +297,7 @@ fun PrivacyScreen(onBack: () -> Unit, onOrders: () -> Unit) {
                 item { SecondaryButton(stringResource(if (cacheCleared) R.string.privacy_cache_cleared else R.string.privacy_clear_cache), { cacheCleared = true; c.analytics.track(AnalyticsEventName.PRIVACY_ACTION, mapOf("privacy_action" to "clear_cache")) }, enabled = !cacheCleared) }
                 item { SecondaryButton(stringResource(R.string.privacy_delete_history), { stepUp = StepUpAction.DELETE_HISTORY }) }
                 item { SecondaryButton(stringResource(R.string.privacy_delete_chat), { stepUp = StepUpAction.DELETE_CHAT }) }
+                item { Text(stringResource(R.string.privacy_addresses_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.xs)) }
                 item { Spacer(Modifier.size(Spacing.md)); DangerButton(stringResource(R.string.privacy_delete_account), { stepUp = StepUpAction.DELETE_ACCOUNT }, Modifier.fillMaxWidth()) }
                 item {
                     Text(

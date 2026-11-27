@@ -9,6 +9,9 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -38,6 +41,9 @@ object Device {
         c.tasks.stopAll(StopReason.USER_CANCEL)
         c.account.setAutomationPaused(false)
         c.auth.logout()
+        // Saved addresses (CR-004) from earlier runs: start every test with none.
+        context.getSharedPreferences("addresses", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        c.addresses.refresh()
         c.mock.update { cfg }
     }
 
@@ -58,6 +64,19 @@ inline fun screenshotOnFailure(name: String, block: () -> Unit) {
         runCatching { Device.screenshot("FAILED-$name", waitForIdle = false) }
         throw t
     }
+}
+
+/** Fills in and saves the add-address form (CR-004) that Compare opens when no address is saved. */
+fun ComposeTestRule.addHomeAddress() {
+    waitForText(Device.str(R.string.addr_new_title))
+    fun field(label: Int, value: String) = onNode(androidx.compose.ui.test.hasSetTextAction() and hasText(Device.str(label))).performScrollTo().performTextInput(value)
+    onNode(hasText(Device.str(R.string.addr_label_home)) and hasClickAction()).performScrollTo().performClick()
+    field(R.string.addr_flat, "Flat 4B, Lake View Apartments")
+    field(R.string.addr_street, "12 MG Road")
+    field(R.string.addr_city, "Bengaluru")
+    field(R.string.addr_pin, "560001")
+    Device.screenshot("address-form")
+    clickable(Device.str(R.string.addr_save)).performScrollTo().performClick()
 }
 
 /** Hides the soft keyboard without Espresso, which needs window focus and can time out. */

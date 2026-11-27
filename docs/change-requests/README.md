@@ -7,7 +7,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-001](CR-001-document-error-responses.md) | Document the error responses the server already returns | Contract documentation only | Approved and implemented 26 Nov 2026 (contract 1.0.1) | — |
 | [CR-002](CR-002-additive-contract-fields.md) | Additive contract fields and endpoints | Optional fields + 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.1.0) | — |
 | [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.2.0) | CR-002 (`GET /v1/config`) |
-| [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Awaiting approval | — |
+| [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Approved and implemented 27 Nov 2026 (contract 1.3.0) | — |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -40,6 +40,9 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 - **CR-003 §3, terms and privacy.** The CR assumed the app could re-record acceptance, but no operation existed. Implemented without a new operation: `terms` and `privacy` are consent keys (accept-only, current version only), backfilled from registration, so `PUT /v1/me/consents/{consentKey}` records re-acceptance and `GET /v1/me/consents` reports what was accepted.
 - **CR-003 §3, consent texts.** Enforced on the server: a grant counts only for the current consent-text version, so AI chat, provider consent and the Phase 4 gates stop honouring old grants and the app's existing just-in-time screens ask again. The app records grants against the version from `GET /v1/config`.
 - **CR-003 §1, "not now" on this device.** The server can't tell "never asked" from "said no" (both are `granted: false`), so the app remembers per user and device that it asked; the decision itself is stored on the server.
+- **CR-004, labels are unique.** Only the label leaves the phone and the cart picker chooses by label, so two saved addresses can't share one (ignoring case).
+- **CR-004, "non-remembered" sign-out.** Addresses survive sign-out only when the user ticked *Keep me signed in on this device*; otherwise, and always on account deletion, they're removed.
+- **CR-004, on-device fakes.** Comparisons are still on-device fakes until Phase 4, so the fake mirrors the backend stub: the chosen label replaces the generic delivery assumption.
 - **Found while implementing:** a token-refresh race in the app's HTTP client (concurrent expired calls could refresh twice), fixed; and the 2×-font layout fix from the device run had made the KPI figures stack at normal size on a standard phone — fixed, with a regression test.
 
 ## Decisions (settled 27 Nov 2026 by the project owner)

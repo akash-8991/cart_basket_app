@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.2.0
+  version: 1.3.0
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -1549,6 +1549,10 @@ components:
         selected_provider: { oneOf: [{ $ref: '#/components/schemas/ProviderKey' }, { type: 'null' }] }
         objective: { $ref: '#/components/schemas/Objective' }
         chat_session_id: { type: [string, 'null'] }
+        delivery_label:
+          type: [string, 'null']
+          maxLength: 40
+          description: "Label of the user's saved delivery address (e.g. \"Home\"), entered on the device. The address itself never leaves the device (D-025, CR-004). Used only for this comparison's assumptions text.\n"
     MatchedLine:
       type: object
       additionalProperties: false

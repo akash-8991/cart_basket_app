@@ -43,6 +43,7 @@ import com.smartcart.app.feature.history.OrdersScreen
 import com.smartcart.app.feature.home.HomeScreen
 import com.smartcart.app.feature.home.MonthDetailScreen
 import com.smartcart.app.feature.settings.ActivityScreen
+import com.smartcart.app.feature.settings.AddressesScreen
 import com.smartcart.app.feature.settings.DeveloperScreen
 import com.smartcart.app.feature.settings.HelpScreen
 import com.smartcart.app.feature.settings.NotificationSettingsScreen
@@ -94,6 +95,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val SET_PROVIDERS = "settings/providers"
     const val SET_PRIVACY = "settings/privacy"
+    const val SET_ADDRESSES = "settings/addresses"
     const val SET_SESSIONS = "settings/sessions"
     const val SET_NOTIFICATIONS = "settings/notifications"
     const val SET_ACTIVITY = "settings/activity"
@@ -155,7 +157,7 @@ fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navControl
                     }
                 }) { Text(stringResource(R.string.policy_update_accept)) }
             },
-            dismissButton = { TextButton(onClick = { scope.launch { c.auth.logout() } }) { Text(stringResource(R.string.policy_update_sign_out)) } },
+            dismissButton = { TextButton(onClick = { scope.launch { c.signOut() } }) { Text(stringResource(R.string.policy_update_sign_out)) } },
         )
     }
 
@@ -343,6 +345,7 @@ fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navControl
             composable(Routes.SET_PROVIDERS) { ProvidersScreen(onBack = back) }
             composable(Routes.SET_PRIVACY) { PrivacyScreen(onBack = back, onOrders = { navController.navigate(Routes.ORDERS) }) }
             composable(Routes.SET_SESSIONS) { SessionsScreen(onBack = back) }
+            composable(Routes.SET_ADDRESSES) { AddressesScreen(onBack = back) }
             composable(Routes.SET_NOTIFICATIONS) { NotificationSettingsScreen(onBack = back) }
             composable(Routes.SET_ACTIVITY) { ActivityScreen(onBack = back) }
             composable(Routes.HELP) { HelpScreen(onBack = back) }

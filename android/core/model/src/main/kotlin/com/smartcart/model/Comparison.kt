@@ -160,6 +160,8 @@ data class QuoteRequest(
     val selectedProvider: ProviderKey? = null,
     val objective: Objective,
     val chatSessionId: String? = null,
+    /** CR-004: label of the user's saved address ("Home"); the address itself never leaves the phone. */
+    val deliveryLabel: String? = null,
 )
 
 @Serializable

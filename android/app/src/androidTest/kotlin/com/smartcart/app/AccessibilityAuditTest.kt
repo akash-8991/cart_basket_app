@@ -165,6 +165,16 @@ class AccessibilityAuditTest {
         screen = { HelpScreen({}) }; audit("help", s(R.string.help_stop_title))
         screen = { com.smartcart.app.feature.auth.VerifyEmailScreen({}, {}) }; audit("verify-email", s(R.string.verify_body))
 
+        // CR-004: saved addresses (list and form), and the cart card's "Deliver to" row via the form's own screen.
+        c = container(MockConfig(latencyMs = 0))
+        runBlocking { c.auth.login("priya.k", "correct horse battery", false) }
+        screen = { com.smartcart.app.feature.settings.AddressesScreen({}) }; audit("addresses-empty", s(R.string.addr_empty_title))
+        c.addresses.save(com.smartcart.data.address.SavedAddress("", "Home", "Flat 4B", "12 MG Road", null, "Bengaluru", "560001"))
+        c.addresses.save(com.smartcart.data.address.SavedAddress("", "Work", "Floor 3, Tower B", "Outer Ring Road", "opposite the metro", "Bengaluru", "560103"))
+        audit("addresses", "Outer Ring Road")
+        dark = true; audit("addresses", "Outer Ring Road"); dark = false
+        screen = { com.smartcart.app.feature.settings.AddressEditor(null) {} }; audit("address-form", s(R.string.addr_label_hint))
+
         assertTrue("Accessibility errors (API ${Device.api}, font ${Device.fontScale}):\n" + problems.distinct().joinToString("\n"), problems.isEmpty())
     }
 }

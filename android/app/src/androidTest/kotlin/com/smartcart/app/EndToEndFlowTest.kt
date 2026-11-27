@@ -89,6 +89,8 @@ class EndToEndFlowTest {
             compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.chat_compare_cart)))
             Device.screenshot("e2e-04-chat")
             compose.clickable(s(R.string.chat_compare_cart)).performClick()
+            // CR-004: no saved address yet, so Compare asks for one first, then carries on.
+            compose.addHomeAddress()
 
             // Comparison: complete coverage → "Cheapest"; user picked BigBasket so switching asks first
             compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)

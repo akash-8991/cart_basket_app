@@ -42,4 +42,10 @@
     <string name="ai_consent_not_now">Not now</string>
     <string name="chat_ai_off_hint">AI help is off, so I can only read lists like \"2 x toned milk 1 L\".</string>
     <string name="chat_ai_turn_on">Turn on AI help</string>
+
+    <!-- CR-004: choosing where to deliver -->
+    <string name="chat_deliver_to">Deliver to</string>
+    <string name="chat_deliver_choose">Choose an address</string>
+    <string name="chat_deliver_cd">Deliver to %1$s. Change address</string>
+    <string name="chat_deliver_none_cd">No delivery address yet. Add an address</string>
 </resources>

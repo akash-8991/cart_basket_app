@@ -158,7 +158,7 @@ class UiAcceptanceTest {
         }
         rule.waitUntil(5_000) { c.tasks.activeTask.value?.status == TaskStatus.CHECKPOINT }
         show(c) {
-            val active = androidx.compose.runtime.produceState<CartTask?>(c.tasks.activeTask.value) { c.tasks.activeTask.collect { value = it } }
+            val active = androidx.compose.runtime.produceState<CartTask?>(null) { c.tasks.activeTask.collect { value = it } }
             ActiveTaskBar(active.value, onOpen = {}, onStop = { id -> runBlocking { c.tasks.stop(id, com.smartcart.model.StopReason.EMERGENCY_STOP) } })
         }
         rule.onNodeWithContentDescription("Emergency stop automation").assertIsDisplayed().performClick()

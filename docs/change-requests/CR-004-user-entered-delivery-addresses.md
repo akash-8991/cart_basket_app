@@ -55,8 +55,9 @@ components:
 - No request body, log line or analytics event contains an address (test inspects all three).
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-Decision: approved / rejected / deferred     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 27 Nov 2026)
+Decision: approved     Decision date: 2026-11-27
 Linked commits / tag:
 ```
 

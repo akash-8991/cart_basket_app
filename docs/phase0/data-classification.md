@@ -14,7 +14,7 @@ India-first (DPDP-aware) baseline. Source: audit §7, §13; PRD v1.4 §11.
 | Chat content | Personal / sensitive | Server (redacted), client memory | Yes | 30 days after last activity (D-025) | Logs (raw), analytics |
 | Order history (normalized) | Sensitive personal | Device; server only with upload consent | Only with consent | Until user deletes | Claude (raw), logs |
 | Raw partner screen text | Sensitive | Device memory during parse only | **No** (default) | Discarded after parse | Anywhere persistent |
-| Addresses / destinations | Sensitive / location | Device; server only for active task | Task-scoped | Task lifetime | Logs, analytics, notifications |
+| Addresses / destinations | Sensitive / location | Device only, typed in by the user, encrypted with a Keystore key per user (CR-004); cleared on sign-out of a non-remembered device, on account deletion, or with *Delete all* | Only the chosen label (e.g. "Home", ≤40 chars) with a comparison; street address only to on-device automation in Phase 4 | Until the user deletes it (label: quote lifetime) | Logs, analytics, notifications, Claude, server export |
 | Comparison snapshot | Business / personal | Server (encrypted) | Yes | 90 days | Analytics (except aggregate) |
 | Handoff token | Secret bearer | Notification intent extras / app link | Yes | ≤10 min, one-time | Logs |
 | Claude API key | Secret | Backend secret manager | Never reaches device | Rotation schedule | APK, repo, client config, logs |

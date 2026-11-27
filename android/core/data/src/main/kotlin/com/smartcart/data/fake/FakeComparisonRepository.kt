@@ -59,6 +59,10 @@ class FakeComparisonRepository(fixtures: Fixtures, mock: MockControl) : FakeBase
                 coverage = q.coverage.copy(checked = emptyList()),
             )
         }
+        // CR-004: the backend names the chosen address label in the assumptions; the fake does the same.
+        request.deliveryLabel?.let { label ->
+            q = q.copy(assumptions = q.assumptions.map { if (it.startsWith("Delivery to")) "Delivery to your saved address \"$label\"" else it })
+        }
         val id = q.quoteId + "_" + Instant.now().toEpochMilli()
         quotes[id] = q.copy(quoteId = id)
         ApiResult.Success(id)

@@ -42,6 +42,10 @@ import com.smartcart.data.ConfigRepository
 import com.smartcart.data.fake.FakeConfigRepository
 import com.smartcart.app.security.AiConsentPrompts
 import com.smartcart.app.security.DeviceIdentity
+import com.smartcart.app.security.KeystoreAddressStore
+import com.smartcart.data.address.AddressBook
+import com.smartcart.data.address.AddressStore
+import com.smartcart.data.address.InMemoryAddressStore
 import com.smartcart.model.AccountState
 import com.smartcart.model.DeviceInfo
 import com.smartcart.model.TaskStatus
@@ -61,6 +65,7 @@ class AppContainer(
     mockConfig: MockConfig = MockConfig(),
     tokenStore: TokenStore? = null,
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    addressStore: AddressStore? = null,
     /** Phase 3.7: when set, auth, account, providers and chat use the backend; everything else stays on fakes until Phase 4. */
     val backendUrl: String? = null,
 ) {
@@ -104,9 +109,29 @@ class AppContainer(
 
     val notifier: Notifier? = context?.let { Notifier(it.applicationContext, notificationPrefs) }
 
+    /** CR-004: the signed-in user's delivery addresses, encrypted on this phone only. */
+    val addresses = AddressBook(
+        addressStore ?: context?.let { runCatching { KeystoreAddressStore(it.applicationContext) }.getOrNull() } ?: InMemoryAddressStore(),
+    ) { (auth.state.value as? AccountState.SignedIn)?.userId }
+
+    /** Signs out. Saved addresses stay only if the user chose to stay signed in on this phone (CR-004 §2). */
+    suspend fun signOut() {
+        val user = (auth.state.value as? AccountState.SignedIn)?.userId
+        val remembered = tokens.read()?.remembered == true
+        auth.logout()
+        if (user != null && !remembered) addresses.clearFor(user)
+    }
+
+    /** After the server accepts account deletion: nothing of the user's stays on this phone. */
+    suspend fun signOutDeletedAccount() {
+        (auth.state.value as? AccountState.SignedIn)?.userId?.let(addresses::clearFor)
+        auth.logout()
+    }
+
     init {
         notifier?.createChannels()
         watchTasksForNotifications()
+        scope.launch { auth.state.collect { addresses.refresh() } }
         if (api != null) refreshProvidersOnSignIn()
     }
 

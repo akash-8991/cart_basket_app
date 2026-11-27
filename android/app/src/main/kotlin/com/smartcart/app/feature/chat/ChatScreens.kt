@@ -29,6 +29,15 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.Role
+import com.smartcart.app.feature.settings.AddressEditorDialog
+import com.smartcart.data.address.SavedAddress
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -109,6 +118,11 @@ data class ChatUiState(
     /** The AI question is on screen, holding back [pendingText] until it is answered (CR-003 §1). */
     val askingAi: Boolean = false,
     val pendingText: String? = null,
+    /** CR-004: the saved address label the user picked; null means their default. */
+    val deliveryLabel: String? = null,
+    /** The add-address form is open; [compareAfterAddress] if it was opened by Compare. */
+    val addingAddress: Boolean = false,
+    val compareAfterAddress: Boolean = false,
 )
 
 /** UNKNOWN: couldn't load (chat isn't blocked); ASK: never answered on this device; DECLINED: "Not now". */
@@ -197,14 +211,34 @@ class ChatViewModel(private val c: AppContainer, val category: Category) : ViewM
 
     fun setObjective(o: Objective) = _state.update { it.copy(objective = o) }
 
+    /** The address this cart goes to: the one picked, else the default. Rides don't use one. */
+    fun deliveryAddress(): SavedAddress? = c.addresses.byLabel(_state.value.deliveryLabel) ?: c.addresses.default
+
+    fun chooseAddress(label: String) = _state.update { it.copy(deliveryLabel = label) }
+    fun addAddress() = _state.update { it.copy(addingAddress = true, compareAfterAddress = false) }
+    fun cancelAddAddress() = _state.update { it.copy(addingAddress = false, compareAfterAddress = false) }
+
+    /** Returns true when Compare was waiting for this address and should carry on. */
+    fun addressAdded(a: SavedAddress): Boolean {
+        val resume = _state.value.compareAfterAddress
+        _state.update { it.copy(deliveryLabel = a.label, addingAddress = false, compareAfterAddress = false) }
+        return resume
+    }
+
     fun compare(onQuote: (String) -> Unit) {
         val d = _state.value.draft ?: return
         if (_state.value.comparing) return
+        val address = if (d.ride == null) deliveryAddress() else null
+        if (d.ride == null && address == null) {
+            // No address yet: ask for one first (CR-004 §3).
+            _state.update { it.copy(addingAddress = true, compareAfterAddress = true) }
+            return
+        }
         val eligible = c.providers.providers.value.filter { it.category == category && !it.hidden && it.status != ProviderStatus.DISABLED }.map { it.key }
         _state.update { it.copy(comparing = true, compareError = null) }
         c.analytics.track(AnalyticsEventName.COMPARISON_REQUESTED, mapOf("category" to category.key, "line_count" to d.lines.size, "objective" to _state.value.objective))
         viewModelScope.launch {
-            val req = QuoteRequest(category, d.lines, d.ride, eligible, d.selectedProvider, _state.value.objective, _state.value.sessionId)
+            val req = QuoteRequest(category, d.lines, d.ride, eligible, d.selectedProvider, _state.value.objective, _state.value.sessionId, deliveryLabel = address?.label)
             when (val r = c.comparisons.create(req)) {
                 is ApiResult.Success -> { _state.update { it.copy(comparing = false) }; onQuote(r.value) }
                 is ApiResult.Failure -> _state.update { it.copy(comparing = false, compareError = r.error) }
@@ -230,6 +264,8 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
     val list = rememberLazyListState()
     LaunchedEffect(s.items.size, s.draft) { if (s.items.isNotEmpty()) list.animateScrollToItem(list.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
 
+    val addresses by c.addresses.addresses.collectAsStateWithLifecycle()
+    if (s.addingAddress) AddressEditorDialog(onSaved = { if (vm.addressAdded(it)) vm.compare(onComparison) }, onDismiss = vm::cancelAddAddress)
     if (s.askingAi) AiConsentDialog(onAllow = { vm.answerAi(true) }, onNotNow = { vm.answerAi(false) }, onDismiss = vm::dismissAiQuestion)
 
     ScreenScaffold(
@@ -292,7 +328,11 @@ fun ChatScreen(category: Category, onBack: () -> Unit, onComparison: (String) ->
                 val last = s.items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant
                 if (last?.turn?.nextStep == NextStep.COMPARE || last?.turn?.nextStep == NextStep.REVIEW_CART) {
                     item(key = "draft") {
-                        DraftCard(d, s, onQty = vm::setQuantity, onRemove = vm::removeLine, onObjective = vm::setObjective, onCompare = { vm.compare(onComparison) })
+                        DraftCard(
+                            d, s, onQty = vm::setQuantity, onRemove = vm::removeLine, onObjective = vm::setObjective, onCompare = { vm.compare(onComparison) },
+                            addresses = addresses, deliverTo = addresses.firstOrNull { it.label == s.deliveryLabel } ?: addresses.firstOrNull { it.isDefault },
+                            onChooseAddress = vm::chooseAddress, onAddAddress = vm::addAddress,
+                        )
                     }
                 }
             }
@@ -339,6 +379,10 @@ private fun DraftCard(
     onRemove: (String) -> Unit,
     onObjective: (Objective) -> Unit,
     onCompare: () -> Unit,
+    addresses: List<SavedAddress> = emptyList(),
+    deliverTo: SavedAddress? = null,
+    onChooseAddress: (String) -> Unit = {},
+    onAddAddress: () -> Unit = {},
 ) {
     AppCard {
         Text(stringResource(if (d.ride != null) R.string.chat_your_ride else R.string.chat_your_cart), style = MaterialTheme.typography.titleMedium)
@@ -359,6 +403,7 @@ private fun DraftCard(
                 IconButton(onClick = { onRemove(l.lineId) }) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.chat_remove, l.name)) }
             }
         }
+        if (d.ride == null) DeliverToRow(addresses, deliverTo, onChooseAddress, onAddAddress)
         Spacer(Modifier.size(Spacing.sm))
         Text(stringResource(R.string.chat_compare_by), style = MaterialTheme.typography.labelLarge)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -438,3 +483,37 @@ private fun AiConsentDialog(onAllow: () -> Unit, onNotNow: () -> Unit, onDismiss
         dismissButton = { androidx.compose.material3.TextButton(onClick = onNotNow, modifier = Modifier.heightIn(min = Spacing.touchTarget)) { Text(stringResource(R.string.ai_consent_not_now)) } },
     )
 }
+
+/** "Deliver to: Home ▾" on the cart card (CR-004 §3): the saved labels plus "Add an address". */
+@Composable
+private fun DeliverToRow(addresses: List<SavedAddress>, chosen: SavedAddress?, onChoose: (String) -> Unit, onAdd: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val cd = chosen?.let { stringResource(R.string.chat_deliver_cd, it.label) } ?: stringResource(R.string.chat_deliver_none_cd)
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = Spacing.touchTarget)
+                .clickable(role = Role.DropdownList) { if (addresses.isEmpty()) onAdd() else open = true }
+                .semantics(mergeDescendants = true) { contentDescription = cd },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.size(Spacing.sm))
+            Text(stringResource(R.string.chat_deliver_to) + ": ", style = MaterialTheme.typography.bodyMedium)
+            Text(chosen?.label ?: stringResource(R.string.addr_add), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f, fill = false))
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            addresses.forEach { a ->
+                DropdownMenuItem(
+                    text = { Text(a.label + if (a.isDefault) " · " + stringResource(R.string.addr_default) else "") },
+                    onClick = { open = false; onChoose(a.label) },
+                    modifier = Modifier.heightIn(min = Spacing.touchTarget),
+                )
+            }
+            DropdownMenuItem(text = { Text(stringResource(R.string.addr_add)) }, onClick = { open = false; onAdd() }, modifier = Modifier.heightIn(min = Spacing.touchTarget))
+        }
+    }
+}
+
