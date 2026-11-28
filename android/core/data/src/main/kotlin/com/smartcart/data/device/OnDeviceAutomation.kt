@@ -18,3 +18,8 @@ interface OnDeviceAutomation {
     /** Brings SmartCart back to the front after a price check opened another app. */
     fun returnToSmartCart() {}
 }
+
+/** CR-005: where the phone's price readings go when comparisons are worked out on the server. */
+interface DeviceReadingSink {
+    suspend fun submitObservation(quoteId: String, observation: com.smartcart.model.PriceObservation): com.smartcart.data.ApiResult<com.smartcart.model.ComparisonQuote>
+}

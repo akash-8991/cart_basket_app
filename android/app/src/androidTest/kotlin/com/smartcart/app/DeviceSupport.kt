@@ -19,6 +19,7 @@ import androidx.test.core.app.ActivityScenario
 import org.junit.Assert.assertEquals
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.core.app.ApplicationProvider
@@ -84,7 +85,18 @@ inline fun screenshotOnFailure(name: String, block: () -> Unit) {
 /** Fills in and saves the add-address form (CR-004) that Compare opens when no address is saved. */
 fun ComposeTestRule.addHomeAddress() {
     waitForText(Device.str(R.string.addr_new_title))
-    fun field(label: Int, value: String) = onNode(androidx.compose.ui.test.hasSetTextAction() and hasText(Device.str(label))).performScrollTo().performTextInput(value)
+    // Typing into a field as the keyboard opens can be dropped on older Androids (seen on API 26): check that
+    // the text is there, and set it again if it isn't.
+    fun field(label: Int, value: String) {
+        val node = { onNode(androidx.compose.ui.test.hasSetTextAction() and hasText(Device.str(label))) }
+        node().performScrollTo().performTextInput(value)
+        repeat(3) {
+            val took = runCatching { waitUntil(2_000) { onAllNodes(androidx.compose.ui.test.hasSetTextAction() and hasText(value)).fetchSemanticsNodes().isNotEmpty() } }.isSuccess
+            if (took) return
+            node().performScrollTo().performTextReplacement(value)
+        }
+        waitUntil(2_000) { onAllNodes(androidx.compose.ui.test.hasSetTextAction() and hasText(value)).fetchSemanticsNodes().isNotEmpty() }
+    }
     onNode(hasText(Device.str(R.string.addr_label_home)) and hasClickAction()).performScrollTo().performClick()
     field(R.string.addr_flat, "Flat 4B, Lake View Apartments")
     field(R.string.addr_street, "12 MG Road")

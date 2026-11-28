@@ -18,10 +18,10 @@ import com.smartcart.model.QuoteRecommendation
 import com.smartcart.model.RecommendationLabel
 
 /**
- * Turns what the phone read in a provider app into the contract's [ProviderResult], and puts it into a quote
- * (Phase 4.3). The rules are the existing comparison rules, applied to the new figures: only complete carts
- * with known fees are ranked, "Cheapest" needs every provider checked, and a fee the app doesn't state is
- * listed as unavailable rather than assumed to be zero. The full server-side engine replaces this in 4.4.
+ * Turns what the phone read in a provider app into the contract's [ProviderResult], and puts it into a quote,
+ * when there is no backend (Phase 4.3). The rules are the comparison rules (PRD FR-5A, the server's engine in
+ * 4.4): only complete carts get a total, made of the items and the fees the app states; a fee it doesn't state
+ * is listed as unavailable, never assumed to be zero, and rules out "Cheapest", as does missing coverage.
  */
 object CapturedQuote {
     /** The item to look up for a quote line: the matched product name and size, as tasks use them. */
@@ -68,8 +68,8 @@ object CapturedQuote {
             "delivery_fee" to components.deliveryFee, "packaging_fee" to components.packagingFee, "platform_fee" to components.platformFee,
             "small_cart_fee" to components.smallCartFee, "taxes" to components.taxes,
         ).filter { it.second == null }.map { it.first }
-        // A total is only given for the whole cart with every fee known; anything less isn't comparable.
-        val total = if (availability == Availability.AVAILABLE && unknownFees.isEmpty()) {
+        // A total is only given for the whole cart: items plus the fees the app states.
+        val total = if (availability == Availability.AVAILABLE) {
             subtotal + listOfNotNull(components.deliveryFee, components.packagingFee, components.platformFee, components.smallCartFee, components.taxes).sumOf { it.amountMinor }
         } else null
         val missing = read.count { it.match == LineMatch.UNAVAILABLE }
@@ -86,7 +86,7 @@ object CapturedQuote {
             notes = listOfNotNull(
                 "Prices read on this phone from $appName",
                 if (missing > 0) "$missing of ${read.size} items aren't available" else null,
-                if (unknownFees.isNotEmpty() && availability == Availability.AVAILABLE) "$appName doesn't state every fee, so there's no total" else null,
+                if (unknownFees.isNotEmpty() && availability == Availability.AVAILABLE) "$appName doesn't show every fee" else null,
             ),
         )
     }
@@ -111,10 +111,12 @@ object CapturedQuote {
         val failed = (quote.coverage.failed - p) + if (result.availability == Availability.FAILED) listOf(p) else emptyList()
         val coverage = Coverage(checked = quote.coverage.checked, failed = failed, complete = failed.isEmpty() && quote.coverage.checked.isNotEmpty())
         val comparable = results.filter { it.availability == Availability.AVAILABLE && it.totalEstimate != null }.sortedBy { it.totalEstimate!!.amountMinor }
+        val fees = setOf("delivery_fee", "packaging_fee", "platform_fee", "small_cart_fee", "surge_or_booking_fee", "taxes", "discounts")
+        val missing = results.flatMap { r -> r.unavailableFields.filter { it in fees } }.distinct()
         val ranked = results.map { r -> r.copy(rank = comparable.indexOfFirst { it.provider == r.provider }.takeIf { it >= 0 }?.plus(1)) }
 
         // Only quotes in a normal comparable state are re-ranked; the other fixture states keep their meaning.
-        if (quote.status !in setOf(ComparisonStatus.COMPLETE, ComparisonStatus.PARTIAL_COVERAGE)) return quote.copy(providerResults = ranked, coverage = coverage)
+        if (quote.status !in setOf(ComparisonStatus.COMPLETE, ComparisonStatus.PARTIAL_COVERAGE)) return quote.copy(providerResults = ranked, coverage = coverage, missingFields = missing)
         val status = if (coverage.complete) ComparisonStatus.COMPLETE else ComparisonStatus.PARTIAL_COVERAGE
         val best = comparable.firstOrNull()
         val recommendation = when {
@@ -124,14 +126,17 @@ object CapturedQuote {
                 val selected = quote.selectedProvider?.let { s -> results.firstOrNull { it.provider == s }?.totalEstimate }
                 QuoteRecommendation(
                     provider = best.provider,
-                    label = if (coverage.complete) RecommendationLabel.CHEAPEST else RecommendationLabel.LOWEST_OBSERVED_ESTIMATE,
-                    reason = if (coverage.complete) "Lowest estimated complete-cart total across all ${coverage.checked.size} apps checked."
-                    else "Lowest estimated total among the apps that could be checked; ${failed.joinToString { it.displayName }} couldn't be checked.",
+                    label = if (coverage.complete && missing.isEmpty()) RecommendationLabel.CHEAPEST else RecommendationLabel.LOWEST_OBSERVED_ESTIMATE,
+                    reason = when {
+                        !coverage.complete -> "Lowest estimated total among the apps that could be checked; ${failed.joinToString { it.displayName }} couldn't be checked."
+                        missing.isNotEmpty() -> "Lowest observed estimate. Some fees were not visible."
+                        else -> "Lowest estimated complete-cart total across all ${coverage.checked.size} apps checked."
+                    },
                     savingsVsSelected = selected?.takeIf { quote.selectedProvider != best.provider && it.amountMinor > best.totalEstimate!!.amountMinor }
                         ?.let { Money(it.amountMinor - best.totalEstimate!!.amountMinor, it.currency) },
                 )
             }
         }
-        return quote.copy(providerResults = ranked, coverage = coverage, status = status, recommendation = recommendation)
+        return quote.copy(providerResults = ranked, coverage = coverage, status = status, recommendation = recommendation, missingFields = missing)
     }
 }

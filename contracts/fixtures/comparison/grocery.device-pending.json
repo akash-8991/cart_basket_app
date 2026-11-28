@@ -271,7 +271,7 @@
     "No membership benefits applied",
     "Coupons not applied unless shown"
   ],
-  "confidence": "medium",
+  "confidence": "low",
   "requires_user_confirmation": true,
   "previous_total_estimate": null
 }

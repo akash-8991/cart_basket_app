@@ -74,6 +74,7 @@ import com.smartcart.model.LineMatch
 import com.smartcart.model.ProviderKey
 import com.smartcart.model.ProviderResult
 import com.smartcart.model.ProviderStatus
+import com.smartcart.model.CartLine
 import com.smartcart.model.QuoteRequest
 import com.smartcart.model.RecommendationLabel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -160,7 +161,9 @@ class ComparisonViewModel(private val c: AppContainer, private val quoteId: Stri
     fun recompare() {
         val q = (state.value.quote as? Load.Ready)?.value ?: return
         viewModelScope.launch {
-            val req = QuoteRequest(q.category, emptyList(), null, q.providerResults.map { it.provider }, q.selectedProvider, q.objective)
+            // Compare the same cart again: its lines are the ones every provider was asked for.
+            val lines = q.providerResults.firstOrNull { it.lines.isNotEmpty() }?.lines.orEmpty().map { CartLine(it.lineId, it.requestedName, it.quantity) }
+            val req = QuoteRequest(q.category, lines, null, q.providerResults.map { it.provider }, q.selectedProvider, q.objective)
             when (val r = c.comparisons.create(req)) {
                 is ApiResult.Success -> _state.update { it.copy(nav = ComparisonNav.Recompare(r.value)) }
                 is ApiResult.Failure -> _state.update { it.copy(actionError = r.error) }

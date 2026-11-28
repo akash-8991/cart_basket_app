@@ -1,5 +1,12 @@
 package com.smartcart.server.stubs
 
+import com.smartcart.server.comparison.ComparisonEngine
+import com.smartcart.server.comparison.EngineInput
+import com.smartcart.server.comparison.Fees
+import com.smartcart.server.comparison.Offer
+import com.smartcart.server.comparison.Reading
+import com.smartcart.server.comparison.RequestedLine
+import com.smartcart.server.comparison.SampleCatalog
 import com.smartcart.server.flags.Flags
 import com.smartcart.server.http.ApiException
 import com.smartcart.server.http.ApiJson
@@ -44,8 +51,8 @@ class Phase4Stubs(
     private val confirmations = ConcurrentHashMap<String, String>()      // "<user>:<quote>" → provider
     private val deletedOrders = ConcurrentHashMap.newKeySet<String>()    // "<user>:<order>"
 
-    /** CR-005: a quote some of whose providers the phone reads. [original] keeps their lines for the reading. */
-    private class DeviceQuote(val deadline: Instant, val providers: Set<String>, val original: Map<String, JsonObject>) {
+    /** A quote's inputs (4.4): the engine recomputes the quote from them each time it is read. */
+    private class QuoteState(@Volatile var input: EngineInput, val device: Set<String>, val deadline: Instant) {
         val reported: MutableSet<String> = ConcurrentHashMap.newKeySet()
     }
 
@@ -59,7 +66,7 @@ class Phase4Stubs(
         var lastResponse: JsonObject? = null
     }
 
-    private val deviceQuotes = ConcurrentHashMap<String, DeviceQuote>()   // "<user>:<quote>"
+    private val quotes = ConcurrentHashMap<String, QuoteState>()          // "<user>:<quote>"
     private val deviceTasks = ConcurrentHashMap<String, DeviceTask>()     // "<user>:<task>"
 
     private fun fixture(path: String): JsonObject =
@@ -93,93 +100,113 @@ class Phase4Stubs(
 
     // ------------------------------------------------------------------ comparison
 
-    fun createQuote(userId: String, category: String, selectedProvider: String?, objective: String, deliveryLabel: String? = null, deviceProviders: List<String> = emptyList()): JsonObject {
+    /**
+     * Phase 4.4: a comparison worked out by [ComparisonEngine] from readings, not a canned fixture. Providers the
+     * phone reads (CR-005) wait for its reading; in development the others are read from [SampleCatalog].
+     */
+    fun createQuote(
+        userId: String,
+        category: String,
+        selectedProvider: String?,
+        objective: String,
+        deliveryLabel: String? = null,
+        deviceProviders: List<String> = emptyList(),
+        eligibleProviders: List<String> = emptyList(),
+        lines: List<RequestedLine> = emptyList(),
+    ): JsonObject {
         if (!flags.isOn("comparison.enabled")) throw ApiException(ErrorCode.SERVICE_UNAVAILABLE)
         limit("stub:quotes:$userId", 20, Duration.ofMinutes(1))
-        val file = when (category) {
-            "grocery" -> "comparison/grocery.complete.json"
-            "food" -> "comparison/food.complete.json"
-            "travel" -> "comparison/travel.complete.json"
-            else -> throw ApiException(ErrorCode.SERVICE_UNAVAILABLE) // no shopping fixture yet
-        }
         val id = newId("qt")
-        val quote = fixture(file).redated().with("quote_id", id).with("objective", objective)
-            .let { q -> selectedProvider?.let { q.with("selected_provider", it) } ?: q }
-            .let { q -> deliveryLabel?.let { label -> q.withDeliveryLabel(label) } ?: q }
-            .let { q -> if (deviceProviders.isEmpty()) q else q.awaitingDevice(userId, id, deviceProviders) }
-        return save("quote", userId, id, quote)
-    }
-
-    /** CR-005: the providers the phone will read wait for its readings; the others are the server's own. */
-    private fun JsonObject.awaitingDevice(userId: String, quoteId: String, device: List<String>): JsonObject {
-        val results = this["provider_results"]!!.jsonArray.map { it.jsonObject }
-        val offered = results.mapNotNull { it.str("provider") }
-        if (device.any { it !in offered }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "device_providers", "invalid_value")
-        deviceQuotes["$userId:$quoteId"] = DeviceQuote(now().plus(DEVICE_WINDOW), device.toSet(), results.filter { it.str("provider") in device }.associateBy { it.str("provider")!! })
-        val marked = results.map { if (it.str("provider") in device) DeviceReadings.pending(it) else it.with("source", "server") }
-        return DeviceReadings.recompute(with("provider_results", JsonArray(marked)), device.toSet())
-    }
-
-    /** A provider whose reading hasn't arrived by the deadline counts as not checked. */
-    private fun deviceDeadline(userId: String, quoteId: String, q: JsonObject): JsonObject {
-        val d = deviceQuotes["$userId:$quoteId"] ?: return q
-        synchronized(d) {
-            val waiting = d.providers - d.reported
-            if (waiting.isEmpty() || clock.instant().isBefore(d.deadline)) return q
-            d.reported += waiting
-            val results = q["provider_results"]!!.jsonArray.map { r ->
-                val o = r.jsonObject
-                if (o.str("provider") in waiting) DeviceReadings.failed(o, "Your phone didn't report prices in time") else o
+        val created = now()
+        val cart = lines.ifEmpty { SampleCatalog.sampleLines(category) }
+        val manual = category == "shopping"
+        val readings = LinkedHashMap<String, Reading>()
+        for (p in eligibleProviders.distinct()) {
+            readings[p] = when {
+                manual -> Reading.NotRead("not_checked", "Compare this one yourself in the app.", null)
+                p in deviceProviders -> Reading.Waiting("Waiting for prices from your phone", "device")
+                else -> SampleCatalog.read(p, cart, created) ?: Reading.NotRead("failed", "${displayName(p)} couldn't be checked.", "server")
             }
-            return save("quote", userId, quoteId, DeviceReadings.recompute(q.with("provider_results", JsonArray(results)), emptySet()))
+        }
+        val input = EngineInput(
+            quoteId = id, category = category, currency = "INR", objective = objective, selectedProvider = selectedProvider,
+            createdAt = created, expiresAt = created.plus(QUOTE_TTL), assumptions = assumptions(category, deliveryLabel), lines = cart,
+            readings = readings, providerNames = readings.keys.associateWith(::displayName), manualOnly = manual,
+        )
+        quotes["$userId:$id"] = QuoteState(input, deviceProviders.toSet(), created.plus(DEVICE_WINDOW))
+        return save("quote", userId, id, ComparisonEngine.compute(input, clock.instant()))
+    }
+
+    private fun displayName(p: String) = ProviderRegistry.find(p)?.displayName ?: p
+
+    /** The sample comparison's assumptions; CR-004: the delivery one names the address the user chose, by label only. */
+    private fun assumptions(category: String, deliveryLabel: String?): List<String> {
+        val file = when (category) { "food" -> "comparison/food.complete.json"; "travel" -> "comparison/travel.complete.json"; else -> "comparison/grocery.complete.json" }
+        return fixture(file)["assumptions"]!!.jsonArray.map { it.jsonPrimitive.content }.map { a ->
+            if (deliveryLabel != null && a.startsWith("Delivery to")) "Delivery to your saved address \"$deliveryLabel\"" else a
         }
     }
 
-    /** CR-005: what the phone read for one provider. The server works out every figure from it. */
+    /** CR-005: what the phone read for one provider. The engine works out every figure from it. */
     fun submitObservation(userId: String, quoteId: String, obs: PriceObservation): JsonObject {
         val q = quote(userId, quoteId)
         if (!Instant.parse(q.str("expires_at")!!).isAfter(clock.instant())) throw ApiException(ErrorCode.QUOTE_EXPIRED)
         limit("stub:observations:$userId", 30, Duration.ofMinutes(1))
-        val d = deviceQuotes["$userId:$quoteId"] ?: throw ApiException(ErrorCode.CONFLICT)
-        synchronized(d) {
+        val st = quotes["$userId:$quoteId"] ?: throw ApiException(ErrorCode.CONFLICT)
+        synchronized(st) {
             // Only a provider the app said the phone would read, and only once.
-            if (obs.provider !in d.providers || obs.provider in d.reported) throw ApiException(ErrorCode.CONFLICT)
-            val currency = q.str("currency")!!
-            val original = d.original.getValue(obs.provider)
-            val lineIds = original["lines"]!!.jsonArray.map { it.jsonObject.str("line_id")!! }.toSet()
+            if (obs.provider !in st.device || obs.provider in st.reported) throw ApiException(ErrorCode.CONFLICT)
+            val currency = st.input.currency
+            val lineIds = st.input.lines.map { it.lineId }.toSet()
             if (obs.offers.any { it.lineId !in lineIds }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "offers", "invalid_value")
             val amounts = obs.offers.mapNotNull { it.unitPrice } + obs.fees?.named()?.mapNotNull { it.second }.orEmpty()
             if (amounts.any { it.currency != currency }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "currency", "invalid_value")
             val captured = Instant.parse(obs.capturedAt)
-            if (captured.isAfter(clock.instant().plus(CLOCK_SKEW)) || captured.isBefore(Instant.parse(q.str("created_at")!!).minus(CLOCK_SKEW))) {
+            if (captured.isAfter(clock.instant().plus(CLOCK_SKEW)) || captured.isBefore(st.input.createdAt.minus(CLOCK_SKEW))) {
                 throw ApiException.field(ErrorCode.VALIDATION_FAILED, "captured_at", "invalid_value")
             }
-            val name = ProviderRegistry.find(obs.provider)!!.displayName
-            val result = if (obs.outcome == "read") DeviceReadings.read(obs.provider, original["lines"]!!.jsonArray, obs, currency, name)
-            else DeviceReadings.failed(original, DeviceReadings.notReadNote(obs.notReadReason, name))
-            d.reported += obs.provider
-            val results = q["provider_results"]!!.jsonArray.map { r -> if (r.jsonObject.str("provider") == obs.provider) result else r }
-            return save("quote", userId, quoteId, DeviceReadings.recompute(q.with("provider_results", JsonArray(results)), d.providers - d.reported))
+            val reading = if (obs.outcome == "read") {
+                val named = (obs.fees ?: ObservedFees()).named()
+                Reading.Read(
+                    capturedAt = captured,
+                    offers = obs.offers.map { Offer(it.lineId, it.found, it.name, null, it.unitPrice?.amountMinor, it.inStock) },
+                    // A fee the app didn't state is unknown, never zero (surge and discounts simply don't apply).
+                    fees = Fees(named.mapNotNull { (k, v) -> v?.let { k to it.amountMinor } }.toMap(), named.filter { (k, v) -> v == null && k !in Fees.OPTIONAL }.map { it.first }.toSet()),
+                    etaMinutes = obs.etaMinutes,
+                    source = "device",
+                    notes = listOf("Prices read on your phone"),
+                )
+            } else Reading.NotRead("failed", DeviceReadings.notReadNote(obs.notReadReason, displayName(obs.provider)), "device")
+            st.reported += obs.provider
+            st.input = st.input.copy(readings = LinkedHashMap(st.input.readings).apply { put(obs.provider, reading) })
+            return save("quote", userId, quoteId, ComparisonEngine.compute(st.input, clock.instant()))
         }
     }
 
-    /** CR-004: the assumptions name the address the user chose (by label only). */
-    private fun JsonObject.withDeliveryLabel(label: String): JsonObject = with(
-        "assumptions",
-        JsonArray(this["assumptions"]!!.jsonArray.map { a ->
-            if (a.jsonPrimitive.content.startsWith("Delivery to")) JsonPrimitive("Delivery to your saved address \"$label\"") else a
-        }),
-    )
-
-    fun quote(userId: String, quoteId: String) = deviceDeadline(userId, quoteId, own("quote", userId, quoteId))
+    /** The quote as it stands now; a provider whose reading hasn't arrived by the deadline counts as not checked. */
+    fun quote(userId: String, quoteId: String): JsonObject {
+        val stored = own("quote", userId, quoteId)
+        val st = quotes["$userId:$quoteId"] ?: return stored
+        synchronized(st) {
+            val late = st.device - st.reported
+            if (late.isNotEmpty() && !clock.instant().isBefore(st.deadline)) {
+                st.reported += late
+                st.input = st.input.copy(readings = LinkedHashMap(st.input.readings).apply {
+                    late.forEach { put(it, Reading.NotRead("failed", "Your phone didn't report prices in time", "device")) }
+                })
+            }
+            return save("quote", userId, quoteId, ComparisonEngine.compute(st.input, clock.instant()))
+        }
+    }
 
     fun confirmQuote(userId: String, quoteId: String, provider: String, acknowledgedSwitch: Boolean): JsonObject {
         val q = quote(userId, quoteId)
         if (!Instant.parse(q.str("expires_at")!!).isAfter(clock.instant())) throw ApiException(ErrorCode.QUOTE_EXPIRED)
         val offered = q["provider_results"]!!.jsonArray.map { it.jsonObject.str("provider") }
         if (provider !in offered) throw ApiException(ErrorCode.CONFLICT)
-        // Switching away from the app the user picked needs an explicit acknowledgement.
-        if (provider != q.str("selected_provider") && !acknowledgedSwitch) throw ApiException(ErrorCode.CONFLICT)
+        // Switching away from the app the user picked needs an explicit acknowledgement (no pick, no switch).
+        val picked = q.str("selected_provider")
+        if (picked != null && provider != picked && !acknowledgedSwitch) throw ApiException(ErrorCode.CONFLICT)
         confirmations["$userId:$quoteId"] = provider
         return JsonObject(mapOf("quote_id" to JsonPrimitive(quoteId), "confirmed_provider" to JsonPrimitive(provider), "confirmed_at" to JsonPrimitive(now().toString())))
     }
@@ -202,7 +229,7 @@ class Phase4Stubs(
         // CR-002 G: a single-use nonce ties the approval to exactly this plan.
         val nonce = "apn_" + Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(16).also(random::nextBytes))
         // CR-005: if the phone read this provider's prices, the phone runs its task; it isn't simulated here.
-        if (deviceQuotes["$userId:$quoteId"]?.providers?.contains(provider) == true) deviceTasks["$userId:$id"] = DeviceTask()
+        if (quotes["$userId:$quoteId"]?.device?.contains(provider) == true) deviceTasks["$userId:$id"] = DeviceTask()
         return save("task", userId, id, base.with("task_id", id).with("quote_id", quoteId).with("provider", provider).with("planned_actions", actions).with("approval_nonce", nonce))
     }
 
@@ -420,6 +447,8 @@ class Phase4Stubs(
 
     private companion object {
         val TERMINAL = setOf("CART_READY", "HANDED_OFF", "CANCELLED", "EXPIRED", "FAILED_SAFE", "BLOCKED_POLICY")
+
+        val QUOTE_TTL: Duration = Duration.ofMinutes(5)
 
         /** CR-005: how long the phone has to report a provider's prices. */
         val DEVICE_WINDOW: Duration = Duration.ofSeconds(120)

@@ -26,9 +26,11 @@ The architecture is unchanged: partner apps are driven only on the phone, and th
 
    A retry with the same `Idempotency-Key` returns the same quote. A second, different reading for the same provider is refused (409).
 3. **The server does all the computing.** Line totals, fees, totals, ranks, coverage, recommendation and savings come from the 4.4 engine, under the existing rules:
-   - totals only for complete carts with every fee known;
-   - "Cheapest" only with full coverage;
-   - unstated fees listed in `unavailable_fields`.
+   - totals only for complete carts, made of the items and every fee the app states (PRD FR-5A: "including known fees");
+   - "Cheapest" only with full coverage and no fee missing;
+   - unstated fees listed in `unavailable_fields`, never counted as zero.
+
+   *(Corrected 28 Nov 2026 in slice 4.4: the draft said "totals only … with every fee known" and called it the existing rule. The PRD and the frozen fixtures give a total with the known fees and list the missing one; see D-031.)*
 
    Nothing computed on the phone is accepted.
 4. **Results say where they came from.** `ProviderResult` gains optional `source` (`device` | `server`), so the app can say "Prices read on this phone" without parsing notes.

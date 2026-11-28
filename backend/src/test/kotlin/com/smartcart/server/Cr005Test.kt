@@ -105,9 +105,11 @@ class Cr005Test {
     @Test fun unstatedFeesUnreadAppsAndSilenceNeverEarnCheapest() = withApp(testServices(clock)) {
         val t = client.register().tokens.accessToken
         val unstated = client.observe(t, client.quote(t).s("quote_id"), reading(fees = fees(platform = "null"))).obj()
-        assertEquals(null, unstated.result("blinkit").total(), "a fee the app doesn't state isn't assumed to be zero")
+        // PRD: totals include the known fees; a fee the app doesn't state is listed, never counted, and rules out "cheapest".
+        assertEquals(23300L + 500L, unstated.result("blinkit").total())
         assertTrue("platform_fee" in unstated.result("blinkit")["unavailable_fields"]!!.jsonArray.map { it.jsonPrimitive.content })
-        assertEquals("swiggy_instamart", unstated["recommendation"]!!.jsonObject.s("provider"))
+        assertEquals("[\"platform_fee\"]", unstated["missing_fields"].toString())
+        assertEquals("lowest_observed_estimate", unstated["recommendation"]!!.jsonObject.s("label"))
 
         val login = """{"provider":"blinkit","captured_at":"${clock.now}","outcome":"not_read","not_read_reason":"login_required",$adapter}"""
         val notRead = client.observe(t, client.quote(t).s("quote_id"), login).obj()

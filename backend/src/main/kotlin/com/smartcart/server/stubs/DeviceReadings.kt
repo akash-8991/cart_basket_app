@@ -74,104 +74,9 @@ import kotlinx.serialization.json.longOrNull
     val adapter: AdapterRef,
 )
 
-/**
- * CR-005 on the server: turns what a phone read into a provider result and recomputes the quote. The phone
- * sends readings only; every total, rank, label and saving is worked out here, under the comparison rules:
- * totals only for complete carts with every fee known, "Cheapest" only with full coverage, unstated fees
- * listed as unavailable, never assumed zero.
- */
+/** CR-005 helpers that aren't the comparison itself (that is [com.smartcart.server.comparison.ComparisonEngine]). */
 internal object DeviceReadings {
     private fun JsonObject.str(k: String) = this[k]?.takeUnless { it is JsonNull }?.jsonPrimitive?.content
-    private fun JsonObject.set(k: String, v: JsonElement) = JsonObject(toMutableMap().apply { put(k, v) })
-    private fun money(minor: Long, currency: String) = JsonObject(mapOf("amount_minor" to JsonPrimitive(minor), "currency" to JsonPrimitive(currency)))
-    private fun MoneyIn?.json(): JsonElement = this?.let { money(it.amountMinor, it.currency) } ?: JsonNull
-    private fun texts(vararg s: String) = JsonArray(s.map(::JsonPrimitive))
-    private fun JsonElement?.minor(): Long? = (this as? JsonObject)?.get("amount_minor")?.jsonPrimitive?.longOrNull
-
-    /** A provider's column while the phone hasn't reported: the requested lines, no figures. */
-    fun pending(result: JsonObject): JsonObject = JsonObject(
-        mapOf(
-            "provider" to result["provider"]!!,
-            "availability" to JsonPrimitive("not_checked"),
-            "captured_at" to JsonNull,
-            "lines" to JsonArray(result["lines"]!!.jsonArray.map { cleared(it.jsonObject) }),
-            "components" to JsonObject(emptyMap()),
-            "total_estimate" to JsonNull,
-            "eta_minutes" to JsonNull,
-            "rank" to JsonNull,
-            "unavailable_fields" to JsonArray(emptyList()),
-            "notes" to texts("Waiting for prices from your phone"),
-            "source" to JsonPrimitive("device"),
-        ),
-    )
-
-    private fun cleared(line: JsonObject) = JsonObject(line.toMutableMap().apply {
-        put("unit_price", JsonNull); put("line_total", JsonNull)
-    })
-
-    /** What the phone read, as a provider result. [lines] are the quote's lines for that provider. */
-    fun read(provider: String, lines: JsonArray, obs: PriceObservation, currency: String, displayName: String): JsonObject {
-        val byLine = obs.offers.associateBy { it.lineId }
-        val read = lines.map { el ->
-            val l = el.jsonObject
-            val o = byLine[l.str("line_id")]
-            val qty = l["quantity"]?.jsonPrimitive?.content?.toIntOrNull() ?: 1
-            val m = l.toMutableMap()
-            when {
-                o == null || !o.found || o.unitPrice == null -> {
-                    m["matched_name"] = JsonNull; m["matched_size"] = JsonNull; m["unit_price"] = JsonNull; m["line_total"] = JsonNull
-                    m["match"] = JsonPrimitive("unavailable"); m["note"] = JsonPrimitive("Not found in $displayName")
-                }
-                !o.inStock -> {
-                    m["matched_name"] = JsonPrimitive(o.name); m["matched_size"] = JsonNull; m["unit_price"] = o.unitPrice.json(); m["line_total"] = JsonNull
-                    m["match"] = JsonPrimitive("unavailable"); m["note"] = JsonPrimitive("Out of stock")
-                }
-                else -> {
-                    m["matched_name"] = JsonPrimitive(o.name); m["matched_size"] = JsonNull; m["unit_price"] = o.unitPrice.json()
-                    m["line_total"] = money(o.unitPrice.amountMinor * qty, currency)
-                    m["match"] = JsonPrimitive("exact"); m["note"] = JsonNull
-                }
-            }
-            JsonObject(m)
-        }
-        val missing = read.count { it.str("match") == "unavailable" }
-        val availability = when (missing) { 0 -> "available"; read.size -> "unavailable"; else -> "partial" }
-        val subtotal = read.mapNotNull { it["line_total"].minor() }.sum()
-        val fees = (obs.fees ?: ObservedFees()).named()
-        // Surge and discounts are optional for groceries: unstated means none. Every other fee must be stated.
-        val unknown = fees.filter { (k, v) -> v == null && k !in setOf("surge_or_booking_fee", "discounts") }.map { it.first }
-        val total = if (availability == "available" && unknown.isEmpty()) {
-            subtotal + fees.filter { it.first != "discounts" }.sumOf { it.second?.amountMinor ?: 0 } - (obs.fees?.discounts?.amountMinor ?: 0)
-        } else null
-        val components = JsonObject(mapOf("item_subtotal" to money(subtotal, currency)) + fees.associate { (k, v) -> k to v.json() })
-        return JsonObject(
-            mapOf(
-                "provider" to JsonPrimitive(provider),
-                "availability" to JsonPrimitive(availability),
-                "captured_at" to JsonPrimitive(obs.capturedAt),
-                "lines" to JsonArray(read),
-                "components" to components,
-                "total_estimate" to (total?.let { money(it, currency) } ?: JsonNull),
-                "eta_minutes" to (obs.etaMinutes?.let(::JsonPrimitive) ?: JsonNull),
-                "rank" to JsonNull,
-                "unavailable_fields" to JsonArray((unknown + listOfNotNull("eta_minutes".takeIf { obs.etaMinutes == null })).map(::JsonPrimitive)),
-                "notes" to JsonArray(
-                    listOfNotNull(
-                        "Prices read on your phone",
-                        if (missing > 0) "$missing of ${read.size} items aren't available" else null,
-                        if (unknown.isNotEmpty() && availability == "available") "$displayName doesn't state every fee, so there's no total" else null,
-                    ).map(::JsonPrimitive),
-                ),
-                "source" to JsonPrimitive("device"),
-            ),
-        )
-    }
-
-    /** A provider the phone couldn't read: it counts as not checked. */
-    fun failed(result: JsonObject, note: String): JsonObject = pending(result)
-        .set("availability", JsonPrimitive("failed"))
-        .set("unavailable_fields", texts("item_subtotal", "delivery_fee", "packaging_fee", "platform_fee", "small_cart_fee", "taxes", "eta_minutes"))
-        .set("notes", texts(note))
 
     fun notReadNote(reason: String?, displayName: String): String = when (reason) {
         "service_off" -> "SmartCart's accessibility service was off, so $displayName wasn't read"
@@ -184,55 +89,6 @@ internal object DeviceReadings {
         "kill_switch" -> "Automation for $displayName is paused"
         else -> "Your phone couldn't read $displayName"
     }
-
-    /**
-     * Ranks, coverage, status and recommendation for a quote some of whose providers are read on the phone.
-     * [pending] providers keep the quote in progress.
-     */
-    fun recompute(quote: JsonObject, pending: Set<String>): JsonObject {
-        val results = quote["provider_results"]!!.jsonArray.map { it.jsonObject }
-        val comparable = results.filter { it.str("availability") == "available" && it["total_estimate"].minor() != null }
-            .sortedBy { it["total_estimate"].minor() }
-        val ranked = results.map { r -> r.set("rank", comparable.indexOfFirst { it.str("provider") == r.str("provider") }.takeIf { it >= 0 }?.let { JsonPrimitive(it + 1) } ?: JsonNull) }
-        val checked = quote["coverage"]!!.jsonObject["checked"]!!.jsonArray
-        val failed = results.filter { it.str("availability") == "failed" }.map { it.str("provider")!! }
-        val complete = failed.isEmpty() && pending.isEmpty() && checked.isNotEmpty()
-        val coverage = JsonObject(mapOf("checked" to checked, "failed" to JsonArray(failed.map(::JsonPrimitive)), "complete" to JsonPrimitive(complete)))
-        val status = when {
-            pending.isNotEmpty() -> "in_progress"
-            complete -> "complete"
-            else -> "partial_coverage"
-        }
-        val best = comparable.firstOrNull()
-        val recommendation = when {
-            pending.isNotEmpty() -> rec(null, "none", "Still checking prices on your phone.", null)
-            quote.str("objective") != "lowest_total" -> quote["recommendation"]!!.jsonObject
-            best == null -> rec(null, "none", "No app had every item with a known total.", null)
-            else -> {
-                val selected = quote.str("selected_provider")?.let { s -> results.firstOrNull { it.str("provider") == s } }
-                val bestTotal = best["total_estimate"].minor()!!
-                val savings = selected?.takeIf { it.str("provider") != best.str("provider") }?.get("total_estimate").minor()
-                    ?.takeIf { it > bestTotal }?.let { money(it - bestTotal, quote.str("currency")!!) }
-                rec(
-                    best.str("provider"),
-                    if (complete) "cheapest" else "lowest_observed_estimate",
-                    if (complete) "Lowest estimated complete-cart total across all ${checked.size} apps checked."
-                    else "Lowest estimated total among the apps that could be checked.",
-                    savings,
-                )
-            }
-        }
-        return quote.set("provider_results", JsonArray(ranked)).set("coverage", coverage).set("status", JsonPrimitive(status)).set("recommendation", recommendation)
-    }
-
-    private fun rec(provider: String?, label: String, reason: String, savings: JsonElement?) = JsonObject(
-        mapOf(
-            "provider" to (provider?.let(::JsonPrimitive) ?: JsonNull),
-            "label" to JsonPrimitive(label),
-            "reason" to JsonPrimitive(reason),
-            "savings_vs_selected" to (savings ?: JsonNull),
-        ),
-    )
 
     /** The items approved for [provider]'s cart: name (with size) and quantity, from the quote it is bound to. */
     fun approvedItems(quote: JsonObject, provider: String): List<Pair<String, Int>> =

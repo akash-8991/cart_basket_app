@@ -4,6 +4,7 @@ import com.smartcart.server.Services
 import com.smartcart.server.auth.AUTH_USER
 import com.smartcart.server.auth.io
 import com.smartcart.server.auth.user
+import com.smartcart.server.comparison.RequestedLine
 import com.smartcart.server.http.ApiException
 import com.smartcart.server.http.ApiJson
 import com.smartcart.server.http.ErrorCode
@@ -73,6 +74,21 @@ private fun instant(v: String?, field: String) { if (v != null && runCatching { 
 private fun amount(m: MoneyIn?, field: String) { if (m != null && (m.amountMinor !in 0..MAX_MINOR || m.currency.length != 3)) bad(field) }
 private fun text(v: String?, max: Int, field: String) { if (v != null && (v.isBlank() || v.length > max)) bad(field, "invalid_length") }
 private fun adapter(a: AdapterRef) { text(a.key, 40, "adapter.key"); text(a.version, 20, "adapter.version") }
+
+/** The cart lines to compare (CartLine in the contract): name, optional size, quantity. */
+private fun QuoteRequest.requestedLines(): List<RequestedLine> {
+    val lines = cartLines.orEmpty().map { el ->
+        val o = el as? kotlinx.serialization.json.JsonObject ?: bad("cart_lines")
+        fun s(k: String) = (o[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+        val q = (o["quantity"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: 1
+        val id = s("line_id") ?: bad("cart_lines.line_id", "required")
+        val name = s("name")?.takeIf { it.isNotBlank() && it.length <= 120 } ?: bad("cart_lines.name")
+        if (q !in 1..99) bad("cart_lines.quantity")
+        RequestedLine(id, name.trim(), s("size")?.trim()?.takeIf { it.isNotEmpty() }, q)
+    }
+    if (lines.size > 50 || lines.map { it.lineId }.toSet().size != lines.size) bad("cart_lines")
+    return lines
+}
 
 /** CR-005: the shape of a price reading; what depends on the quote is checked against it in [Phase4Stubs]. */
 private fun PriceObservation.validate() {
@@ -160,8 +176,9 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         req.deliveryLabel?.let { if (it.isBlank() || it.length > 40) bad("delivery_label", "invalid_length") }
         val device = req.deviceProviders.orEmpty()
         if (device.size > 3 || device.toSet().size != device.size || device.any { it !in req.eligibleProviders }) bad("device_providers")
+        val lines = req.requestedLines()
         call.onceOnly(s, "quote:${u.userId}", ApiJson.encodeToString(QuoteRequest.serializer(), req), HttpStatusCode.Created) {
-            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective, req.deliveryLabel?.trim(), device) }
+            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective, req.deliveryLabel?.trim(), device, req.eligibleProviders, lines) }
         }
     }
     post("/v1/comparison/quotes/{quoteId}/observations") {

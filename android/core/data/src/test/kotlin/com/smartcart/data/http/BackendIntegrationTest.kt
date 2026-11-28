@@ -7,6 +7,9 @@ import com.smartcart.model.DeviceInfo
 import com.smartcart.model.ErrorCode
 import com.smartcart.model.NextStep
 import com.smartcart.model.ProviderKey
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -97,5 +100,55 @@ class BackendIntegrationTest {
         assertEquals(ErrorCode.INVALID_CREDENTIALS, (auth.login(userId, "not the password", true) as ApiResult.Failure).error.code)
         assertEquals(ErrorCode.WEAK_PASSWORD, (HttpAuthRepository(api, MemoryTokenStore()) { DeviceInfo(deviceId = "d2", appVersion = "1") }
             .register(userId + "x", "x@example.com", "1234567890") as ApiResult.Failure).error.code)
+    }
+
+    // ---------------------------------------------------------------- Phase 4.4: the server's comparison engine
+
+    private val cart = listOf(
+        com.smartcart.model.CartLine("l1", "Toned milk", 2, "1 L"), com.smartcart.model.CartLine("l2", "Brown bread", 1, "400 g"),
+        com.smartcart.model.CartLine("l3", "Eggs", 1, "12 pack"), com.smartcart.model.CartLine("l4", "Bananas", 1, "6 pcs"),
+    )
+    private val grocers = listOf(ProviderKey.BLINKIT, ProviderKey.BIGBASKET, ProviderKey.SWIGGY_INSTAMART)
+    private fun request() = com.smartcart.model.QuoteRequest(Category.GROCERY, cart, null, grocers, ProviderKey.BIGBASKET, com.smartcart.model.Objective.LOWEST_TOTAL, deliveryLabel = "Home")
+    private fun com.smartcart.model.ComparisonQuote.of(p: ProviderKey) = providerResults.single { it.provider == p }
+
+    @Test fun theServerWorksOutTheComparison() = runBlocking {
+        auth.register(userId, "$userId@example.com", password).ok()
+        val comparisons = HttpComparisonRepository(api, pollMillis = 200)
+        val id = comparisons.create(request()).ok()
+        val q = withTimeout(20_000) { comparisons.observe(id).toList() }.last().ok()
+        assertEquals(com.smartcart.model.ComparisonStatus.COMPLETE, q.status)
+        assertEquals(ProviderKey.BLINKIT, q.recommendation.provider)
+        assertEquals(com.smartcart.model.RecommendationLabel.CHEAPEST, q.badgeLabel)
+        assertEquals(22900L, q.of(ProviderKey.BLINKIT).totalEstimate!!.amountMinor)
+        assertTrue(q.assumptions.contains("Delivery to your saved address \"Home\""))
+        assertEquals(ProviderKey.BLINKIT, comparisons.confirm(id, ProviderKey.BLINKIT, acknowledgedSwitch = true).ok().confirmedProvider)
+    }
+
+    @Test fun thePhonesReadingChangesTheServersQuote() = runBlocking {
+        auth.register(userId, "$userId@example.com", password).ok()
+        providers.refresh().ok()
+        providers.setAutomationConsent(ProviderKey.BLINKIT, true).ok()
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        val store = com.smartcart.automation.FakeStore("normal", System::currentTimeMillis)
+        val phone = object : com.smartcart.data.device.OnDeviceAutomation {
+            override fun driver() = store
+            override val verifier = com.smartcart.automation.FakeVerifier()
+            override fun adapterFor(provider: ProviderKey) =
+                if (provider == ProviderKey.BLINKIT) com.smartcart.automation.teststore.TestStoreAdapter(setOf(com.smartcart.automation.FakeVerifier.GOOD_SIGNER)) else null
+        }
+        val comparisons = com.smartcart.data.device.DeviceComparisonRepository(
+            HttpComparisonRepository(api, pollMillis = 200), phone, providers, account, scope,
+            timing = com.smartcart.automation.RunnerTiming(pollMillis = 5, stepWaitMillis = 400, foreignPackageGraceMillis = 100),
+        )
+        val id = comparisons.create(request()).ok()
+        val q = withTimeout(30_000) { comparisons.observe(id).toList() }.last().ok()
+        val blinkit = q.of(ProviderKey.BLINKIT)
+        assertEquals(com.smartcart.model.ResultSource.DEVICE, blinkit.source)
+        assertEquals("₹233 read in the Test Store plus its ₹5 delivery fee", 23300L + 500L, blinkit.totalEstimate!!.amountMinor)
+        assertEquals(com.smartcart.model.ResultSource.SERVER, q.of(ProviderKey.BIGBASKET).source)
+        assertEquals(ProviderKey.BLINKIT, q.recommendation.provider)
+        assertEquals("₹264 at BigBasket (the person's pick) minus ₹238", 2600L, q.recommendation.savingsVsSelected!!.amountMinor)
+        scope.cancel()
     }
 }

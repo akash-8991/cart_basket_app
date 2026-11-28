@@ -54,7 +54,7 @@ import java.util.Locale
 @Serializable private data class ChatContext(val installedProviders: List<ProviderKey>, val locale: String, val currency: String)
 @Serializable private data class ChatMessageRequest(val sessionId: String, val text: String, val clarificationAnswer: ClarificationAnswer? = null, val context: ChatContext)
 
-private inline fun <reified T> encode(serializer: KSerializer<T>, value: T) = ApiJson.lenient.encodeToString(serializer, value)
+internal inline fun <reified T> encode(serializer: KSerializer<T>, value: T) = ApiJson.lenient.encodeToString(serializer, value)
 
 /** Versions of the terms, privacy and consent texts shipped in this build of the frozen frontend. */
 object PolicyVersions {

@@ -416,7 +416,7 @@ out('dashboard/monthly.json', 'MonthlyMetrics', { currency: 'INR', months: month
 const adapterRef = { key: 'teststore', version: '1' };
 out('comparison/grocery.device-pending.json', 'ComparisonQuote', quote('qt_grocery_device', 'grocery', 'in_progress',
   [{ ...notChecked('blinkit', 'not_checked', 'Waiting for prices from your phone'), source: 'device' }, { ...gBigbasket(), source: 'server' }, { ...gInstamart(), source: 'server' }],
-  { selected_provider: 'bigbasket', label: 'none', reason: 'Still checking prices on your phone.', confidence: 'medium', assumptions: assumptionsGrocery }), 201);
+  { selected_provider: 'bigbasket', label: 'none', reason: 'Still checking prices on your phone.', confidence: 'low', assumptions: assumptionsGrocery }), 201);
 const observed = (line_id, name, rupees, in_stock = true) => ({ line_id, found: true, name, unit_price: INR(rupees), in_stock });
 out('device/observation.read.json', 'PriceObservation', {
   provider: 'blinkit', captured_at: at(1), outcome: 'read', not_read_reason: null, adapter: adapterRef,

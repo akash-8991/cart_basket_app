@@ -8,6 +8,9 @@ import com.smartcart.data.ComparisonRepository
 import com.smartcart.data.ProviderRepository
 import com.smartcart.model.Availability
 import com.smartcart.model.ComparisonQuote
+import com.smartcart.model.LineMatch
+import com.smartcart.model.MatchedLine
+import com.smartcart.model.NotReadReason
 import com.smartcart.model.ComparisonStatus
 import com.smartcart.model.CostComponents
 import com.smartcart.model.ProviderKey
@@ -42,13 +45,27 @@ class DeviceComparisonRepository(
     private val timing: RunnerTiming = RunnerTiming(),
 ) : ComparisonRepository {
 
-    /** One provider's on-device check for one quote. [result] is set once it has finished. */
-    private data class Check(val provider: ProviderKey, val appName: String, val read: Int, val total: Int, val result: com.smartcart.model.ProviderResult? = null)
+    /**
+     * One provider's on-device check for one quote. Without a backend, [result] is the column worked out here; with
+     * one, [done] is set once the reading has been sent and the server works the column out (Phase 4.4).
+     */
+    private data class Check(
+        val provider: ProviderKey,
+        val appName: String,
+        val read: Int,
+        val total: Int,
+        val result: com.smartcart.model.ProviderResult? = null,
+        val done: Boolean = false,
+    )
 
     private val checks = ConcurrentHashMap<String, MutableStateFlow<Check>>()
     private val finished = ConcurrentHashMap<String, ComparisonQuote>()
 
     override suspend fun create(request: QuoteRequest): ApiResult<String> {
+        // One bound provider per comparison: the phone can only drive one app at a time.
+        val sink = base as? DeviceReadingSink
+        val bound = request.eligibleProviders.firstOrNull { device.adapterFor(it) != null }
+        if (sink != null && bound != null) return createOnServer(sink, request, bound)
         val r = base.create(request)
         if (r !is ApiResult.Success) return r
         val quoteId = r.value
@@ -87,6 +104,42 @@ class DeviceComparisonRepository(
         return r
     }
 
+    /**
+     * With a backend (CR-005): the server is told which provider the phone reads, the phone reads it, and the
+     * reading — not a worked-out column — is sent for the server's engine to use. If anything stops the phone
+     * from reading, it says why; if the reading never arrives, the server's deadline marks the provider unchecked.
+     */
+    private suspend fun createOnServer(sink: DeviceReadingSink, request: QuoteRequest, provider: ProviderKey): ApiResult<String> {
+        val r = base.create(request.copy(deviceProviders = listOf(provider)))
+        if (r !is ApiResult.Success) return r
+        val quoteId = r.value
+        val adapter = device.adapterFor(provider)!!
+        val lines = request.cartLines.map { MatchedLine(lineId = it.lineId, requestedName = it.label, matchedName = it.name, matchedSize = it.size, quantity = it.quantity, match = LineMatch.EXACT) }
+            .ifEmpty { base.cached(quoteId)?.providerResults?.firstOrNull { it.lines.isNotEmpty() }?.lines.orEmpty() }
+        val items = lines.map(CapturedQuote::item)
+        val state = MutableStateFlow(Check(provider, adapter.appName, 0, items.size))
+        checks[quoteId] = state
+        scope.launch {
+            fun at() = clock.instant().toString()
+            val driver = device.driver()
+            val observation = when {
+                items.isEmpty() -> DeviceReports.notRead(provider, NotReadReason.STOPPED, adapter, at())
+                killed(provider) -> DeviceReports.notRead(provider, NotReadReason.KILL_SWITCH, adapter, at())
+                !consented(provider) -> DeviceReports.notRead(provider, NotReadReason.CONSENT_MISSING, adapter, at())
+                driver == null -> DeviceReports.notRead(provider, NotReadReason.SERVICE_OFF, adapter, at())
+                else -> {
+                    val capture = PriceCapture(driver, device.verifier, adapter, killSwitch = { killed(provider) }, timing = timing)
+                    val outcome = capture.run(items) { read, total -> state.value = state.value.copy(read = read, total = total) }
+                    device.returnToSmartCart()
+                    DeviceReports.observation(provider, lines, outcome, adapter, at(), base.cached(quoteId)?.currency ?: "INR")
+                }
+            }
+            sink.submitObservation(quoteId, observation)
+            state.value = state.value.copy(done = true)
+        }
+        return r
+    }
+
     private fun consented(provider: ProviderKey) = providers.providers.value.firstOrNull { it.key == provider }?.consent?.automation == true
 
     private fun killed(provider: ProviderKey) =
@@ -98,6 +151,7 @@ class DeviceComparisonRepository(
      */
     override fun observe(quoteId: String): Flow<ApiResult<ComparisonQuote>> {
         val check = checks[quoteId] ?: return base.observe(quoteId)
+        if (base is DeviceReadingSink) return observeOnServer(quoteId, check)
         return channelFlow {
             var latest: ApiResult<ComparisonQuote>? = null
             var last: ApiResult<ComparisonQuote>? = null
@@ -123,6 +177,22 @@ class DeviceComparisonRepository(
                 check.transformWhile { emit(it); it.result == null }.collect { emitMerged() }
             }
         }
+    }
+
+    /** The server's quote, with the phone's progress shown in its column until the reading has been sent. */
+    private fun observeOnServer(quoteId: String, check: MutableStateFlow<Check>): Flow<ApiResult<ComparisonQuote>> = channelFlow {
+        var latest: ApiResult<ComparisonQuote>? = null
+        var last: ApiResult<ComparisonQuote>? = null
+        val lock = Any()
+        fun emitLatest() = synchronized(lock) {
+            val b = latest ?: return@synchronized
+            val c = check.value
+            val next = if (b is ApiResult.Success && b.value.status == ComparisonStatus.IN_PROGRESS && !c.done) ApiResult.Success(overlay(b.value, c)) else b
+            if (next != last) { last = next; trySend(next) }
+        }
+        val watch = launch { check.collect { emitLatest() } }
+        base.observe(quoteId).collect { latest = it; emitLatest() }
+        watch.cancel()
     }
 
     /** The base quote while the phone is still reading: that provider's column shows how far it has got. */

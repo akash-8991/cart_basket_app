@@ -37,8 +37,8 @@ import java.util.UUID
  * `-Pandroid.testInstrumentationRunnerArguments.backendUrl=http://10.0.2.2:<port>`; see
  * tools/backend-integration.sh, which starts the backend and enables Blinkit through the operator API.
  *
- * Auth, account, providers and chat go over HTTP; comparison and the automation runtime are still the
- * on-device fakes until Phase 4.
+ * Auth, account, providers, chat and comparisons (the server's engine, 4.4) go over HTTP; cart tasks are
+ * still on the phone until 4.5.
  */
 @RunWith(AndroidJUnit4::class)
 class BackendEndToEndTest {
@@ -52,9 +52,11 @@ class BackendEndToEndTest {
     @Before fun setUp() {
         assumeTrue("no backendUrl argument; backend end-to-end test skipped", backendUrl != null)
         Device.grantNotifications()
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            Device.app.container = AppContainer(Device.context, AssetFixtureSource(Device.context), tokenStore = InMemoryTokenStore(), backendUrl = backendUrl)
-        }
+        useBackend()
+    }
+
+    private fun useBackend(testStore: com.smartcart.app.automation.TestStoreBinding? = null) = InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        Device.app.container = AppContainer(Device.context, AssetFixtureSource(Device.context), tokenStore = InMemoryTokenStore(), backendUrl = backendUrl, testStore = testStore)
     }
 
     @After fun tearDown() {
@@ -68,6 +70,37 @@ class BackendEndToEndTest {
         val c = Device.app.container
         scenario = ActivityScenario.launch(MainActivity::class.java)
 
+        registerChatAndCompare(c)
+
+        // The comparison comes from the server's engine (4.4); the cart task still runs on the phone until 4.5.
+        compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)
+        Device.screenshot("backend-e2e-04-comparison")
+        compose.clickable(s(R.string.cmp_use, "Blinkit")).performClick()
+        compose.waitUntil(20_000) {
+            compose.onAllNodes(hasText(s(R.string.approve_start)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodes(hasText(s(R.string.cmp_switch_title, "Blinkit")), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodes(hasText(s(R.string.cmp_switch_title, "Blinkit")), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNode(hasText(s(R.string.cmp_use, "Blinkit")) and hasClickAction() and hasAnyAncestor(isDialog())).performClick()
+        }
+        // Wait for the heading: the button is further down a lazy list and isn't built until scrolled to.
+        compose.waitForText(s(R.string.approve_steps))
+        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.approve_start)))
+        compose.clickable(s(R.string.approve_start)).performClick()
+        compose.waitForText(s(R.string.ready_open_cart, "Blinkit"), timeoutMs = 30_000)
+        Device.screenshot("backend-e2e-05-cart-ready")
+
+        // The backend holds the account and the consents the journey used.
+        runBlocking {
+            assertEquals(userId, (c.account.profile() as ApiResult.Success).value.userId)
+            val consents = (c.account.consents() as ApiResult.Success).value.filter { it.granted }.map { it.key }
+            assertTrue(consents.containsAll(listOf("ai_processing", "automation.blinkit")))
+            c.auth.logout()
+        }
+    }
+
+    /** Register → verify-email banner → grocery chat with AI consent → clarification → cart → compare (with an address). */
+    private fun registerChatAndCompare(c: AppContainer) {
         // Registration goes to the backend.
         compose.waitForText(s(R.string.welcome_create))
         compose.clickable(s(R.string.welcome_create)).performClick()
@@ -111,31 +144,27 @@ class BackendEndToEndTest {
         compose.clickable(s(R.string.chat_compare_cart)).performClick()
         // CR-004: no saved address yet, so Compare asks for one first, then carries on.
         compose.addHomeAddress()
+    }
 
-        // Comparison and automation are still on-device fakes, gated by the backend's provider status and consent.
-        compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)
-        Device.screenshot("backend-e2e-04-comparison")
-        compose.clickable(s(R.string.cmp_use, "Blinkit")).performClick()
-        compose.waitUntil(20_000) {
-            compose.onAllNodes(hasText(s(R.string.approve_start)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() ||
-                compose.onAllNodes(hasText(s(R.string.cmp_switch_title, "Blinkit")), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-        }
-        if (compose.onAllNodes(hasText(s(R.string.cmp_switch_title, "Blinkit")), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
-            compose.onNode(hasText(s(R.string.cmp_use, "Blinkit")) and hasClickAction() and hasAnyAncestor(isDialog())).performClick()
-        }
-        // Wait for the heading: the button is further down a lazy list and isn't built until scrolled to.
-        compose.waitForText(s(R.string.approve_steps))
-        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.approve_start)))
-        compose.clickable(s(R.string.approve_start)).performClick()
-        compose.waitForText(s(R.string.ready_open_cart, "Blinkit"), timeoutMs = 30_000)
-        Device.screenshot("backend-e2e-05-cart-ready")
-
-        // The backend holds the account and the consents the journey used.
-        runBlocking {
-            assertEquals(userId, (c.account.profile() as ApiResult.Success).value.userId)
-            val consents = (c.account.consents() as ApiResult.Success).value.filter { it.granted }.map { it.key }
-            assertTrue(consents.containsAll(listOf("ai_processing", "automation.blinkit")))
-            c.auth.logout()
+    @Test fun thePhonesReadingReachesTheServersComparison() = screenshotOnFailure("backendPhoneReading") {
+        // Phase 4.4 end to end: the phone reads Blinkit's prices in the Test Store, sends the reading (CR-005),
+        // and the server's engine puts it in the comparison.
+        val binding = com.smartcart.app.automation.TestStoreBinding(Device.context).apply { enabled.value = true }
+        useBackend(binding)
+        Automation.turnOn()
+        Automation.scenario("normal")
+        try {
+            val c = Device.app.container
+            scenario = ActivityScenario.launch(MainActivity::class.java)
+            registerChatAndCompare(c)
+            compose.waitForText("Prices read on your phone", timeoutMs = 60_000)
+            // The backend's chat builds 1 × toned milk, bread, eggs and bananas: ₹28 + ₹45 + ₹84 + ₹48 in the Test
+            // Store plus its ₹5 delivery fee. (The server's own sample prices for Blinkit would give ₹201.)
+            compose.waitForText(com.smartcart.model.Money(2800L + 4500 + 8400 + 4800 + 500, "INR").format())
+            compose.waitForText(s(R.string.rec_label_cheapest))
+            Device.screenshot("backend-e2e-06-phone-reading")
+        } finally {
+            Automation.turnOff()
         }
     }
 }

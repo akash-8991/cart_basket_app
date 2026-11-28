@@ -176,4 +176,7 @@ data class QuoteRequest(
 )
 
 @Serializable
+data class ConfirmQuoteRequest(val provider: ProviderKey, val acknowledgedSwitch: Boolean)
+
+@Serializable
 data class QuoteConfirmation(val quoteId: String, val confirmedProvider: ProviderKey, val confirmedAt: String)

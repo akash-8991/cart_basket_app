@@ -36,6 +36,7 @@ import com.smartcart.data.http.ApiClient
 import com.smartcart.data.http.HttpAccountRepository
 import com.smartcart.data.http.HttpAuthRepository
 import com.smartcart.data.http.HttpChatRepository
+import com.smartcart.data.http.HttpComparisonRepository
 import com.smartcart.data.http.HttpProviderRepository
 import com.smartcart.data.http.HttpConfigRepository
 import com.smartcart.data.http.PolicyVersions
@@ -70,7 +71,7 @@ class AppContainer(
     tokenStore: TokenStore? = null,
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     addressStore: AddressStore? = null,
-    /** Phase 3.7: when set, auth, account, providers and chat use the backend; everything else stays on fakes until Phase 4. */
+    /** Phase 3.7: when set, auth, account, providers and chat use the backend; comparisons too since 4.4. */
     val backendUrl: String? = null,
     /** Phase 4.2–4.3, debug builds only: lets Blinkit's prices and cart tasks really run in SmartCart Test Store. */
     val testStore: TestStoreBinding? = null,
@@ -108,9 +109,11 @@ class AppContainer(
     // until the Phase 4 device spike; until then the app reports "unknown" (null).
     val providers: ProviderRepository = api?.let { HttpProviderRepository(it, account) } ?: FakeProviderRepository(fixtures, mock)
     val chat: ChatRepository = api?.let { HttpChatRepository(it, providers) } ?: FakeChatRepository(fixtures, mock)
-    // Phase 4.3: with the debug Test Store binding on, the bound provider's prices are read on the phone.
-    val comparisons: ComparisonRepository = FakeComparisonRepository(fixtures, mock).let { fixtureComparisons ->
-        testStore?.let { DeviceComparisonRepository(fixtureComparisons, it, providers, account, scope) } ?: fixtureComparisons
+    // Phase 4.4: with a backend, comparisons are worked out by the server's engine; otherwise by fixtures.
+    // Phase 4.3: with the debug Test Store binding on, the bound provider's prices are read on the phone
+    // (and, with a backend, sent to the server as a reading, CR-005).
+    val comparisons: ComparisonRepository = (api?.let { HttpComparisonRepository(it) } ?: FakeComparisonRepository(fixtures, mock)).let { base ->
+        testStore?.let { DeviceComparisonRepository(base, it, providers, account, scope) } ?: base
     }
     private val simulatedTasks = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
     // A task runs on the phone when an adapter is bound for its provider (only the debug Test Store binding so

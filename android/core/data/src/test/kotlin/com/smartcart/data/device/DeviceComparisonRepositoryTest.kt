@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -161,5 +162,53 @@ class DeviceComparisonRepositoryTest {
             listOf("Add Toned milk 1 L × 2", "Add Eggs 12 pack × 1", "Add Bananas 6 pcs × 1"),
             t.plannedActions.filter { it.type == ActionType.SELECT_ITEM }.map { it.description },
         )
+    }
+
+    /** Stands in for the server (4.4): records what the phone sends and settles the quote once the reading arrives. */
+    private class FakeServer(private val inner: FakeComparisonRepository) : com.smartcart.data.ComparisonRepository by inner, DeviceReadingSink {
+        val requests = mutableListOf<QuoteRequest>()
+        val readings = mutableListOf<com.smartcart.model.PriceObservation>()
+        private val settled = kotlinx.coroutines.flow.MutableStateFlow(false)
+        override suspend fun create(request: QuoteRequest) = inner.create(request).also { requests += request }
+        override suspend fun submitObservation(quoteId: String, observation: com.smartcart.model.PriceObservation): ApiResult<ComparisonQuote> {
+            readings += observation
+            settled.value = true
+            return ApiResult.Success(inner.cached(quoteId)!!)
+        }
+        override fun observe(quoteId: String) = kotlinx.coroutines.flow.flow {
+            val q = inner.cached(quoteId)!!
+            emit(ApiResult.Success(q.copy(status = ComparisonStatus.IN_PROGRESS)))
+            settled.first { it }
+            emit(ApiResult.Success(q.copy(providerResults = q.providerResults.map { if (it.provider == ProviderKey.BLINKIT) it.copy(source = com.smartcart.model.ResultSource.DEVICE) else it })))
+        }
+    }
+
+    @Test fun withABackendThePhoneSendsItsReadingInsteadOfWorkingOutTheColumn() = runBlocking {
+        val e = env()
+        val server = FakeServer(FakeComparisonRepository(fixtures, e.mock))
+        val repo = DeviceComparisonRepository(server, e.phone, e.providers, e.account, scope, timing = timing)
+        val cart = listOf(com.smartcart.model.CartLine("c1", "Toned milk", 2, "1 L"), com.smartcart.model.CartLine("c2", "Paneer", 1, "200 g"))
+        val id = (repo.create(QuoteRequest(Category.GROCERY, cart, eligibleProviders = all, objective = Objective.LOWEST_TOTAL)) as ApiResult.Success).value
+        val seen = withTimeout(10_000) { repo.observe(id).toList() }.map { (it as ApiResult.Success).value }
+
+        assertEquals("the server is told which provider the phone reads", listOf(ProviderKey.BLINKIT), server.requests.single().deviceProviders)
+        val reading = server.readings.single()
+        assertEquals(com.smartcart.model.ObservationOutcome.READ, reading.outcome)
+        assertEquals("keyed by the cart's own lines", listOf("c1", "c2"), reading.offers.map { it.lineId })
+        assertEquals(2800L, reading.offers[0].unitPrice!!.amountMinor)
+        assertFalse("paneer isn't in the store", reading.offers[1].found)
+        assertTrue("progress shows while the phone reads", seen.any { q -> q.of(ProviderKey.BLINKIT).notes.any { it.startsWith("Reading prices in Test Store:") } })
+        assertEquals("the server's quote is the final word", com.smartcart.model.ResultSource.DEVICE, seen.last().of(ProviderKey.BLINKIT).source)
+        assertEquals(1, e.phone.returns)
+    }
+
+    @Test fun withABackendAnUnreadableProviderIsReportedWithItsReason() = runBlocking {
+        val e = env(phone = Phone(FakeStore("normal", System::currentTimeMillis), connected = false))
+        val server = FakeServer(FakeComparisonRepository(fixtures, e.mock))
+        val repo = DeviceComparisonRepository(server, e.phone, e.providers, e.account, scope, timing = timing)
+        val id = (repo.create(QuoteRequest(Category.GROCERY, eligibleProviders = all, objective = Objective.LOWEST_TOTAL)) as ApiResult.Success).value
+        withTimeout(10_000) { repo.observe(id).toList() }
+        assertEquals(com.smartcart.model.NotReadReason.SERVICE_OFF, server.readings.single().notReadReason)
+        assertEquals(0, e.phone.store.launches)
     }
 }
