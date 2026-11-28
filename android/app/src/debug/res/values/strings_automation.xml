@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="automation_service_label">SmartCart cart helper</string>
+    <string name="automation_service_summary">Adds items you approved to a shopping app\'s cart</string>
+    <string name="automation_service_description">When you approve a cart, SmartCart opens the shopping app and adds exactly the items you approved, then checks the cart. It reads only that app\'s screens while the task runs, never touches payment, passwords or codes, and stops the moment you press Stop. In this test build it works only with SmartCart Test Store.</string>
+</resources>

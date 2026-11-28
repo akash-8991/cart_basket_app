@@ -80,10 +80,14 @@ val copyFixtures by tasks.registering(Copy::class) {
 }
 tasks.named("preBuild") { dependsOn(copyFixtures) }
 
+// Phase 4.1: device tests drive SmartCart Test Store, so install it alongside the app under test.
+tasks.matching { it.name == "connectedDebugAndroidTest" }.configureEach { dependsOn(":teststore:installDebug") }
+
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:automation"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

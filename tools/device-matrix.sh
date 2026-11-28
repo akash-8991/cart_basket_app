@@ -23,6 +23,11 @@ OUT="$ROOT/android/build/device-matrix"
 if [ $# -gt 0 ]; then ENTRIES=("$@"); else ENTRIES=(26 30 34 36 36:pixel_tablet); fi
 PORT=5560
 SERIAL="emulator-$PORT"
+# A hung test must fail its device, not stall the whole matrix (exit code 124 = timed out).
+TIMEOUT="$(command -v timeout || command -v gtimeout || true)"
+SUITE_LIMIT="${SUITE_LIMIT:-45m}"
+AUDIT_LIMIT="${AUDIT_LIMIT:-15m}"
+limit() { if [ -n "$TIMEOUT" ]; then "$TIMEOUT" "$@"; else shift; "$@"; fi; }
 
 mkdir -p "$OUT"
 log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
@@ -65,14 +70,15 @@ for ENTRY in "${ENTRIES[@]}"; do
 
   log "API $API $DEVICE: full device suite"
   rm -rf "$ROOT"/android/app/build/outputs/androidTest-results "$ROOT"/android/app/build/outputs/connected_android_test_additional_output
-  (cd "$ROOT/android" && ANDROID_SERIAL="$SERIAL" ./gradlew :app:connectedDebugAndroidTest --console=plain -q) >"$DEST/gradle.log" 2>&1
+  (cd "$ROOT/android" && ANDROID_SERIAL="$SERIAL" limit "$SUITE_LIMIT" ./gradlew :app:connectedDebugAndroidTest --console=plain -q) >"$DEST/gradle.log" 2>&1
   echo $? > "$DEST/exit-code"
+  [ "$(cat "$DEST/exit-code")" = 124 ] && { log "API $API $DEVICE: suite timed out after $SUITE_LIMIT"; "$ADB" -s "$SERIAL" shell am force-stop com.smartcart.app.debug; }
   collect "$DEST"
 
   log "API $API $DEVICE: accessibility audit at 2x font"
   "$ADB" -s "$SERIAL" shell settings put system font_scale 2.0
   rm -rf "$ROOT"/android/app/build/outputs/androidTest-results "$ROOT"/android/app/build/outputs/connected_android_test_additional_output
-  (cd "$ROOT/android" && ANDROID_SERIAL="$SERIAL" ./gradlew :app:connectedDebugAndroidTest --console=plain -q \
+  (cd "$ROOT/android" && ANDROID_SERIAL="$SERIAL" limit "$AUDIT_LIMIT" ./gradlew :app:connectedDebugAndroidTest --console=plain -q \
      -Pandroid.testInstrumentationRunnerArguments.class=com.smartcart.app.AccessibilityAuditTest) >"$DEST/gradle-font2.log" 2>&1
   echo $? > "$DEST/exit-code-font2"
   collect "$DEST/font2"
@@ -100,5 +106,7 @@ for d in sorted(glob.glob(os.path.join(out, "api*"))):
                 t += 1
                 for fl in tc.findall("failure") + tc.findall("error"):
                     f += 1; notes.append(tc.get("name"))
-        print(f"| {api} | {label} | {t} | {f} | {status if not xs else ', '.join(notes)} |")
+        code = os.path.join(d, "exit-code" if label == "full" else "exit-code-font2")
+        if os.path.exists(code) and open(code).read().strip() == "124": notes.insert(0, "TIMED OUT")
+        print(f"| {api} | {label} | {t} | {f} | {status if not xs and not notes else ', '.join(notes)} |")
 EOF

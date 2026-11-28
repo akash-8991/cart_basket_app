@@ -19,3 +19,6 @@ include(":app")
 include(":core:model")
 include(":core:data")
 include(":core:designsystem")
+include(":core:automation")
+include(":teststore")
+

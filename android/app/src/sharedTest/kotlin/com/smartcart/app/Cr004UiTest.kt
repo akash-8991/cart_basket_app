@@ -34,6 +34,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+
+/** Generous, because a freshly booted emulator can take several seconds to draw the chat. */
+private const val WAIT = 15_000L
 
 /** CR-004 in the app: user-entered delivery addresses, kept on the phone. Shared: JVM and device. */
 @RunWith(AndroidJUnit4::class)
@@ -54,7 +59,7 @@ class Cr004UiTest {
     }
 
     private fun waitForText(text: String, substring: Boolean = false) =
-        rule.waitUntil(5_000) { rule.onAllNodesWithText(text, substring = substring, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(WAIT) { rule.onAllNodesWithText(text, substring = substring, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
     private fun gone(text: String) = rule.onAllNodesWithText(text, useUnmergedTree = true).fetchSemanticsNodes().isEmpty()
     private fun field(label: Int) = rule.onNode(hasSetTextAction() and hasText(s(label)))
 
@@ -126,11 +131,11 @@ class Cr004UiTest {
         waitForText(s(R.string.addr_edit_title))
         rule.onNode(hasText(s(R.string.addr_make_default)) and isEnabled()).performClick()
         save()
-        rule.waitUntil(5_000) { c.addresses.default?.label == "Work" }
+        rule.waitUntil(WAIT) { c.addresses.default?.label == "Work" }
         rule.onNode(hasContentDescription(s(R.string.addr_edit_cd, "Home"))).performClick()
         rule.onNode(hasText(s(R.string.addr_delete)) and hasClickAction()).performScrollTo().performClick()
         rule.onNodeWithText(s(R.string.addr_delete_confirm)).performClick()
-        rule.waitUntil(5_000) { c.addresses.addresses.value.map { it.label } == listOf("Work") }
+        rule.waitUntil(WAIT) { c.addresses.addresses.value.map { it.label } == listOf("Work") }
     }
 
     /** Opens grocery chat and builds the cart that ends with "Compare full cart". */
@@ -138,10 +143,14 @@ class Cr004UiTest {
         runBlocking { c.account.setConsent("ai_processing", true) }
         show(c) { ChatScreen(Category.GROCERY, onBack = {}, onComparison = onQuote) }
         rule.onNode(hasSetTextAction()).performTextInput("Milk, brown bread, eggs and bananas")
-        rule.waitUntil(5_000) { rule.onAllNodes(hasContentDescription(s(R.string.chat_send)) and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(WAIT) { rule.onAllNodes(hasContentDescription(s(R.string.chat_send)) and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
         rule.onNode(hasContentDescription(s(R.string.chat_send))).performClick()
         waitForText("Toned milk 1 L")
-        rule.onNode(hasText("Toned milk 1 L") and hasClickAction()).performClick()
+        // The keyboard is still resizing the window here, and on a phone an injected tap can be cancelled by the
+        // layout moving under it; invoking the chip's click action runs the same handler without that race.
+        val milk = hasText("Toned milk 1 L") and hasClickAction()
+        rule.onNode(hasScrollToNodeAction()).performScrollToNode(milk)
+        rule.onNode(milk).performSemanticsAction(SemanticsActions.OnClick)
         waitForText(s(R.string.chat_compare_cart))
         rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.chat_compare_cart)))
     }
@@ -156,7 +165,7 @@ class Cr004UiTest {
         assertEquals("nothing is compared without an address", null, quoteId)
         fillForm()
         save()
-        rule.waitUntil(5_000) { quoteId != null }
+        rule.waitUntil(WAIT) { quoteId != null }
         assertTrue(assumptions(c, quoteId!!).contains("Delivery to your saved address \"Home\""))
     }
 
@@ -167,13 +176,15 @@ class Cr004UiTest {
         var quoteId: String? = null
         cartReadyToCompare(c) { quoteId = it }
         rule.onNode(hasContentDescription(s(R.string.chat_deliver_cd, "Home"))).performClick()
+        // The menu is a popup window; on a device it can attach a frame or two after the tap.
+        rule.waitUntil(WAIT) { rule.onAllNodes(hasText("Work") and hasClickAction()).fetchSemanticsNodes().isNotEmpty() }
         rule.onNode(hasText("Work") and hasClickAction()).performClick()
         rule.onNode(hasContentDescription(s(R.string.chat_deliver_cd, "Work"))).assertExists()
         // Let the menu finish closing (its popup would take the tap) and bring Compare back into view.
-        rule.waitUntil(5_000) { gone(s(R.string.addr_add)) }
+        rule.waitUntil(WAIT) { gone(s(R.string.addr_add)) }
         rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.chat_compare_cart)))
         rule.onNode(hasText(s(R.string.chat_compare_cart)) and hasClickAction()).performClick()
-        rule.waitUntil(5_000) { quoteId != null }
+        rule.waitUntil(WAIT) { quoteId != null }
         val a = assumptions(c, quoteId!!)
         assertTrue(a.toString(), a.contains("Delivery to your saved address \"Work\""))
         assertTrue("the street address stays on the phone", a.none { line -> "MG Road" in line || "560001" in line })
