@@ -51,55 +51,7 @@ class EndToEndFlowTest {
 
     @Test
     fun registerCompareApproveAndHandOff() = screenshotOnFailure("registerCompareApproveAndHandOff") {
-            // Welcome → Create account
-            compose.waitForText(s(R.string.welcome_create))
-            Device.screenshot("e2e-01-welcome")
-            compose.clickable(s(R.string.welcome_create)).performClick()
-
-            // Register
-            compose.waitForText(s(R.string.register_intro))
-            compose.onNode(hasSetTextAction() and hasText(s(R.string.auth_user_id))).performTextInput("priya.k")
-            compose.onNode(hasSetTextAction() and hasText(s(R.string.auth_email))).performTextInput("priya@example.com")
-            compose.onNode(hasSetTextAction() and hasText(s(R.string.auth_password))).performTextInput("correct horse battery")
-            compose.onNode(hasSetTextAction() and hasText(s(R.string.register_confirm_password))).performTextInput("correct horse battery")
-            compose.onNode(hasText(s(R.string.register_terms))).performScrollTo().performClick()
-            Device.screenshot("e2e-02-register")
-            compose.clickable(s(R.string.register_submit)).performScrollTo().performClick()
-
-            // Home: KPIs then categories; session stored in the real Keystore
-            compose.waitForText(s(R.string.home_what_do_you_need))
-            assertEquals("priya.k", Device.app.container.let { com.smartcart.app.security.KeystoreTokenStore(Device.context).read()?.userId })
-            Device.screenshot("e2e-03-home")
-            compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.category_grocery)))
-            compose.clickable(s(R.string.category_grocery)).performClick()
-
-            // Chat → clarification → cart draft
-            compose.waitFor(hasContentDescription(s(R.string.chat_send)))
-            compose.onNode(hasSetTextAction()).performTextInput("Milk, brown bread, eggs and bananas")
-            // Send stays disabled until the chat session exists; tapping it earlier would do nothing.
-            compose.waitFor(hasContentDescription(s(R.string.chat_send)) and isEnabled())
-            compose.onNode(hasContentDescription(s(R.string.chat_send))).performClick()
-            compose.waitForText("Toned milk 1 L")
-            compose.clickable("Toned milk 1 L").performClick()
-            compose.waitForText(s(R.string.chat_compare_cart))
-            // On a landscape tablet the on-screen keyboard leaves less room than the cart card needs; close it,
-            // as a user would, so scrolling to the button really brings it on screen.
-            scenario.onActivity { hideKeyboard(it) }
-            compose.waitForIdle()
-            compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.chat_compare_cart)))
-            Device.screenshot("e2e-04-chat")
-            compose.clickable(s(R.string.chat_compare_cart)).performClick()
-            // CR-004: no saved address yet, so Compare asks for one first, then carries on.
-            compose.addHomeAddress()
-
-            // Comparison: complete coverage → "Cheapest"; user picked BigBasket so switching asks first
-            compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)
-            compose.waitForText(s(R.string.rec_label_cheapest))
-            Device.screenshot("e2e-05-comparison")
-            compose.clickable(s(R.string.cmp_use, "Blinkit")).performClick()
-            compose.waitForText(s(R.string.cmp_switch_title, "Blinkit"))
-            Device.screenshot("e2e-06-switch-dialog")
-            compose.onNode(hasText(s(R.string.cmp_use, "Blinkit")) and hasClickAction() and hasAnyAncestor(isDialog())).performClick()
+            compose.registerCompareAndPickBlinkit(scenario, shots = true)
 
             // Approval: every step listed with its risk level
             compose.waitForText(s(R.string.approve_start))

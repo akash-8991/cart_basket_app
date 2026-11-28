@@ -37,40 +37,18 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class AutomationRuntimeDeviceTest {
-    // The instrumentation's own UiAutomation would otherwise suppress every other accessibility service.
-    private val ui: UiAutomation = Device.instrumentation.getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+    private val ui: UiAutomation = Device.ui
     private val ctx = Device.context
     private val verifier = AndroidPackageVerifier(ctx)
     private val items = listOf(ItemRequest("Toned milk 1 L", 2), ItemRequest("Brown bread 400 g", 1))
     private val plan = ExecutablePlan.forCart("Test Store", items)
     private val limits = TaskLimits(maxActions = 25, maxRuntimeSeconds = 180, inactivityTimeoutSeconds = 30)
 
-    private fun sh(cmd: String): String = ui.executeShellCommand(cmd).let { pfd ->
-        android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).bufferedReader().use { it.readText() }
-    }
+    @Before fun turnOnTheService() = Automation.turnOn()
 
-    @Before fun turnOnTheService() = runBlocking {
-        // Off first, then on: re-writing an unchanged value doesn't make the system rebind a service it dropped
-        // (for example after the app was reinstalled), and the test would wait for a connection that never comes.
-        sh("settings delete secure enabled_accessibility_services")
-        withTimeout(10_000) { while (AutomationHost.driver.value != null) delay(100) }
-        sh("settings put secure enabled_accessibility_services ${ctx.packageName}/${SmartCartAutomationService::class.java.name}")
-        sh("settings put secure accessibility_enabled 1")
-        withTimeout(15_000) { while (AutomationHost.driver.value == null) delay(100) }
-    }
+    @After fun turnItOff() = Automation.turnOff()
 
-    @After fun turnItOff() {
-        sh("settings delete secure enabled_accessibility_services")
-        sh("am force-stop ${TestStoreAdapter.PACKAGE}")
-    }
-
-    private fun scenario(name: String) {
-        sh("am force-stop ${TestStoreAdapter.PACKAGE}")
-        // -f 32 = FLAG_INCLUDE_STOPPED_PACKAGES, since the store was just force-stopped. `am broadcast` returns
-        // only after the receiver has saved the scenario.
-        val out = sh("am broadcast -f 32 -n ${TestStoreAdapter.PACKAGE}/.ConfigureReceiver --es scenario $name")
-        check("Broadcast completed" in out) { "configuring the Test Store failed: $out" }
-    }
+    private fun scenario(name: String) = Automation.scenario(name)
 
     private fun runner(): TaskRunner = TaskRunner(
         driver = assertNotNull("service connected", AutomationHost.driver.value).let { AutomationHost.driver.value!! },

@@ -42,6 +42,8 @@ data class RunState(
     val needsUserAction: NeedsUserAction? = null,
     val cart: VerifiedCart? = null,
     val failure: TaskFailure? = null,
+    /** Index in the plan of the step running (or that halted); a resumed run starts from it. */
+    val step: Int = 0,
 )
 
 /** Timing knobs. Defaults suit real phones; tests shrink them. */
@@ -91,12 +93,22 @@ class TaskRunner(
         if (_state.value.checkpoint?.checkpointId == checkpointId) checkpointAnswer?.complete(approve)
     }
 
-    suspend fun run(approvedActionIds: Set<String>): RunState {
+    /**
+     * Runs the plan. After the person has dealt with something only they can do (NEEDS_USER_ACTION), the task
+     * is run again from the step that halted: [resumeFrom] is that step and [actionsAlreadyUsed] keeps the
+     * action limit counting across the whole task. The full plan must still be the approved one, the app is
+     * checked again, and the cart is verified against every approved item.
+     */
+    suspend fun run(approvedActionIds: Set<String>, resumeFrom: Int = 0, actionsAlreadyUsed: Int = 0): RunState {
         startedAt = now(); lastProgressAt = startedAt
+        _state.update { it.copy(actionsUsed = actionsAlreadyUsed, step = resumeFrom) }
         val outcome = try {
             preflight(approvedActionIds)
-            status(TaskStatus.RUNNING, "Started in ${adapter.appName}")
-            for (step in plan.actions) runStep(step)
+            status(TaskStatus.RUNNING, if (resumeFrom > 0 || actionsAlreadyUsed > 0) "Continuing in ${adapter.appName}" else "Started in ${adapter.appName}")
+            for (i in resumeFrom until plan.actions.size) {
+                _state.update { it.copy(step = i) }
+                runStep(plan.actions[i])
+            }
             null
         } catch (h: Halted) {
             h.outcome
@@ -231,9 +243,17 @@ class TaskRunner(
         override fun cartRead(reading: CartReading) { this@TaskRunner.reading = reading }
     }
 
-    private fun hazardOutcome(h: Hazard): Outcome = when (h) {
-        Hazard.PAYMENT -> Outcome.Blocked("A payment screen appeared. Paying is always left to you")
-        else -> Outcome.NeedsUser(h.userReason!!, "${adapter.appName} is asking for something only you can do")
+    private fun hazardOutcome(h: Hazard): Outcome {
+        val app = adapter.appName
+        val then = "then come back and resume. I never type passwords or codes."
+        return when (h) {
+            Hazard.PAYMENT -> Outcome.Blocked("A payment screen appeared. Paying is always left to you")
+            Hazard.LOGIN -> Outcome.NeedsUser(h.userReason!!, "$app wants you to sign in. Sign in yourself in $app, $then")
+            Hazard.PASSWORD -> Outcome.NeedsUser(h.userReason!!, "$app is asking for your password. Enter it yourself, $then")
+            Hazard.OTP -> Outcome.NeedsUser(h.userReason!!, "$app is asking for a one-time code. Enter it yourself, $then")
+            Hazard.CAPTCHA -> Outcome.NeedsUser(h.userReason!!, "$app wants to check you're human. Do that yourself, $then")
+            Hazard.BIOMETRIC -> Outcome.NeedsUser(h.userReason!!, "$app is asking for your fingerprint or face. Do that yourself, $then")
+        }
     }
 
     /** Waited too long: say why as precisely as the screen allows. */
@@ -241,7 +261,7 @@ class TaskRunner(
         if (last == null) return Outcome.Failed(FailureCode.INACTIVITY_TIMEOUT, "${adapter.appName} stopped responding")
         val known = adapter.screens.firstOrNull { it.matches(last) }
         return when {
-            known == null && last.isSystemStyleDialog -> Outcome.NeedsUser(UserActionReason.UNEXPECTED_DIALOG, "${adapter.appName} showed a message that needs you")
+            known == null && last.isSystemStyleDialog -> Outcome.NeedsUser(UserActionReason.UNEXPECTED_DIALOG, "${adapter.appName} showed a message that needs you. Deal with it in ${adapter.appName}, then come back and resume.")
             known == null -> Outcome.Failed(FailureCode.UNKNOWN_SCREEN, "${adapter.appName} showed a screen I don't recognise, so I stopped")
             else -> Outcome.Failed(FailureCode.INACTIVITY_TIMEOUT, "${adapter.appName} didn't do what was expected")
         }
@@ -268,24 +288,28 @@ class TaskRunner(
     private fun finish(o: Outcome?) {
         when (o) {
             null -> status(TaskStatus.CART_READY, "Your cart is ready in ${adapter.appName}")
+            // A halt is one line in the timeline: the reason, with the status change it causes.
             is Outcome.NeedsUser -> {
                 _state.update { it.copy(needsUserAction = NeedsUserAction(o.reason, o.message)) }
-                halt(o.message); status(TaskStatus.NEEDS_USER_ACTION, o.message)
+                halt(TaskStatus.NEEDS_USER_ACTION, o.message)
             }
             is Outcome.Blocked -> {
                 _state.update { it.copy(failure = TaskFailure(FailureCode.POLICY_BLOCKED, o.message)) }
-                halt(o.message); status(TaskStatus.BLOCKED_POLICY, o.message)
+                halt(TaskStatus.BLOCKED_POLICY, o.message)
             }
             is Outcome.Failed -> {
                 _state.update { it.copy(failure = TaskFailure(o.code, o.message)) }
-                halt(o.message); status(TaskStatus.FAILED_SAFE, o.message)
+                halt(TaskStatus.FAILED_SAFE, o.message)
             }
-            Outcome.Stopped -> { halt("Stopped"); status(TaskStatus.CANCELLED, "Stopped") }
+            Outcome.Stopped -> halt(TaskStatus.CANCELLED, "Stopped")
             Outcome.Rejected -> status(TaskStatus.CANCELLED, "You chose to stop")
         }
     }
 
-    private fun halt(message: String) = event(TaskEventType.HALT, message)
+    private fun halt(s: TaskStatus, message: String) {
+        _state.update { it.copy(status = s) }
+        event(TaskEventType.HALT, message)
+    }
 
     private fun status(s: TaskStatus, description: String) {
         _state.update { it.copy(status = s) }

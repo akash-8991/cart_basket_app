@@ -37,8 +37,8 @@ class RotationDeviceTest {
 
     @After
     fun tearDown() {
-        Device.instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
-        Device.instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_UNFREEZE)
+        Device.ui.setRotation(UiAutomation.ROTATION_FREEZE_0)
+        Device.ui.setRotation(UiAutomation.ROTATION_UNFREEZE)
         scenario?.close()
     }
 
@@ -50,7 +50,7 @@ class RotationDeviceTest {
      */
     private fun rotate(quarterTurn: Boolean) {
         val before = resumedActivity()?.resources?.configuration?.orientation
-        Device.instrumentation.uiAutomation.setRotation(if (quarterTurn) UiAutomation.ROTATION_FREEZE_90 else UiAutomation.ROTATION_FREEZE_0)
+        Device.ui.setRotation(if (quarterTurn) UiAutomation.ROTATION_FREEZE_90 else UiAutomation.ROTATION_FREEZE_0)
         compose.waitUntil(15_000) { resumedActivity()?.resources?.configuration?.orientation.let { it != null && it != before } }
     }
 

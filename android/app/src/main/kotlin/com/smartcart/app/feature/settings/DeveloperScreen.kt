@@ -45,6 +45,7 @@ fun DeveloperScreen(onBack: () -> Unit) {
     val cfg by c.mock.config.collectAsStateWithLifecycle()
     val flags by c.flags.values.collectAsStateWithLifecycle()
     val events by c.analytics.events.collectAsStateWithLifecycle()
+    val testStoreOn = c.testStore?.enabled?.collectAsStateWithLifecycle()
 
     @Composable
     fun <E : Enum<E>> Choice(label: String, values: Array<E>, current: E, set: (MockConfig, E) -> MockConfig) {
@@ -62,6 +63,11 @@ fun DeveloperScreen(onBack: () -> Unit) {
             item { SectionHeader("Network") }
             item { SwitchRow("Offline", cfg.offline, { on -> c.mock.update { it.copy(offline = on) } }) }
             item { SwitchRow("Slow network (2.5 s)", cfg.latencyMs > 1000, { on -> c.mock.update { it.copy(latencyMs = if (on) 2500 else 700) } }) }
+            testStoreOn?.let { on ->
+                item { SectionHeader("On-device automation (Phase 4.2)") }
+                item { SwitchRow("Grocery tasks run in SmartCart Test Store", on.value, { v -> c.testStore?.enabled?.value = v }) }
+                item { Text("Needs the Test Store app installed and SmartCart turned on under Settings → Accessibility. Other categories stay simulated.", style = MaterialTheme.typography.bodySmall) }
+            }
             item { SectionHeader("Scenarios") }
             item { Choice("Login", LoginScenario.entries.toTypedArray(), cfg.login) { m, v -> m.copy(login = v) } }
             item { Choice("Register", RegisterScenario.entries.toTypedArray(), cfg.register) { m, v -> m.copy(register = v) } }

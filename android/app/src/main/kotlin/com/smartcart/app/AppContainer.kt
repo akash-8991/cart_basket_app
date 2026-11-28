@@ -1,6 +1,7 @@
 package com.smartcart.app
 
 import android.content.Context
+import com.smartcart.app.automation.TestStoreBinding
 import com.smartcart.app.notifications.Notifier
 import com.smartcart.app.notifications.NotificationPrefs
 import com.smartcart.app.security.InMemoryTokenStore
@@ -44,6 +45,8 @@ import com.smartcart.app.security.AiConsentPrompts
 import com.smartcart.app.security.DeviceIdentity
 import com.smartcart.app.security.KeystoreAddressStore
 import com.smartcart.data.address.AddressBook
+import com.smartcart.data.device.DeviceCartTaskRepository
+import com.smartcart.data.device.RoutingCartTaskRepository
 import com.smartcart.data.address.AddressStore
 import com.smartcart.data.address.InMemoryAddressStore
 import com.smartcart.model.AccountState
@@ -68,6 +71,8 @@ class AppContainer(
     addressStore: AddressStore? = null,
     /** Phase 3.7: when set, auth, account, providers and chat use the backend; everything else stays on fakes until Phase 4. */
     val backendUrl: String? = null,
+    /** Phase 4.2, debug builds only: lets grocery cart tasks really run in SmartCart Test Store. */
+    val testStore: TestStoreBinding? = null,
 ) {
     val mock = MockControl(mockConfig)
     val fixtures = Fixtures(fixtureSource)
@@ -103,7 +108,12 @@ class AppContainer(
     val providers: ProviderRepository = api?.let { HttpProviderRepository(it, account) } ?: FakeProviderRepository(fixtures, mock)
     val chat: ChatRepository = api?.let { HttpChatRepository(it, providers) } ?: FakeChatRepository(fixtures, mock)
     val comparisons: ComparisonRepository = FakeComparisonRepository(fixtures, mock)
-    val tasks: CartTaskRepository = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
+    private val simulatedTasks = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
+    // A task runs on the phone when an adapter is bound for its provider (only the debug Test Store binding so
+    // far); otherwise it is simulated as before.
+    val tasks: CartTaskRepository = testStore?.let { binding ->
+        RoutingCartTaskRepository(simulatedTasks, DeviceCartTaskRepository(binding, comparisons, providers, account, scope), { binding.adapterFor(it) != null }, scope)
+    } ?: simulatedTasks
     val history: HistoryRepository = FakeHistoryRepository(fixtures, mock, providers, scope)
     val recommendations: RecommendationRepository = FakeRecommendationRepository(fixtures, mock)
 

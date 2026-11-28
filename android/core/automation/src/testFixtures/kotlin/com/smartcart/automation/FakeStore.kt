@@ -25,6 +25,8 @@ class FakeStore(
 
     val clicks = mutableListOf<String>()
     var launches = 0; private set
+    /** Set by [userSignsIn]: the person dealt with the login/OTP/CAPTCHA screen themselves. */
+    private var cleared = false
 
     private fun later(change: () -> Unit) {
         if (latencyMs == 0L) change() else pending = (now() + latencyMs) to change
@@ -32,7 +34,7 @@ class FakeStore(
 
     override suspend fun launch(packageName: String): Boolean {
         launches++
-        later { screen = when (scenario) { "otp" -> "otp"; "login" -> "login"; "captcha" -> "captcha"; "redesign" -> "redesign"; else -> "home" } }
+        later { screen = when { cleared -> "home"; scenario == "otp" -> "otp"; scenario == "login" -> "login"; scenario == "captcha" -> "captcha"; scenario == "redesign" -> "redesign"; else -> "home" } }
         return true
     }
 
@@ -119,6 +121,12 @@ class FakeStore(
         query = text
         return true
     }
+
+    /** What the person does when handed the phone: signs in, enters the OTP or solves the CAPTCHA themselves. */
+    fun userSignsIn() { cleared = true; screen = "home" }
+
+    /** What the person does with an unexpected dialog: dismisses it. */
+    fun userDismissesDialog() { screen = "home" }
 
     override fun back(): Boolean {
         screen = "home"

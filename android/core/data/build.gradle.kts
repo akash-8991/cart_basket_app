@@ -12,8 +12,11 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 dependencies {
     api(project(":core:model"))
     api(libs.kotlinx.coroutines.core)
+    // Phase 4.2: cart tasks run on the phone through the automation runtime.
+    api(project(":core:automation"))
     implementation(libs.okhttp)
     testImplementation(libs.junit)
+    testImplementation(testFixtures(project(":core:automation")))
     testImplementation(libs.kotlinx.coroutines.test)
 }
 

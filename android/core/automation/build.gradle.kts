@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    `java-test-fixtures`
 }
 
 java {
@@ -13,6 +14,9 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 dependencies {
     api(project(":core:model"))
     api(libs.kotlinx.coroutines.core)
+    // FakeStore (a JVM Test Store) is shared with :core:data's task-repository tests.
+    testFixturesApi(project(":core:model"))
+    testFixturesApi(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
