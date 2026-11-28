@@ -184,7 +184,7 @@ class DeviceComparisonRepositoryTest {
     }
 
     @Test fun withABackendThePhoneSendsItsReadingInsteadOfWorkingOutTheColumn() = runBlocking {
-        val e = env()
+        val e = env(phone = Phone(FakeStore("normal", System::currentTimeMillis, latencyMs = 30))) // slow enough for the progress to be seen
         val server = FakeServer(FakeComparisonRepository(fixtures, e.mock))
         val repo = DeviceComparisonRepository(server, e.phone, e.providers, e.account, scope, timing = timing)
         val cart = listOf(com.smartcart.model.CartLine("c1", "Toned milk", 2, "1 L"), com.smartcart.model.CartLine("c2", "Paneer", 1, "200 g"))

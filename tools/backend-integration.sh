@@ -18,18 +18,24 @@ OUT="$ROOT/android/build/backend-integration"
 mkdir -p "$OUT"
 log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 
-log "starting backend on :$PORT"
-(cd "$ROOT/backend" && SMARTCART_HOST=0.0.0.0 SMARTCART_PORT="$PORT" SMARTCART_ADMIN_TOKEN="$ADMIN" ./gradlew run --console=plain -q) >"$OUT/backend.log" 2>&1 &
-BACKEND=$!
-trap 'pkill -f "com.smartcart.server.ApplicationKt" >/dev/null 2>&1; kill $BACKEND >/dev/null 2>&1' EXIT
-for _ in $(seq 1 90); do curl -sf "localhost:$PORT/readyz" >/dev/null && break; sleep 2; done
-curl -sf "localhost:$PORT/readyz" >/dev/null || { log "backend did not start; see $OUT/backend.log"; exit 1; }
-
 admin() { curl -sf -X PUT "localhost:$PORT/admin/$1" -H "Authorization: Bearer $ADMIN" -H "X-Operator: integration" -H "Content-Type: application/json" -d "$2" >/dev/null; }
-admin flags/provider.blinkit.enabled '{"enabled":true,"reason":"integration run"}'
-# Phase 4.5: tasks need automation switched on and an approval record for the provider (a test record here).
-admin flags/automation.global.enabled '{"enabled":true,"reason":"integration run"}'
-admin providers/blinkit/approval '{"adapter_version":"teststore-1","approved_by":"integration","record_url":"https://example.invalid/approvals/integration","reason":"integration run against SmartCart Test Store"}'
+
+# A fresh backend (in-memory rate limits and stub data start clean) with Blinkit enabled, automation on and a
+# test approval record for Blinkit (tasks need one, Phase 4.5).
+start_backend() {
+  pkill -f "com.smartcart.server.ApplicationKt" >/dev/null 2>&1; sleep 1
+  log "starting backend on :$PORT"
+  (cd "$ROOT/backend" && SMARTCART_HOST=0.0.0.0 SMARTCART_PORT="$PORT" SMARTCART_ADMIN_TOKEN="$ADMIN" ./gradlew run --console=plain -q) >>"$OUT/backend.log" 2>&1 &
+  BACKEND=$!
+  for _ in $(seq 1 90); do curl -sf "localhost:$PORT/readyz" >/dev/null && break; sleep 2; done
+  curl -sf "localhost:$PORT/readyz" >/dev/null || { log "backend did not start; see $OUT/backend.log"; exit 1; }
+  admin flags/provider.blinkit.enabled '{"enabled":true,"reason":"integration run"}'
+  admin flags/automation.global.enabled '{"enabled":true,"reason":"integration run"}'
+  admin providers/blinkit/approval '{"adapter_version":"teststore-1","approved_by":"integration","record_url":"https://example.invalid/approvals/integration","reason":"integration run against SmartCart Test Store"}'
+}
+trap 'pkill -f "com.smartcart.server.ApplicationKt" >/dev/null 2>&1; kill $BACKEND >/dev/null 2>&1' EXIT
+: > "$OUT/backend.log"
+start_backend
 
 log "JVM: BackendIntegrationTest"
 (cd "$ROOT/android" && ./gradlew :core:data:test --console=plain -q -PbackendUrl="http://127.0.0.1:$PORT" --tests "com.smartcart.data.http.BackendIntegrationTest") >"$OUT/jvm.log" 2>&1
@@ -46,6 +52,7 @@ print(f"  JVM integration: {t} tests, {f} failed, {s} skipped")
 EOF
 
 if [ "${1:-}" = "device" ]; then
+  start_backend # the JVM tests' sign-ups would otherwise count against the device journeys' rate limits
   SERIAL=emulator-5560
   log "device: booting API 36 emulator"
   "$ANDROID_HOME/emulator/emulator" -avd smartcart_api36 -port 5560 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 >"$OUT/emulator.log" 2>&1 &

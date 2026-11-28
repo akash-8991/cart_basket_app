@@ -72,7 +72,7 @@ deep link: smartcart://handoff/{opaqueToken} → task/{taskId}/ready (after toke
 | S-TASK-01 | `consent/automation/{provider}` | Just-in-time accessibility explanation: scope, allowed actions, prohibited actions, how to stop | S D | `providers/capabilities.*` |
 | S-TASK-02 | `task/{taskId}/approve` | Action preview: provider, items, quantities, risk level per action, estimated total, max actions, timeout; Approve / Cancel | L S X R | `cart-tasks/created.*` |
 | S-TASK-03 | `task/{taskId}` | Timeline of actions, current state, checkpoint confirmations, emergency stop | L S X O + domain: RUNNING, CHECKPOINT, NEEDS_USER_ACTION, FAILED_SAFE, BLOCKED_POLICY, CANCELLED, EXPIRED | `cart-tasks/*` |
-| S-TASK-04 | `task/{taskId}/ready` | Verified cart summary; "Open cart in {provider}"; estimate-vs-final disclaimer | S X (handoff expired) | `deep-links/*` |
+| S-TASK-04 | `task/{taskId}/ready` | Verified cart summary; "Open cart in {provider}" (uses the one-time link, CR-006); estimate-vs-final disclaimer | S X (handoff expired: "This link has expired" + "Make a new link", CR-006) | `deep-links/*` |
 | S-TASK-05 | `task/{taskId}/manual` | Manual fallback steps; open provider app | S | — |
 | S-HIST-01 | `history/connect` | Choose providers, fields collected, privacy mode (device-only / normalized upload) | S D | `providers/capabilities.*` |
 | S-HIST-02 | `history/import/{id}` | Progress per provider; pause / cancel | L S P X | `history/import.*` |

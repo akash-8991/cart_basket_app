@@ -438,6 +438,12 @@ out('device/progress.cart-ready.json', 'TaskProgressReport', {
   cart: { verified: true, verified_at: at(2), lines: cartLines, total_estimate: gBlinkit().total_estimate, differs_from_quote: false }, adapter: adapterRef,
 }, 0);
 
+// ---------------------------------------------------------------- CR-006: a redeemed handoff link
+out('deep-links/redeemed.json', 'HandoffRedemption', {
+  task_id: 'tsk_grocery_01', provider: 'blinkit', target_package: null, strategy: 'manual',
+  manual_steps: ['Open Blinkit', 'Open the cart', 'Check the items and pay in Blinkit'],
+});
+
 // ---------------------------------------------------------------- generic errors
 out('errors/service-unavailable.json', 'ErrorEnvelope', err('service_unavailable', 'Something went wrong on our side. Please try again.'), 503);
 out('errors/ai-unavailable.json', 'ErrorEnvelope', err('ai_unavailable', 'The assistant is temporarily limited.'), 503);

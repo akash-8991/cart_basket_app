@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
     private val pendingLink = MutableStateFlow<Uri?>(null)
+    /** CR-006: the task a handoff link from a notification belongs to, carried in the intent (never in the URL). */
+    private var fallbackTask: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +42,7 @@ class MainActivity : ComponentActivity() {
                         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
                             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
                     ) {
-                        AppNavHost(pendingLink = pendingLink, consumeLink = { pendingLink.value = null })
+                        AppNavHost(pendingLink = pendingLink, consumeLink = { pendingLink.value = null; fallbackTask = null }, fallbackTask = { fallbackTask })
                     }
                 }
             }
@@ -55,6 +57,12 @@ class MainActivity : ComponentActivity() {
     /** Only our own scheme is accepted; anything else is ignored. */
     private fun acceptLink(intent: Intent?) {
         val uri = intent?.data ?: return
-        if (uri.scheme == "smartcart") pendingLink.value = uri
+        if (uri.scheme != "smartcart") return
+        fallbackTask = intent.getStringExtra(EXTRA_FALLBACK_TASK)
+        pendingLink.value = uri
+    }
+
+    companion object {
+        const val EXTRA_FALLBACK_TASK = "com.smartcart.app.FALLBACK_TASK"
     }
 }

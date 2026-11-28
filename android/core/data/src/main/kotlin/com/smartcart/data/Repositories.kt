@@ -97,6 +97,11 @@ interface CartTaskRepository {
     suspend fun stopAll(reason: StopReason)
     suspend fun createHandoff(taskId: String): ApiResult<Handoff>
     suspend fun markHandedOff(taskId: String)
+    /**
+     * CR-006: checks a handoff link's token and uses it up; the cart is handed off now. Any refusal (unknown,
+     * used, expired, someone else's, another app) is the same not_found.
+     */
+    suspend fun redeemHandoff(token: String, packageName: String? = null): ApiResult<com.smartcart.model.HandoffRedemption>
 }
 
 /** CR-002 A: client-visible flags and the current policy text versions. */

@@ -1,0 +1,11 @@
+{
+  "task_id": "tsk_grocery_01",
+  "provider": "blinkit",
+  "target_package": null,
+  "strategy": "manual",
+  "manual_steps": [
+    "Open Blinkit",
+    "Open the cart",
+    "Check the items and pay in Blinkit"
+  ]
+}

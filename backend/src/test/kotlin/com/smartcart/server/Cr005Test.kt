@@ -174,6 +174,8 @@ class Cr005Test {
 
         val handoff = client.postJson("/v1/deep-links", """{"task_id":"$task"}""", key, t).assertContract("POST", "/v1/deep-links")
         assertEquals(201, handoff.status.value)
+        val token = handoff.obj()["handoff_url"]!!.jsonPrimitive.content.substringAfterLast('/')
+        client.postJson("/v1/deep-links/redeem", """{"token":"$token"}""", token = t).assertContract("POST", "/v1/deep-links/redeem")
         assertEquals("HANDED_OFF", client.getAuthed("/v1/cart-tasks/$task", t).obj().s("status"))
     }
 

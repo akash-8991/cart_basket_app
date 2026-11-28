@@ -103,6 +103,8 @@ class CartTasks(
         var pausedSince: Instant? = null
         var lastSeq = 0
         var lastResponse: JsonObject? = null
+        /** When the cart became ready; links can be made for [HANDOFF_WINDOW] after (CR-006). */
+        var readyAt: Instant? = null
     }
 
     private fun now(): Instant = clock.instant().truncatedTo(ChronoUnit.SECONDS)
@@ -245,6 +247,7 @@ class CartTasks(
         )
         t.event("cart_verified", "Cart matches what you approved")
         t.move("CART_READY", "Cart ready")
+        t.readyAt = clock.instant()
     }
 
     // ------------------------------------------------------------------ approve, checkpoint, stop
@@ -366,7 +369,7 @@ class CartTasks(
                         ),
                     )
                     t.forceRunning()
-                    if (ok) { t.checkpoint = JsonNull; t.needsUserAction = JsonNull; t.status = "CART_READY" }
+                    if (ok) { t.checkpoint = JsonNull; t.needsUserAction = JsonNull; t.status = "CART_READY"; t.readyAt = clock.instant() }
                     else failSafe(t, "cart_verification_failed", "The cart in the app doesn't match what you approved, so it was stopped.")
                 }
                 else -> {
@@ -386,21 +389,27 @@ class CartTasks(
     // ------------------------------------------------------------------ handoff
 
     /**
-     * Once per ready cart: an opaque, signed, single-use token valid for at most 10 minutes, bound to the user,
-     * the task and the provider's app (A-08). The URL carries the token only — no task, order or user data.
+     * An opaque, signed, single-use token valid for at most 10 minutes, bound to the user, the task and the
+     * provider's app (A-08); the URL carries the token only — no task, order or user data. CR-006: a new link
+     * can be made for a ready cart (a newer one replaces the older) for an hour after it became ready, and
+     * making one doesn't hand the cart off — using it does.
      */
     fun handoff(userId: String, taskId: String): JsonObject {
         val t = own(userId, taskId)
         synchronized(t) {
             refresh(t)
             if (!t.phoneRuns && t.status == "RUNNING") simulate(t)
-            if (t.status != "CART_READY") throw ApiException(ErrorCode.CONFLICT)
+            if (t.status != "CART_READY" && t.status != "HANDED_OFF") throw ApiException(ErrorCode.CONFLICT)
+            val ready = t.readyAt ?: clock.instant()
+            if (clock.instant().isAfter(ready.plus(HANDOFF_WINDOW))) {
+                if (t.status == "CART_READY") t.move("EXPIRED", "The cart's links have expired")
+                throw ApiException(ErrorCode.CONFLICT)
+            }
             limit("handoffs:$userId", 20, Duration.ofMinutes(10))
             // Partner package names are added only once verified on a device (provider-matrix.md); until then the
             // handoff is bound to the provider and the person opens the app themselves.
             val pkg: String? = null
             val (token, expires) = handoffs.issue(userId, t.id, t.provider, pkg)
-            t.move("HANDED_OFF", "Opened ${name(t.provider)} cart", "handoff_created")
             return JsonObject(
                 mapOf(
                     "handoff_url" to JsonPrimitive("smartcart://handoff/$token"),
@@ -413,7 +422,29 @@ class CartTasks(
         }
     }
 
+    /**
+     * CR-006: checks a link and uses it up. The cart is handed off now. Every refusal is the same not_found, so
+     * a link reveals nothing about why it failed.
+     */
+    fun redeem(userId: String, token: String, packageName: String?): JsonObject {
+        val ok = handoffs.redeem(userId, token, packageName) as? HandoffTokens.Redeemed.Ok ?: throw ApiException(ErrorCode.NOT_FOUND)
+        val t = own(userId, ok.taskId)
+        synchronized(t) {
+            if (t.status == "CART_READY") t.move("HANDED_OFF", "Opened ${name(t.provider)} cart", "handoff_created")
+            return JsonObject(
+                mapOf(
+                    "task_id" to JsonPrimitive(t.id),
+                    "provider" to JsonPrimitive(t.provider),
+                    "target_package" to (ok.packageName?.let(::JsonPrimitive) ?: JsonNull),
+                    "strategy" to JsonPrimitive(if (ok.packageName == null) "manual" else "app_launch"),
+                    "manual_steps" to JsonArray(listOf("Open ${name(t.provider)}", "Open the cart", "Check the items and pay in ${name(t.provider)}").map(::JsonPrimitive)),
+                ),
+            )
+        }
+    }
+
     companion object {
+        val HANDOFF_WINDOW: Duration = Duration.ofHours(1)
         val APPROVAL_WINDOW: Duration = Duration.ofMinutes(30)
         val LIMITS = JsonObject(mapOf("max_actions" to JsonPrimitive(25), "max_runtime_seconds" to JsonPrimitive(180), "inactivity_timeout_seconds" to JsonPrimitive(30)))
     }

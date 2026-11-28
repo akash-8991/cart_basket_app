@@ -47,6 +47,7 @@ import kotlinx.serialization.json.JsonObject
 @Serializable data class CheckpointDecision(val checkpointId: String, val decision: String)
 @Serializable data class StopCartTaskRequest(val reason: String)
 @Serializable data class HandoffRequest(val taskId: String)
+@Serializable data class RedeemHandoffRequest(val token: String, val packageName: String? = null)
 @Serializable data class ImportRequest(val providers: List<String>, val fields: List<String>, val uploadMode: String)
 @Serializable data class RecommendationFeedback(val useful: Boolean)
 
@@ -262,6 +263,18 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         call.onceOnly(s, "handoff:${u.userId}", ApiJson.encodeToString(HandoffRequest.serializer(), req), HttpStatusCode.Created) {
             st.handoff(u.userId, req.taskId)
         }
+    }
+
+    // CR-006: a link is used once; every refusal looks the same.
+    post("/v1/deep-links/redeem") {
+        call.stubsOrUnavailable(s)
+        val u = call.user()
+        val req = call.receive<RedeemHandoffRequest>()
+        if (!Regex("^[A-Za-z0-9_-]{16,128}$").matches(req.token)) bad("token", "invalid_format")
+        req.packageName?.let { if (it.isBlank() || it.length > 255) bad("package_name", "invalid_length") }
+        val d = s.limiter.hit("redeem:${u.userId}", 30, java.time.Duration.ofMinutes(1))
+        if (!d.allowed) throw ApiException.limited(ErrorCode.RATE_LIMITED, d)
+        call.respondJson(HttpStatusCode.OK, st.redeemHandoff(u.userId, req.token, req.packageName).toString())
     }
 
     // ---------------------------------------------------------------- history

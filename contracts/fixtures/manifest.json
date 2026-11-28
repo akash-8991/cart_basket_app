@@ -277,6 +277,11 @@
       "status": 201
     },
     {
+      "file": "deep-links/redeemed.json",
+      "schema": "HandoffRedemption",
+      "status": 200
+    },
+    {
       "file": "device/observation.not-read.json",
       "schema": "PriceObservation",
       "status": 0

@@ -9,7 +9,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.2.0) | CR-002 (`GET /v1/config`) |
 | [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Approved and implemented 27 Nov 2026 (contract 1.3.0) | — |
 | [CR-005](CR-005-device-reported-prices-and-task-progress.md) | Device-reported prices and task progress (Phase 4) | 2 new operations, 5 new schemas, 2 optional fields; no screen change | Approved and implemented 28 Nov 2026 (contract 1.4.0) | — |
-| [CR-006](CR-006-redeem-handoff-links.md) | Redeem cart handoff links (Phase 4.5) | 1 new operation, 2 new schemas; handoff link and notification behaviour; App Links when a domain exists | **Proposed 28 Nov 2026** — awaiting approval | CR-005 |
+| [CR-006](CR-006-redeem-handoff-links.md) | Redeem cart handoff links (Phase 4.5) | 1 new operation, 2 new schemas; handoff link and notification behaviour; App Links when a domain exists | Approved and implemented 28 Nov 2026 (contract 1.5.0) | CR-005 |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -51,6 +51,10 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 - **CR-005 fixtures.** Request bodies (`device/observation.*.json`, `device/progress.*.json`) are listed in the manifest with status 0; the app decodes them strictly like every other fixture. One unquoted description in the patch split into a stray schema key when applied; fixed in the contract and the CR text, and the contract is now scanned for unexpected keywords.
 - **CR-005, totals with a missing fee (corrected in 4.4).** The CR text first said a total needs every fee known and called that the existing rule; it isn't. The PRD and the frozen fixtures give a total from the known fees and list the missing one, which rules out "cheapest". The CR text, the server and the app's no-backend merge now follow the PRD (D-031).
 - **CR-005, a phone that finishes before its first report.** D-002 has no APPROVED → CART_READY, so the phone reports RUNNING first, then where it is (4.5).
+- **CR-006, how long a cart's links can be made.** "Until the task expires" needed a number for a ready cart: links can be made for an hour after the cart became ready; after that the task expires (CART_READY → EXPIRED, allowed by D-002).
+- **CR-006, the notification's fallback.** The notification's handoff link carries no task ID; the task travels in the notification intent's extras (not the URL), so an expired or replaced link still opens that cart's screen, where a new link is made.
+- **CR-006 without a backend.** Fixture and debug Test Store tasks use local links with the server's rules (opaque, 10 minutes, newest only, once). The Test Store's own package is the only one ever opened, since it is the adapter's verified app; partner packages wait for the device spike.
+- **CR-006, App Links** are served from `SMARTCART_APP_LINKS` ("package:SHA256[,…]"); unset, `/.well-known/assetlinks.json` is 404. The app's https intent filter is added once the team has a domain.
 - **Found while implementing:** a token-refresh race in the app's HTTP client (concurrent expired calls could refresh twice), fixed; and the 2×-font layout fix from the device run had made the KPI figures stack at normal size on a standard phone — fixed, with a regression test.
 
 ## Decisions (settled 27 Nov 2026 by the project owner)

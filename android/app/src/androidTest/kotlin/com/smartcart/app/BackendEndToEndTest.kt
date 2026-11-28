@@ -10,6 +10,7 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -135,7 +136,8 @@ class BackendEndToEndTest {
         compose.waitFor(hasContentDescription(s(R.string.chat_send)))
         compose.onNode(hasSetTextAction()).performTextInput("Milk, brown bread, eggs and bananas")
         compose.waitFor(hasContentDescription(s(R.string.chat_send)) and isEnabled(), timeoutMs = 30_000)
-        compose.onNode(hasContentDescription(s(R.string.chat_send))).performClick()
+        // As the keyboard settles an injected tap can be lost; invoke Send's click action (the same handler).
+        compose.onNode(hasContentDescription(s(R.string.chat_send))).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         // CR-003 §1: asked before the first message reaches the model.
         compose.waitForText(s(R.string.ai_consent_title))
         Device.screenshot("backend-e2e-02a-ai-consent")

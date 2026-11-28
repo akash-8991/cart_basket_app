@@ -197,3 +197,17 @@ data class StopCartTaskRequest(val reason: StopReason)
 
 @Serializable
 data class HandoffRequest(val taskId: String)
+
+/** CR-006: body of `POST /v1/deep-links/redeem`. */
+@Serializable
+data class RedeemHandoffRequest(val token: String, val packageName: String? = null)
+
+/** CR-006: a handoff link that was valid and is now used up. */
+@Serializable
+data class HandoffRedemption(
+    val taskId: String,
+    val provider: ProviderKey,
+    val targetPackage: String? = null,
+    val strategy: HandoffStrategy,
+    val manualSteps: List<String>,
+)

@@ -132,7 +132,11 @@ class OnDeviceTaskJourneyTest {
         compose.waitForText(s(R.string.ready_line, "Toned milk 1 L", 2))
         Device.screenshot("ondevice-03-cart-ready")
         compose.onNode(hasText(s(R.string.ready_open_cart, "Blinkit")) and hasClickAction()).performScrollTo().performClick()
-        compose.waitForText(s(R.string.ready_opening, "Blinkit"))
+        // CR-006: the one-time link is used and the cart's app is opened with an explicit package intent.
+        compose.waitUntil(15_000) { testStoreShows("cart_title") || testStoreShows("store_title") }
+        Device.screenshot("ondevice-03b-opened-in-test-store")
+        Automation.backToSmartCart()
+        compose.waitForText(s(R.string.ready_opening, "Blinkit"), timeoutMs = 20_000)
         compose.clickable(s(R.string.common_ok)).performClick()
         assertEquals(TaskStatus.HANDED_OFF, awaitTask(id, 10_000) { it.status == TaskStatus.HANDED_OFF }.status)
     }

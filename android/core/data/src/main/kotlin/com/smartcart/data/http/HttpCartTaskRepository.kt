@@ -14,7 +14,9 @@ import com.smartcart.model.CheckpointDecision
 import com.smartcart.model.CreateCartTaskRequest
 import com.smartcart.model.ErrorCode
 import com.smartcart.model.Handoff
+import com.smartcart.model.HandoffRedemption
 import com.smartcart.model.HandoffRequest
+import com.smartcart.model.RedeemHandoffRequest
 import com.smartcart.model.ProviderKey
 import com.smartcart.model.StopCartTaskRequest
 import com.smartcart.model.StopReason
@@ -89,6 +91,12 @@ class HttpCartTaskRepository(
 
     override suspend fun getTask(taskId: String): ApiResult<CartTask> = api.call("GET", "/v1/cart-tasks/$taskId", CartTask.serializer())
 
+    override suspend fun redeemHandoff(token: String, packageName: String?): ApiResult<HandoffRedemption> {
+        val r = api.call("POST", "/v1/deep-links/redeem", HandoffRedemption.serializer(), encode(RedeemHandoffRequest.serializer(), RedeemHandoffRequest(token, packageName)))
+        if (r is ApiResult.Success && tasks.value.containsKey(r.value.taskId)) refresh(r.value.taskId)
+        return r
+    }
+
     /** Reads a task this repository follows and keeps the answer. */
     private suspend fun refresh(taskId: String) = getTask(taskId).kept()
 
@@ -136,6 +144,6 @@ class HttpCartTaskRepository(
 
     override suspend fun createHandoff(taskId: String): ApiResult<Handoff> = handoff(taskId)
 
-    /** The server marks the task handed off when it issues the link. */
+    /** The server marks the task handed off when the link is used (CR-006). */
     override suspend fun markHandedOff(taskId: String) { refresh(taskId) }
 }

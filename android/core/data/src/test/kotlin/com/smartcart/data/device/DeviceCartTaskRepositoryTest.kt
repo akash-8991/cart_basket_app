@@ -306,6 +306,7 @@ class DeviceCartTaskRepositoryTest {
         override suspend fun stopTask(taskId: String, reason: StopReason): ApiResult<CartTask> { task = task!!.copy(status = TaskStatus.CANCELLED); return ApiResult.Success(task!!) }
         override suspend fun handoff(taskId: String) = ApiResult.Success(com.smartcart.model.Handoff("smartcart://handoff/x", com.smartcart.model.HandoffStrategy.MANUAL, null, "t", emptyList()))
         override suspend fun getTask(taskId: String) = ApiResult.Success(task!!)
+        override suspend fun redeemHandoff(token: String, packageName: String?): ApiResult<com.smartcart.model.HandoffRedemption> = com.smartcart.data.LocalHandoffLinks.notFound()
     }
 
     private fun serverEnv(scenario: String = "normal", latencyMs: Long = 0): Pair<Env, FakeTaskServer> {

@@ -361,19 +361,38 @@ class DeviceCartTaskRepository(
         val t = tasks.value[taskId] ?: return notFound()
         if (t.status != TaskStatus.CART_READY && t.status != TaskStatus.HANDED_OFF) return conflict()
         val app = runs.getValue(taskId).adapter
+        // CR-006: an opaque one-time token; the app opens the adapter's own, verified app.
+        val (token, expires) = links.issue(taskId)
         return ApiResult.Success(
             Handoff(
-                handoffUrl = "smartcart://handoff/device/$taskId",
+                handoffUrl = "smartcart://handoff/$token",
                 strategy = HandoffStrategy.APP_LAUNCH,
                 targetPackage = app.packageName,
-                expiresAt = clock.instant().plus(APPROVAL_WINDOW).toString(),
+                expiresAt = expires.toString(),
                 manualSteps = listOf("Open ${app.appName}", "Open the cart", "Check the items and pay in ${app.appName}"),
             ),
         )
     }
 
+    private val links = com.smartcart.data.LocalHandoffLinks(clock)
+
+    override suspend fun redeemHandoff(token: String, packageName: String?): ApiResult<com.smartcart.model.HandoffRedemption> {
+        server?.let { srv ->
+            val r = srv.redeemHandoff(token, packageName)
+            if (r is ApiResult.Success && owns(r.value.taskId)) (srv.getTask(r.value.taskId) as? ApiResult.Success)?.let { got -> edit(r.value.taskId) { got.value } }
+            return r
+        }
+        val taskId = links.redeem(token) ?: return com.smartcart.data.LocalHandoffLinks.notFound()
+        val app = runs[taskId]?.adapter ?: return com.smartcart.data.LocalHandoffLinks.notFound()
+        val t = tasks.value[taskId] ?: return com.smartcart.data.LocalHandoffLinks.notFound()
+        markHandedOff(taskId)
+        return ApiResult.Success(
+            com.smartcart.model.HandoffRedemption(taskId, t.provider, app.packageName, HandoffStrategy.APP_LAUNCH, listOf("Open ${app.appName}", "Open the cart", "Check the items and pay in ${app.appName}")),
+        )
+    }
+
     override suspend fun markHandedOff(taskId: String) {
-        if (server != null) return // the server marks it when it issues the link
+        if (server != null) return // the server marks it when the link is used (CR-006)
         val app = runs[taskId]?.adapter ?: return
         edit(taskId) { t ->
             if (t.status != TaskStatus.CART_READY) null

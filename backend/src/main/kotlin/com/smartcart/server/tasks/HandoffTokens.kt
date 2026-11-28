@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  * server sub-key, valid for at most 10 minutes, bound to one user, one task and one provider app, and usable
  * once. Only a keyed hash of each token is kept, so the store can't be replayed from.
  *
- * Redeeming a token from a link is CR-006 (no contract operation yet); [redeem] is the check it will use.
+ * A link is redeemed with `POST /v1/deep-links/redeem` (CR-006), which uses [redeem].
  */
 class HandoffTokens(private val secrets: Secrets, private val clock: Clock, private val ttl: Duration = TTL) {
     private class Grant(val userId: String, val taskId: String, val provider: String, val packageName: String?, val expiresAt: Instant) {
@@ -30,6 +30,8 @@ class HandoffTokens(private val secrets: Secrets, private val clock: Clock, priv
 
     private val random = SecureRandom()
     private val grants = ConcurrentHashMap<String, Grant>()
+    /** The current link per task (CR-006): a new one replaces the previous, which stops working. */
+    private val current = ConcurrentHashMap<String, String>()
     private val b64 = Base64.getUrlEncoder().withoutPadding()
 
     private fun key(token: String) = secrets.hmacHex("handoff-store", token)
@@ -41,7 +43,9 @@ class HandoffTokens(private val secrets: Secrets, private val clock: Clock, priv
         val g = Grant(userId, taskId, provider, packageName, expires)
         val id = b64.encodeToString(ByteArray(16).also(random::nextBytes))
         val token = id + sign(id, g) // 22 + 22 characters, [A-Za-z0-9_-] (contracts/schemas/deep-link.schema.json)
-        grants[key(token)] = g
+        val k = key(token)
+        grants[k] = g
+        current.put(taskId, k)?.let(grants::remove)
         return token to expires
     }
 

@@ -230,6 +230,8 @@ class Phase4Stubs(
 
     fun handoff(userId: String, taskId: String) = tasks.handoff(userId, taskId)
 
+    fun redeemHandoff(userId: String, token: String, packageName: String?) = tasks.redeem(userId, token, packageName)
+
     // ------------------------------------------------------------------ history
 
     fun startImport(userId: String, providerKeys: List<String>): JsonObject {

@@ -141,7 +141,7 @@ class TaskThreatsTest {
 
     // ---------------------------------------------------------------- A-08 handoff link replay
 
-    @Test fun a08_theHandoffLinkIsOpaqueShortLivedAndIssuedOncePerCart() = withApp(testServices(clock)) {
+    @Test fun a08_theHandoffLinkIsOpaqueAndShortLived() = withApp(testServices(clock)) {
         val t = client.register().tokens.accessToken
         client.unlock(t)
         val task = client.readyTask(t)
@@ -152,8 +152,7 @@ class TaskThreatsTest {
         listOf(id, task.s("quote_id"), "priya", "blinkit").forEach { assertFalse(it in url, "no $it in the link") }
         val ttl = Duration.between(clock.now, Instant.parse(h.s("expires_at")))
         assertTrue(ttl <= Duration.ofMinutes(10) && !ttl.isNegative, "at most 10 minutes: $ttl")
-        assertEquals("HANDED_OFF", client.getAuthed("/v1/cart-tasks/$id", t).obj().s("status"))
-        assertEquals("conflict", client.postJson("/v1/deep-links", """{"task_id":"$id"}""", key, t).assertContract("POST", "/v1/deep-links").errorCode(), "one link per cart")
+        assertEquals("CART_READY", client.getAuthed("/v1/cart-tasks/$id", t).obj().s("status"), "making a link isn't handing off (CR-006)")
         val other = client.register("ravi.s", "ravi@example.com", "dev-9").tokens.accessToken
         assertEquals("not_found", client.postJson("/v1/deep-links", """{"task_id":"$id"}""", key, other).errorCode(), "someone else's task")
     }

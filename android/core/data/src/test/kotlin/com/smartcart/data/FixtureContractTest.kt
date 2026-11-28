@@ -74,6 +74,7 @@ class FixtureContractTest {
         // CR-005 request bodies
         "PriceObservation" to com.smartcart.model.PriceObservation.serializer(),
         "TaskProgressReport" to com.smartcart.model.TaskProgressReport.serializer(),
+        "HandoffRedemption" to com.smartcart.model.HandoffRedemption.serializer(),
     )
 
     @Test

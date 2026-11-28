@@ -334,7 +334,22 @@ class FakeCartTaskRepository(
             HandoffScenario.APP_LAUNCH -> "deep-links/app-launch.json"
             HandoffScenario.MANUAL -> "deep-links/manual.json"
         }
-        ApiResult.Success(fixtures.load(path))
+        // CR-006: a fresh one-time token each time (the fixture gives the strategy and steps).
+        val (token, expires) = links.issue(taskId)
+        val h = fixtures.load<Handoff>(path).copy(handoffUrl = "smartcart://handoff/$token", expiresAt = expires.toString())
+        issued[taskId] = h
+        ApiResult.Success(h)
+    }
+
+    private val links = com.smartcart.data.LocalHandoffLinks(clock)
+    private val issued = ConcurrentHashMap<String, Handoff>()
+
+    override suspend fun redeemHandoff(token: String, packageName: String?): ApiResult<com.smartcart.model.HandoffRedemption> {
+        val taskId = links.redeem(token) ?: return com.smartcart.data.LocalHandoffLinks.notFound()
+        val t = get(taskId) ?: return com.smartcart.data.LocalHandoffLinks.notFound()
+        val h = issued.getValue(taskId)
+        markHandedOff(taskId)
+        return ApiResult.Success(com.smartcart.model.HandoffRedemption(taskId, t.provider, h.targetPackage, h.strategy, h.manualSteps))
     }
 
     override suspend fun markHandedOff(taskId: String) {

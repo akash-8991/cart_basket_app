@@ -57,7 +57,8 @@ class Notifier(private val context: Context, private val prefs: NotificationPref
         }
     }
 
-    fun cartReady(task: CartTask) {
+    /** CR-006: opens [handoffUrl] (the cart's one-time link) when there is one; the task travels as a fallback. */
+    fun cartReady(task: CartTask, handoffUrl: String? = null) {
         if (!prefs.values.value.cartReady) return
         post(
             id = task.taskId.hashCode(),
@@ -66,7 +67,8 @@ class Notifier(private val context: Context, private val prefs: NotificationPref
             genericBody = context.getString(R.string.notif_cart_ready_generic_body),
             detailTitle = context.getString(R.string.notif_cart_ready_title, task.provider.displayName),
             detailBody = context.getString(R.string.notif_cart_ready_body, task.provider.displayName),
-            uri = "smartcart://task/${task.taskId}",
+            uri = handoffUrl ?: "smartcart://task/${task.taskId}",
+            fallbackTask = task.taskId.takeIf { handoffUrl != null },
         )
     }
 
@@ -88,12 +90,13 @@ class Notifier(private val context: Context, private val prefs: NotificationPref
         post(sessionId.hashCode(), CH_IMPORTS, context.getString(R.string.notif_import_title), context.getString(R.string.notif_import_body), null, null, "smartcart://history/import/$sessionId")
     }
 
-    private fun post(id: Int, channel: String, genericTitle: String, genericBody: String, detailTitle: String?, detailBody: String?, uri: String) {
+    private fun post(id: Int, channel: String, genericTitle: String, genericBody: String, detailTitle: String?, detailBody: String?, uri: String, fallbackTask: String? = null) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri), context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .apply { fallbackTask?.let { putExtra(MainActivity.EXTRA_FALLBACK_TASK, it) } }
         val pi = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val public = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

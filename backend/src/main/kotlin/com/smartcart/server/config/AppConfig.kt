@@ -31,6 +31,11 @@ data class AppConfig(
     val flagCacheSeconds: Long = 5,
     /** Live Claude calls (D-019). Off until Phase 4; the key is read from ANTHROPIC_API_KEY by the SDK. */
     val aiLiveCalls: Boolean = false,
+    /**
+     * CR-006: Android App Links. "package:SHA256FP[,SHA256FP…]" for the app whose verified https links open
+     * handoffs; served at /.well-known/assetlinks.json. Unset until the team has a domain and a release key.
+     */
+    val appLinks: String? = null,
 ) {
     init {
         adminToken?.let { require(it.length >= 32) { "SMARTCART_ADMIN_TOKEN must be at least 32 characters" } }
@@ -70,6 +75,7 @@ data class AppConfig(
                 requireProviderApproval = env["SMARTCART_REQUIRE_PROVIDER_APPROVAL"]?.toBooleanStrict() ?: (mode != Env.DEV),
                 flagCacheSeconds = env["SMARTCART_FLAG_CACHE_SECONDS"]?.toLong() ?: 5,
                 aiLiveCalls = env["SMARTCART_AI_LIVE"]?.toBooleanStrict() ?: false,
+                appLinks = env["SMARTCART_APP_LINKS"]?.takeIf { it.isNotBlank() },
             )
         }
     }

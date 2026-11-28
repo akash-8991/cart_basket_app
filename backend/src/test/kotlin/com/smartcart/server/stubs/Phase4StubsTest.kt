@@ -90,8 +90,10 @@ class Phase4StubsTest {
         val handoff = client.postJson("/v1/deep-links", """{"task_id":"$task"}""", key, t).assertContract("POST", "/v1/deep-links")
         val url = handoff.field("handoff_url")
         assertTrue(url.startsWith("smartcart://handoff/") && task !in url && q !in url, "opaque: $url")
+        // CR-006: making a link doesn't hand the cart off; using it does.
+        assertTrue("\"status\":\"CART_READY\"" in client.getAuthed("/v1/cart-tasks/$task", t).bodyAsText())
+        client.postJson("/v1/deep-links/redeem", """{"token":"${url.substringAfterLast('/')}"}""", token = t).assertContract("POST", "/v1/deep-links/redeem")
         assertTrue("\"status\":\"HANDED_OFF\"" in client.getAuthed("/v1/cart-tasks/$task", t).bodyAsText())
-        assertEquals("conflict", client.postJson("/v1/deep-links", """{"task_id":"$task"}""", key, t).assertContract("POST", "/v1/deep-links").errorCode(), "one handoff per cart")
     }
 
     @Test fun theChosenAddressLabelAppearsInTheAssumptions() = withApp { s ->

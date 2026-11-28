@@ -44,4 +44,10 @@ class RoutingCartTaskRepository(
 
     override suspend fun createHandoff(taskId: String): ApiResult<Handoff> = of(taskId).createHandoff(taskId)
     override suspend fun markHandedOff(taskId: String) = of(taskId).markHandedOff(taskId)
+
+    /** A token doesn't say whose task it is: the phone's repository is asked first, then the other. */
+    override suspend fun redeemHandoff(token: String, packageName: String?): ApiResult<com.smartcart.model.HandoffRedemption> {
+        val d = device.redeemHandoff(token, packageName)
+        return if (d is ApiResult.Success) d else simulated.redeemHandoff(token, packageName)
+    }
 }

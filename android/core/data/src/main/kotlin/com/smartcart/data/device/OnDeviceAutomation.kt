@@ -35,5 +35,6 @@ interface TaskServer {
     suspend fun answerCheckpoint(taskId: String, checkpointId: String, approve: Boolean): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
     suspend fun stopTask(taskId: String, reason: com.smartcart.model.StopReason): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
     suspend fun handoff(taskId: String): com.smartcart.data.ApiResult<com.smartcart.model.Handoff>
+    suspend fun redeemHandoff(token: String, packageName: String?): com.smartcart.data.ApiResult<com.smartcart.model.HandoffRedemption>
     suspend fun getTask(taskId: String): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
 }

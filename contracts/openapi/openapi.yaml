@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.4.0
+  version: 1.5.0
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -941,6 +941,30 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
+  /v1/deep-links/redeem:
+    post:
+      tags: [deep-links]
+      operationId: redeemHandoff
+      summary: Check a cart handoff token and use it up.
+      description: "One use, by the user it was issued to, for the app it was issued for, before it expires. Every refusal (malformed, forged, someone else's, expired, already used, another app) is the same 404, so a link reveals nothing about why it failed (threat model A-08).\n"
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RedeemHandoffRequest' }
+      responses:
+        '200':
+          description: The token was valid and is now used up.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HandoffRedemption' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
         default: { $ref: '#/components/responses/Error' }
 
@@ -2141,3 +2165,27 @@ components:
         failure: { $ref: '#/components/schemas/CartTask/properties/failure' }
         cart: { $ref: '#/components/schemas/CartTask/properties/cart' }
         adapter: { $ref: '#/components/schemas/AdapterRef' }
+    RedeemHandoffRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: { type: string, pattern: '^[A-Za-z0-9_-]{16,128}$' }
+        package_name:
+          type: [string, 'null']
+          maxLength: 255
+    HandoffRedemption:
+      type: object
+      additionalProperties: false
+      required: [task_id, provider, strategy, manual_steps]
+      properties:
+        task_id: { type: string }
+        provider: { $ref: '#/components/schemas/ProviderKey' }
+        target_package:
+          type: [string, 'null']
+        strategy:
+          type: string
+          enum: [cart_deep_link, app_launch, manual]
+        manual_steps:
+          type: array
+          items: { type: string }

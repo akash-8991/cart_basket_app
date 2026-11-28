@@ -107,7 +107,8 @@ components:
 - No link, log line or analytics event contains a task, quote or user ID.
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-Decision: proposed     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 28 Nov 2026)
+Decision: approved     Decision date: 2026-11-28
 Linked commits / tag:
 ```

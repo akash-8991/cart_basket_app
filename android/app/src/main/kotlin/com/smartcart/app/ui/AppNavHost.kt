@@ -119,12 +119,19 @@ object Routes {
 private fun providerArg(s: String?) = ProviderKey.entries.firstOrNull { it.key == s }
 
 @Composable
-fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navController: NavHostController = rememberNavController()) {
+fun AppNavHost(
+    pendingLink: StateFlow<Uri?>,
+    consumeLink: () -> Unit,
+    navController: NavHostController = rememberNavController(),
+    fallbackTask: () -> String? = { null },
+) {
     val c = LocalAppContainer.current
     val account by c.auth.state.collectAsStateWithLifecycle()
     val activeTask by c.tasks.activeTask.collectAsStateWithLifecycle()
     val link by pendingLink.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val linkExpiredText = stringResource(R.string.handoff_link_expired)
 
     val start = when (account) {
         is AccountState.SignedIn -> Routes.HOME
@@ -175,14 +182,25 @@ fun AppNavHost(pendingLink: StateFlow<Uri?>, consumeLink: () -> Unit, navControl
     LaunchedEffect(link, account) {
         val uri = link ?: return@LaunchedEffect
         if (account !is AccountState.SignedIn) return@LaunchedEffect
-        c.analytics.track(AnalyticsEventName.NOTIFICATION_OPENED, mapOf("notification_type" to if (uri.host == "task") "cart_ready" else "import_complete"))
+        c.analytics.track(AnalyticsEventName.NOTIFICATION_OPENED, mapOf("notification_type" to if (uri.host == "task" || uri.host == "handoff") "cart_ready" else "import_complete"))
         val seg = uri.pathSegments
         when (uri.host) {
             "task" -> seg.firstOrNull()?.let { navController.navigate(Routes.task(it)) }
             "history" -> if (seg.size >= 2 && seg[0] == "import") navController.navigate(Routes.historyImport(seg[1]))
             "insights" -> if (seg.size >= 2) navController.navigate(Routes.month(seg[1]))
             "home" -> navController.navigate(Routes.HOME)
-            // Handoff tokens are validated server-side in Phase 3; the mock opens home.
+            // CR-006: the link is checked and used up; it opens that cart. If it no longer works, the notification's
+            // task (if it came from one) opens instead, where a new link can be made; otherwise home, saying so.
+            "handoff" -> {
+                val fallback = fallbackTask()
+                when (val r = seg.firstOrNull()?.let { c.tasks.redeemHandoff(it) }) {
+                    is com.smartcart.data.ApiResult.Success -> navController.navigate(Routes.ready(r.value.taskId))
+                    else -> if (fallback != null) navController.navigate(Routes.ready(fallback)) else {
+                        navController.navigate(Routes.HOME)
+                        android.widget.Toast.makeText(context, linkExpiredText, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
             else -> navController.navigate(Routes.HOME)
         }
         consumeLink()

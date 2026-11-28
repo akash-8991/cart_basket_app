@@ -81,7 +81,12 @@
     <string name="ready_strategy_app">%1$s doesn\'t support opening the cart directly, so the app opens on its home screen.</string>
     <string name="ready_strategy_manual">Open %1$s yourself and follow these steps.</string>
     <string name="ready_step">%1$d. %2$s</string>
-    <string name="ready_mock_note">This mock build does not open partner apps. Link expires %1$s.</string>
+    <!-- CR-006 -->
+    <string name="ready_link_note">This link has now been used. If you need it again, make a new one on this screen.</string>
+    <string name="ready_link_expired_title">This link has expired</string>
+    <string name="ready_link_expired_body">Links to open your cart work once and for 10 minutes. Make a new one to open the cart.</string>
+    <string name="ready_link_new">Make a new link</string>
+    <string name="handoff_link_expired">That cart link has expired or was already used.</string>
 
     <!-- S-TASK-05 Manual fallback -->
     <string name="manual_title">Continue in %1$s</string>

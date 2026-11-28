@@ -173,7 +173,12 @@ class BackendIntegrationTest {
         assertTrue(ready.cart!!.verified)
         val h = tasks.createHandoff(t.taskId).ok()
         assertTrue(Regex("^smartcart://handoff/[A-Za-z0-9_-]{16,128}$").matches(h.handoffUrl) && t.taskId !in h.handoffUrl)
+        // CR-006: the link hands the cart off when it is used, once.
+        assertEquals(com.smartcart.model.TaskStatus.CART_READY, tasks.getTask(t.taskId).ok().status)
+        val token = h.handoffUrl.substringAfterLast('/')
+        assertEquals(t.taskId, tasks.redeemHandoff(token).ok().taskId)
         assertEquals(com.smartcart.model.TaskStatus.HANDED_OFF, withTimeout(10_000) { tasks.observe(t.taskId).first { it?.status == com.smartcart.model.TaskStatus.HANDED_OFF } }!!.status)
+        assertEquals(ErrorCode.NOT_FOUND, (tasks.redeemHandoff(token) as ApiResult.Failure).error.code)
         scope.cancel()
     }
 

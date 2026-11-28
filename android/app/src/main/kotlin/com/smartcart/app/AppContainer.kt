@@ -184,7 +184,11 @@ class AppContainer(
                     lastStatus = null
                     if (finishedId != null) {
                         val final = tasks.observe(finishedId).first()
-                        if (final?.status == TaskStatus.CART_READY) n.cartReady(final)
+                        if (final?.status == TaskStatus.CART_READY) {
+                            // CR-006: the notification carries the cart's one-time link.
+                            val link = (tasks.createHandoff(finishedId) as? com.smartcart.data.ApiResult.Success)?.value?.handoffUrl
+                            n.cartReady(final, link)
+                        }
                     }
                 }
             }

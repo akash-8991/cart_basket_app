@@ -137,6 +137,11 @@ fun Application.module(services: Services) {
         adminRoutes(services)
 
         // Operational endpoints: not part of the public contract.
+        // CR-006: Android App Links. Only served once configured (a domain and the release signing key).
+        get("/.well-known/assetlinks.json") {
+            val links = services.config.appLinks?.let(::assetLinks) ?: return@get call.respondText("", ContentType.Application.Json, io.ktor.http.HttpStatusCode.NotFound)
+            call.respondText(links, ContentType.Application.Json)
+        }
         get("/healthz") { call.respondText("""{"status":"ok"}""", ContentType.Application.Json) }
         get("/readyz") {
             val ready = Database.isReady(services.db)
@@ -151,3 +156,27 @@ fun Application.module(services: Services) {
         }
     }
 }
+
+/**
+ * "package:FP[,FP…][;package:FP…]" → the Digital Asset Links statement Android checks before treating
+ * https handoff links as SmartCart's own (CR-006). Fingerprints are SHA-256, colon-separated hex.
+ */
+internal fun assetLinks(config: String): String {
+    val fp = Regex("^([0-9A-F]{2}:){31}[0-9A-F]{2}$")
+    val entries = config.split(";").map { it.trim() }.filter { it.isNotEmpty() }.map { e ->
+        val pkg = e.substringBefore(":").trim()
+        val prints = e.substringAfter(":").split(",").map { it.trim().uppercase() }
+        require(Regex("^[a-zA-Z][\\w.]*$").matches(pkg) && prints.isNotEmpty() && prints.all(fp::matches)) { "SMARTCART_APP_LINKS is malformed" }
+        kotlinx.serialization.json.buildJsonObject {
+            put("relation", kotlinx.serialization.json.JsonArray(listOf(kotlinx.serialization.json.JsonPrimitive("delegate_permission/common.handle_all_urls"))))
+            put("target", kotlinx.serialization.json.buildJsonObject {
+                put("namespace", kotlinx.serialization.json.JsonPrimitive("android_app"))
+                put("package_name", kotlinx.serialization.json.JsonPrimitive(pkg))
+                put("sha256_cert_fingerprints", kotlinx.serialization.json.JsonArray(prints.map(::JsonPrimitiveOf)))
+            })
+        }
+    }
+    return kotlinx.serialization.json.JsonArray(entries).toString()
+}
+
+private fun JsonPrimitiveOf(s: String) = kotlinx.serialization.json.JsonPrimitive(s)

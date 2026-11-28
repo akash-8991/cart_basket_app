@@ -187,6 +187,11 @@ class TaskViewModel(private val c: AppContainer, val taskId: String) : ViewModel
     val error: StateFlow<ApiError?> = _error
     private val _handoff = MutableStateFlow<Handoff?>(null)
     val handoff: StateFlow<Handoff?> = _handoff
+    /** CR-006: the link, once used; and whether it no longer worked. */
+    private val _redemption = MutableStateFlow<com.smartcart.model.HandoffRedemption?>(null)
+    val redemption: StateFlow<com.smartcart.model.HandoffRedemption?> = _redemption
+    private val _linkExpired = MutableStateFlow(false)
+    val linkExpired: StateFlow<Boolean> = _linkExpired
     private var terminalLogged = false
 
     private fun act(block: suspend () -> ApiResult<*>, after: () -> Unit = {}) {
@@ -230,9 +235,29 @@ class TaskViewModel(private val c: AppContainer, val taskId: String) : ViewModel
 
     fun loadHandoff() = act({ c.tasks.createHandoff(taskId).also { if (it is ApiResult.Success) _handoff.value = it.value } })
 
-    fun markHandedOff() = viewModelScope.launch {
-        c.tasks.markHandedOff(taskId)
-        c.analytics.track(AnalyticsEventName.HANDOFF_OPENED, mapOf("handoff_strategy" to _handoff.value?.strategy))
+    /** Uses the cart's one-time link: the cart is handed off, and the app opens it (or shows the steps). */
+    fun openCart() {
+        val h = _handoff.value ?: return
+        if (_busy.value) return
+        _busy.value = true
+        viewModelScope.launch {
+            when (val r = c.tasks.redeemHandoff(h.handoffUrl.substringAfterLast('/'))) {
+                is ApiResult.Success -> {
+                    _redemption.value = r.value
+                    c.analytics.track(AnalyticsEventName.HANDOFF_OPENED, mapOf("handoff_strategy" to r.value.strategy))
+                }
+                is ApiResult.Failure -> if (r.error.code == com.smartcart.model.ErrorCode.NOT_FOUND) _linkExpired.value = true else _error.value = r.error
+            }
+            _busy.value = false
+        }
+    }
+
+    fun dismissOpened() { _redemption.value = null }
+
+    /** A link works once and for 10 minutes; a new one replaces it. */
+    fun newLink() {
+        _linkExpired.value = false
+        loadHandoff()
     }
 }
 
@@ -444,8 +469,16 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
     val handoff by vm.handoff.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
-    var opened by remember { mutableStateOf<Handoff?>(null) }
+    val opened by vm.redemption.collectAsStateWithLifecycle()
+    val linkExpired by vm.linkExpired.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     LaunchedEffect(Unit) { vm.loadHandoff() }
+    // CR-006: a verified app is opened with an explicit package intent, never an implicit one.
+    LaunchedEffect(opened) {
+        val r = opened ?: return@LaunchedEffect
+        val pkg = r.targetPackage?.takeIf { r.strategy != HandoffStrategy.MANUAL } ?: return@LaunchedEffect
+        context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+    }
 
     ScreenScaffold(stringResource(R.string.ready_title), onBack) { padding ->
         val t = task ?: run { LoadingState(); return@ScreenScaffold }
@@ -476,12 +509,15 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
             }
             item { Text(stringResource(R.string.ready_pay_note, t.provider.displayName), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             error?.let { e -> item { Banner(ErrorCopy.body(e), tone = Tone.DANGER, title = ErrorCopy.title(e), actionLabel = stringResource(R.string.common_try_again), onAction = vm::loadHandoff) } }
+            if (linkExpired) item {
+                Banner(stringResource(R.string.ready_link_expired_body), tone = Tone.WARNING, title = stringResource(R.string.ready_link_expired_title), actionLabel = stringResource(R.string.ready_link_new), onAction = vm::newLink)
+            }
             item {
                 PrimaryButton(
                     stringResource(R.string.ready_open_cart, t.provider.displayName),
                     loading = busy,
-                    enabled = handoff != null,
-                    onClick = { vm.markHandedOff(); opened = handoff },
+                    enabled = handoff != null && !linkExpired,
+                    onClick = vm::openCart,
                 )
             }
             item { SecondaryButton(stringResource(R.string.common_done), onHome) }
@@ -491,7 +527,7 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
     opened?.let { h ->
         val t = task
         AlertDialog(
-            onDismissRequest = { opened = null },
+            onDismissRequest = vm::dismissOpened,
             title = { Text(stringResource(R.string.ready_opening, t?.provider?.displayName.orEmpty())) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -503,10 +539,10 @@ fun CartReadyScreen(taskId: String, onBack: () -> Unit, onManual: (ProviderKey, 
                         },
                     )
                     h.manualSteps.forEachIndexed { i, s -> Text(stringResource(R.string.ready_step, i + 1, s)) }
-                    Text(stringResource(R.string.ready_mock_note, Format.time(h.expiresAt)), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.ready_link_note), style = MaterialTheme.typography.bodySmall)
                 }
             },
-            confirmButton = { TextButton(onClick = { opened = null; onHome() }) { Text(stringResource(R.string.common_ok)) } },
+            confirmButton = { TextButton(onClick = { vm.dismissOpened(); onHome() }) { Text(stringResource(R.string.common_ok)) } },
         )
     }
 }
