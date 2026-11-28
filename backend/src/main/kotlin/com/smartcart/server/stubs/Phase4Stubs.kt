@@ -2,6 +2,7 @@ package com.smartcart.server.stubs
 
 import com.smartcart.server.flags.Flags
 import com.smartcart.server.http.ApiException
+import com.smartcart.server.http.ApiJson
 import com.smartcart.server.http.ErrorCode
 import com.smartcart.server.me.MeService
 import com.smartcart.server.providers.ProviderRegistry
@@ -43,6 +44,24 @@ class Phase4Stubs(
     private val confirmations = ConcurrentHashMap<String, String>()      // "<user>:<quote>" → provider
     private val deletedOrders = ConcurrentHashMap.newKeySet<String>()    // "<user>:<order>"
 
+    /** CR-005: a quote some of whose providers the phone reads. [original] keeps their lines for the reading. */
+    private class DeviceQuote(val deadline: Instant, val providers: Set<String>, val original: Map<String, JsonObject>) {
+        val reported: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    }
+
+    /** CR-005: a task the phone runs; only the session that approved it may report on it. */
+    private class DeviceTask {
+        var approvedBy: String? = null
+        var approvedAt: Instant? = null
+        var pausedSeconds = 0L
+        var pausedSince: Instant? = null
+        var lastSeq = 0
+        var lastResponse: JsonObject? = null
+    }
+
+    private val deviceQuotes = ConcurrentHashMap<String, DeviceQuote>()   // "<user>:<quote>"
+    private val deviceTasks = ConcurrentHashMap<String, DeviceTask>()     // "<user>:<task>"
+
     private fun fixture(path: String): JsonObject =
         json.parseToJsonElement(Phase4Stubs::class.java.getResourceAsStream("/contracts/fixtures/$path")!!.readAllBytes().decodeToString()).jsonObject
 
@@ -74,7 +93,7 @@ class Phase4Stubs(
 
     // ------------------------------------------------------------------ comparison
 
-    fun createQuote(userId: String, category: String, selectedProvider: String?, objective: String, deliveryLabel: String? = null): JsonObject {
+    fun createQuote(userId: String, category: String, selectedProvider: String?, objective: String, deliveryLabel: String? = null, deviceProviders: List<String> = emptyList()): JsonObject {
         if (!flags.isOn("comparison.enabled")) throw ApiException(ErrorCode.SERVICE_UNAVAILABLE)
         limit("stub:quotes:$userId", 20, Duration.ofMinutes(1))
         val file = when (category) {
@@ -87,7 +106,61 @@ class Phase4Stubs(
         val quote = fixture(file).redated().with("quote_id", id).with("objective", objective)
             .let { q -> selectedProvider?.let { q.with("selected_provider", it) } ?: q }
             .let { q -> deliveryLabel?.let { label -> q.withDeliveryLabel(label) } ?: q }
+            .let { q -> if (deviceProviders.isEmpty()) q else q.awaitingDevice(userId, id, deviceProviders) }
         return save("quote", userId, id, quote)
+    }
+
+    /** CR-005: the providers the phone will read wait for its readings; the others are the server's own. */
+    private fun JsonObject.awaitingDevice(userId: String, quoteId: String, device: List<String>): JsonObject {
+        val results = this["provider_results"]!!.jsonArray.map { it.jsonObject }
+        val offered = results.mapNotNull { it.str("provider") }
+        if (device.any { it !in offered }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "device_providers", "invalid_value")
+        deviceQuotes["$userId:$quoteId"] = DeviceQuote(now().plus(DEVICE_WINDOW), device.toSet(), results.filter { it.str("provider") in device }.associateBy { it.str("provider")!! })
+        val marked = results.map { if (it.str("provider") in device) DeviceReadings.pending(it) else it.with("source", "server") }
+        return DeviceReadings.recompute(with("provider_results", JsonArray(marked)), device.toSet())
+    }
+
+    /** A provider whose reading hasn't arrived by the deadline counts as not checked. */
+    private fun deviceDeadline(userId: String, quoteId: String, q: JsonObject): JsonObject {
+        val d = deviceQuotes["$userId:$quoteId"] ?: return q
+        synchronized(d) {
+            val waiting = d.providers - d.reported
+            if (waiting.isEmpty() || clock.instant().isBefore(d.deadline)) return q
+            d.reported += waiting
+            val results = q["provider_results"]!!.jsonArray.map { r ->
+                val o = r.jsonObject
+                if (o.str("provider") in waiting) DeviceReadings.failed(o, "Your phone didn't report prices in time") else o
+            }
+            return save("quote", userId, quoteId, DeviceReadings.recompute(q.with("provider_results", JsonArray(results)), emptySet()))
+        }
+    }
+
+    /** CR-005: what the phone read for one provider. The server works out every figure from it. */
+    fun submitObservation(userId: String, quoteId: String, obs: PriceObservation): JsonObject {
+        val q = quote(userId, quoteId)
+        if (!Instant.parse(q.str("expires_at")!!).isAfter(clock.instant())) throw ApiException(ErrorCode.QUOTE_EXPIRED)
+        limit("stub:observations:$userId", 30, Duration.ofMinutes(1))
+        val d = deviceQuotes["$userId:$quoteId"] ?: throw ApiException(ErrorCode.CONFLICT)
+        synchronized(d) {
+            // Only a provider the app said the phone would read, and only once.
+            if (obs.provider !in d.providers || obs.provider in d.reported) throw ApiException(ErrorCode.CONFLICT)
+            val currency = q.str("currency")!!
+            val original = d.original.getValue(obs.provider)
+            val lineIds = original["lines"]!!.jsonArray.map { it.jsonObject.str("line_id")!! }.toSet()
+            if (obs.offers.any { it.lineId !in lineIds }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "offers", "invalid_value")
+            val amounts = obs.offers.mapNotNull { it.unitPrice } + obs.fees?.named()?.mapNotNull { it.second }.orEmpty()
+            if (amounts.any { it.currency != currency }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "currency", "invalid_value")
+            val captured = Instant.parse(obs.capturedAt)
+            if (captured.isAfter(clock.instant().plus(CLOCK_SKEW)) || captured.isBefore(Instant.parse(q.str("created_at")!!).minus(CLOCK_SKEW))) {
+                throw ApiException.field(ErrorCode.VALIDATION_FAILED, "captured_at", "invalid_value")
+            }
+            val name = ProviderRegistry.find(obs.provider)!!.displayName
+            val result = if (obs.outcome == "read") DeviceReadings.read(obs.provider, original["lines"]!!.jsonArray, obs, currency, name)
+            else DeviceReadings.failed(original, DeviceReadings.notReadNote(obs.notReadReason, name))
+            d.reported += obs.provider
+            val results = q["provider_results"]!!.jsonArray.map { r -> if (r.jsonObject.str("provider") == obs.provider) result else r }
+            return save("quote", userId, quoteId, DeviceReadings.recompute(q.with("provider_results", JsonArray(results)), d.providers - d.reported))
+        }
     }
 
     /** CR-004: the assumptions name the address the user chose (by label only). */
@@ -98,7 +171,7 @@ class Phase4Stubs(
         }),
     )
 
-    fun quote(userId: String, quoteId: String) = own("quote", userId, quoteId)
+    fun quote(userId: String, quoteId: String) = deviceDeadline(userId, quoteId, own("quote", userId, quoteId))
 
     fun confirmQuote(userId: String, quoteId: String, provider: String, acknowledgedSwitch: Boolean): JsonObject {
         val q = quote(userId, quoteId)
@@ -128,16 +201,19 @@ class Phase4Stubs(
         })
         // CR-002 G: a single-use nonce ties the approval to exactly this plan.
         val nonce = "apn_" + Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(16).also(random::nextBytes))
+        // CR-005: if the phone read this provider's prices, the phone runs its task; it isn't simulated here.
+        if (deviceQuotes["$userId:$quoteId"]?.providers?.contains(provider) == true) deviceTasks["$userId:$id"] = DeviceTask()
         return save("task", userId, id, base.with("task_id", id).with("quote_id", quoteId).with("provider", provider).with("planned_actions", actions).with("approval_nonce", nonce))
     }
 
     /** Reading a running task advances the canned run by one step: RUNNING → CART_READY. */
     fun task(userId: String, taskId: String): JsonObject {
         val t = expireIfDue(userId, own("task", userId, taskId))
-        return if (t.str("status") == "RUNNING") transition(userId, t, "cart-tasks/cart-ready.json") else t
+        val simulated = deviceTasks["$userId:$taskId"] == null
+        return if (simulated && t.str("status") == "RUNNING") transition(userId, t, "cart-tasks/cart-ready.json") else t
     }
 
-    fun approve(userId: String, taskId: String, actionIds: List<String>, nonce: String): JsonObject {
+    fun approve(userId: String, taskId: String, actionIds: List<String>, nonce: String, sessionId: String = ""): JsonObject {
         val t = expireIfDue(userId, own("task", userId, taskId))
         if (nonce.isBlank() || nonce.length > 128) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "approval_nonce", "invalid_format")
         when (t.str("status")) {
@@ -150,7 +226,13 @@ class Phase4Stubs(
         if (actionIds.toSet() != planned) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
         // The nonce must be the one issued for this plan; it is cleared once used, so it can't be replayed.
         if (!java.security.MessageDigest.isEqual(nonce.toByteArray(), (t.str("approval_nonce") ?: "").toByteArray())) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
-        return transition(userId, t, "cart-tasks/running.json")
+        val device = deviceTasks["$userId:$taskId"] ?: return transition(userId, t, "cart-tasks/running.json")
+        // A device-run task stays APPROVED until the phone reports; only this session may report on it.
+        synchronized(device) {
+            device.approvedBy = sessionId
+            device.approvedAt = clock.instant()
+            return save("task", userId, taskId, t.with("status", "APPROVED").with("approval_nonce", null).withEvent("state_changed", "Approved by you"))
+        }
     }
 
     fun checkpoint(userId: String, taskId: String, checkpointId: String, decision: String): JsonObject {
@@ -158,13 +240,118 @@ class Phase4Stubs(
         if (t.str("status") != "CHECKPOINT" || t["checkpoint"]?.takeUnless { it is JsonNull }?.jsonObject?.str("checkpoint_id") != checkpointId) {
             throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
         }
-        return transition(userId, t, if (decision == "approve") "cart-tasks/running.json" else "cart-tasks/cancelled.json")
+        val device = deviceTasks["$userId:$taskId"] ?: return transition(userId, t, if (decision == "approve") "cart-tasks/running.json" else "cart-tasks/cancelled.json")
+        synchronized(device) {
+            device.endPause()
+            val yes = decision == "approve"
+            return save("task", userId, taskId, t.with("status", if (yes) "RUNNING" else "CANCELLED").with("checkpoint", null)
+                .withEvent("checkpoint_answered", if (yes) "You chose to continue" else "You chose to stop"))
+        }
+    }
+
+    private fun DeviceTask.endPause() {
+        pausedSince?.let { pausedSeconds += Duration.between(it, clock.instant()).seconds }
+        pausedSince = null
+    }
+
+    private fun JsonObject.withEvent(type: String, description: String): JsonObject {
+        val events = this["events"]?.jsonArray.orEmpty()
+        val seq = (events.maxOfOrNull { it.jsonObject["seq"]!!.jsonPrimitive.content.toInt() } ?: 0) + 1
+        val e = JsonObject(mapOf("seq" to JsonPrimitive(seq), "at" to JsonPrimitive(now().toString()), "type" to JsonPrimitive(type), "description" to JsonPrimitive(description), "action_id" to JsonNull))
+        return with("events", JsonArray(events + e))
+    }
+
+    /**
+     * CR-005: what the phone did for a task it runs. Applied only along device transitions of the task state
+     * machine (D-002); the server enforces the limits and checks the cart itself. When the task has already
+     * ended here (stopped, paused, expired), the answer says so and the phone halts.
+     */
+    fun reportProgress(userId: String, sessionId: String, taskId: String, r: TaskProgressReport): JsonObject {
+        val t = own("task", userId, taskId)
+        val device = deviceTasks["$userId:$taskId"] ?: throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
+        synchronized(device) {
+            val approver = device.approvedBy ?: throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
+            if (approver != sessionId) throw ApiException(ErrorCode.FORBIDDEN)
+            limit("stub:progress:$userId:$taskId", 120, Duration.ofMinutes(1))
+            if (r.reportSeq == device.lastSeq) return device.lastResponse!!
+            if (r.reportSeq < device.lastSeq) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
+            val current = t.str("status")!!
+            if (current in TERMINAL) return t.also { device.lastSeq = r.reportSeq; device.lastResponse = it }
+
+            val events = t["events"]!!.jsonArray
+            val next = (events.maxOfOrNull { it.jsonObject["seq"]!!.jsonPrimitive.content.toInt() } ?: 0) + 1
+            if (r.events.withIndex().any { (i, e) -> e.seq != next + i }) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "events", "invalid_value")
+            if (r.actionsUsed < (t["actions_used"]?.jsonPrimitive?.content?.toInt() ?: 0)) throw ApiException.field(ErrorCode.VALIDATION_FAILED, "actions_used", "invalid_value")
+            if (r.status != current && r.status !in DEVICE_MOVES[current].orEmpty()) throw ApiException(ErrorCode.TASK_STATE_CONFLICT)
+            when (r.status) {
+                "CHECKPOINT" -> r.checkpoint ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "checkpoint", "required")
+                "NEEDS_USER_ACTION" -> r.needsUserAction ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "needs_user_action", "required")
+                "FAILED_SAFE", "BLOCKED_POLICY" -> r.failure ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "failure", "required")
+                "CART_READY" -> r.cart ?: throw ApiException.field(ErrorCode.VALIDATION_FAILED, "cart", "required")
+            }
+
+            val paused = setOf("CHECKPOINT", "NEEDS_USER_ACTION")
+            if (current in paused && r.status !in paused) device.endPause()
+            if (current !in paused && r.status in paused) device.pausedSince = clock.instant()
+
+            val limits = t["limits"]!!.jsonObject
+            val maxActions = limits["max_actions"]!!.jsonPrimitive.content.toInt()
+            val runtimeEnds = device.approvedAt!!.plusSeconds(limits["max_runtime_seconds"]!!.jsonPrimitive.content.toLong() + device.pausedSeconds)
+            var status = r.status
+            var failure: JsonElement = r.failure?.let { ApiJson.encodeToJsonElement(FailureIn.serializer(), it) } ?: JsonNull
+            var cart: JsonElement = t["cart"] ?: JsonNull
+            var serverNote: String? = null
+            fun failSafe(code: String, message: String) {
+                status = "FAILED_SAFE"
+                failure = JsonObject(mapOf("code" to JsonPrimitive(code), "message" to JsonPrimitive(message)))
+                serverNote = message
+            }
+            when {
+                r.actionsUsed > maxActions -> failSafe("max_actions_reached", "This took more steps than allowed, so it was stopped.")
+                status !in paused && status !in TERMINAL && clock.instant().isAfter(runtimeEnds) -> failSafe("runtime_exceeded", "This took longer than allowed, so it was stopped.")
+                status == "CART_READY" -> {
+                    // The phone says the cart is ready; the server checks it against what was approved.
+                    val c = r.cart!!
+                    val approved = DeviceReadings.approvedItems(quote(userId, t.str("quote_id")!!), t.str("provider")!!)
+                    val got = c.lines.map { l -> listOfNotNull(l.matchedName ?: l.requestedName, l.matchedSize).joinToString(" ").lowercase() to l.quantity }
+                    val ok = approved.size == got.size && approved.toSet() == got.toSet()
+                    val totals = c.lines.map { it.lineTotal }
+                    val total = if (totals.all { it != null } && totals.isNotEmpty()) MoneyIn(totals.sumOf { it!!.amountMinor }, totals.first()!!.currency) else null
+                    cart = JsonObject(
+                        mapOf(
+                            "verified" to JsonPrimitive(ok),
+                            "verified_at" to (if (ok) JsonPrimitive(now().toString()) else JsonNull),
+                            "lines" to JsonArray(c.lines.map { ApiJson.encodeToJsonElement(CartLineIn.serializer(), it) }),
+                            "total_estimate" to (total?.let { ApiJson.encodeToJsonElement(MoneyIn.serializer(), it) } ?: JsonNull),
+                            "differs_from_quote" to JsonPrimitive(!ok),
+                        ),
+                    )
+                    if (!ok) failSafe("cart_verification_failed", "The cart in the app doesn't match what you approved, so it was stopped.")
+                }
+            }
+            var updated = t.with("status", status)
+                .with("actions_used", r.actionsUsed)
+                .with("events", JsonArray(events + r.events.map { ApiJson.encodeToJsonElement(TaskEventIn.serializer(), it) }))
+                .with("checkpoint", if (status == "CHECKPOINT") ApiJson.encodeToJsonElement(CheckpointIn.serializer(), r.checkpoint!!) else null)
+                .with("needs_user_action", if (status == "NEEDS_USER_ACTION") ApiJson.encodeToJsonElement(NeedsUserIn.serializer(), r.needsUserAction!!) else null)
+                .with("failure", if (status in setOf("FAILED_SAFE", "BLOCKED_POLICY")) failure else null)
+                .with("cart", cart)
+                .with("approval_nonce", null)
+            serverNote?.let { updated = updated.withEvent("halt", it) }
+            return save("task", userId, taskId, updated).also { device.lastSeq = r.reportSeq; device.lastResponse = it }
+        }
     }
 
     /** The emergency stop always succeeds; a task that has already ended stays as it is. */
     fun stop(userId: String, taskId: String): JsonObject {
         val t = own("task", userId, taskId)
-        return if (t.str("status") in TERMINAL) t else transition(userId, t, "cart-tasks/cancelled.json")
+        if (t.str("status") in TERMINAL) return t
+        val device = deviceTasks["$userId:$taskId"] ?: return transition(userId, t, "cart-tasks/cancelled.json")
+        // A device-run task keeps its timeline; the phone learns of the stop from its next report's answer.
+        synchronized(device) {
+            device.endPause()
+            return save("task", userId, taskId, t.with("status", "CANCELLED").with("checkpoint", null).with("needs_user_action", null).withEvent("halt", "Stopped by you"))
+        }
     }
 
     private fun expireIfDue(userId: String, t: JsonObject): JsonObject =
@@ -186,7 +373,8 @@ class Phase4Stubs(
         if (t.str("status") != "CART_READY") throw ApiException(ErrorCode.CONFLICT)
         // Opaque, one-time, short-lived (threat model A-08): the URL carries no task, order or user data.
         val token = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(24).also(random::nextBytes))
-        transition(userId, t, "cart-tasks/handed-off.json")
+        if (deviceTasks["$userId:$taskId"] != null) save("task", userId, taskId, t.with("status", "HANDED_OFF").withEvent("handoff_created", "Opened the cart in the app"))
+        else transition(userId, t, "cart-tasks/handed-off.json")
         return fixture("deep-links/cart.json").with("handoff_url", "smartcart://handoff/$token").with("expires_at", now().plus(Duration.ofMinutes(10)).toString())
     }
 
@@ -232,6 +420,18 @@ class Phase4Stubs(
 
     private companion object {
         val TERMINAL = setOf("CART_READY", "HANDED_OFF", "CANCELLED", "EXPIRED", "FAILED_SAFE", "BLOCKED_POLICY")
+
+        /** CR-005: how long the phone has to report a provider's prices. */
+        val DEVICE_WINDOW: Duration = Duration.ofSeconds(120)
+        val CLOCK_SKEW: Duration = Duration.ofMinutes(5)
+
+        /** The D-002 transitions the phone may make (a report may also stay in the same state). */
+        val DEVICE_MOVES = mapOf(
+            "APPROVED" to setOf("RUNNING", "CANCELLED", "BLOCKED_POLICY"),
+            "RUNNING" to setOf("CHECKPOINT", "NEEDS_USER_ACTION", "CART_READY", "CANCELLED", "FAILED_SAFE", "BLOCKED_POLICY"),
+            "CHECKPOINT" to setOf("RUNNING", "CANCELLED", "FAILED_SAFE"),
+            "NEEDS_USER_ACTION" to setOf("RUNNING", "CANCELLED", "FAILED_SAFE", "BLOCKED_POLICY"),
+        )
     }
 }
 

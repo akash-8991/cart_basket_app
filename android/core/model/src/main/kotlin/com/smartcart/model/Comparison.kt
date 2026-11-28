@@ -83,6 +83,13 @@ enum class Availability {
     @SerialName("failed") FAILED,
 }
 
+/** CR-005: where a provider's figures were read. */
+@Serializable
+enum class ResultSource {
+    @SerialName("device") DEVICE,
+    @SerialName("server") SERVER,
+}
+
 @Serializable
 data class ProviderResult(
     val provider: ProviderKey,
@@ -95,6 +102,8 @@ data class ProviderResult(
     val rank: Int? = null,
     val unavailableFields: List<String>,
     val notes: List<String>,
+    /** CR-005: DEVICE when the figures come from prices read on the user's phone. */
+    val source: ResultSource? = null,
 )
 
 @Serializable
@@ -162,6 +171,8 @@ data class QuoteRequest(
     val chatSessionId: String? = null,
     /** CR-004: label of the user's saved address ("Home"); the address itself never leaves the phone. */
     val deliveryLabel: String? = null,
+    /** CR-005: providers whose prices this phone reads itself and reports with a [PriceObservation]. */
+    val deviceProviders: List<ProviderKey> = emptyList(),
 )
 
 @Serializable

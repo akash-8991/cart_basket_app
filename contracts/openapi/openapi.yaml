@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.3.0
+  version: 1.4.0
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -882,6 +882,67 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
         default: { $ref: '#/components/responses/Error' }
+  /v1/comparison/quotes/{quoteId}/observations:
+    post:
+      tags: [comparison]
+      operationId: submitPriceObservation
+      summary: Report what the phone read in one provider app for this comparison.
+      description: "Only for a provider listed in the quote's device_providers, once per provider. The server validates the readings and recomputes the quote; it never takes totals, ranks or labels from the device. Readings are used only for this user's comparison.\n"
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: quoteId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PriceObservation' }
+      responses:
+        '200':
+          description: The comparison recomputed with this provider's readings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ComparisonQuote' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '410': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
+  /v1/cart-tasks/{taskId}/progress:
+    post:
+      tags: [cart-tasks]
+      operationId: reportTaskProgress
+      summary: Report what the phone did for an approved task.
+      description: "Only from the device session that approved the task. The server applies the report only along device transitions of the task state machine, enforces the task's limits and verifies the cart itself. The response is the server's view; if it is CANCELLED or FAILED_SAFE the device halts at once.\n"
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskProgressReport' }
+      responses:
+        '200':
+          description: The task as the server now holds it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CartTask' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
 
 components:
   securitySchemes:
@@ -1553,6 +1614,11 @@ components:
           type: [string, 'null']
           maxLength: 40
           description: "Label of the user's saved delivery address (e.g. \"Home\"), entered on the device. The address itself never leaves the device (D-025, CR-004). Used only for this comparison's assumptions text.\n"
+        device_providers:
+          type: array
+          maxItems: 3
+          items: { $ref: '#/components/schemas/ProviderKey' }
+          description: "Providers whose prices this phone will read itself and report with submitPriceObservation. They stay not_checked until a reading arrives; after 120 s without one they are marked failed (CR-005).\n"
     MatchedLine:
       type: object
       additionalProperties: false
@@ -1600,6 +1666,13 @@ components:
         notes:
           type: array
           items: { type: string }
+        source:
+          type: [string, 'null']
+          enum:
+            - device
+            - server
+            - 
+          description: Where this provider's figures were read; device means on the user's phone (CR-005).
     Recommendation_Label:
       type: string
       enum: [cheapest, lowest_observed_estimate, fastest, best_value, preferred, none]
@@ -1945,3 +2018,126 @@ components:
           type: string
           minLength: 6
           maxLength: 8
+    AdapterRef:
+      type: object
+      additionalProperties: false
+      required: [key, version]
+      properties:
+        key: { type: string, maxLength: 40 }
+        version: { type: string, maxLength: 20 }
+    ObservedOffer:
+      type: object
+      additionalProperties: false
+      required: [line_id, found]
+      properties:
+        line_id: { type: string, description: A line_id of this quote. }
+        found: { type: boolean }
+        name:
+          type: [string, 'null']
+          maxLength: 120
+          description: Product name as the app shows it. Untrusted text.
+        unit_price:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        in_stock: { type: boolean, default: false }
+    ObservedFees:
+      type: object
+      additionalProperties: false
+      description: Fees the app states. Null means the app didn't state it; the server never assumes zero.
+      properties:
+        delivery_fee:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        packaging_fee:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        platform_fee:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        small_cart_fee:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        surge_or_booking_fee:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        taxes:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        discounts:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+    PriceObservation:
+      type: object
+      additionalProperties: false
+      required: [provider, captured_at, outcome, adapter]
+      properties:
+        provider: { $ref: '#/components/schemas/ProviderKey' }
+        captured_at: { type: string, format: date-time }
+        outcome:
+          type: string
+          enum: [read, not_read]
+        not_read_reason:
+          type: [string, 'null']
+          enum:
+            - service_off
+            - consent_missing
+            - app_not_installed
+            - package_mismatch
+            - login_required
+            - otp_required
+            - captcha
+            - biometric
+            - password_prompt
+            - payment_screen
+            - unknown_screen
+            - unexpected_dialog
+            - timeout
+            - kill_switch
+            - stopped
+            - 
+          description: Required when outcome is not_read.
+        adapter: { $ref: '#/components/schemas/AdapterRef' }
+        offers:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/ObservedOffer' }
+        fees:
+          oneOf:
+            - { $ref: '#/components/schemas/ObservedFees' }
+            - { type: 'null' }
+        eta_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 600
+    TaskProgressReport:
+      type: object
+      additionalProperties: false
+      required: [report_seq, status, actions_used, events, adapter]
+      properties:
+        report_seq:
+          type: integer
+          minimum: 1
+          description: 'Increases with every report for the task; a repeat gets the same answer, an older one 409.'
+        status:
+          type: string
+          enum: [RUNNING, CHECKPOINT, NEEDS_USER_ACTION, CART_READY, FAILED_SAFE, BLOCKED_POLICY, CANCELLED]
+          description: The state the device is now in; applied only along device transitions of the task state machine.
+        actions_used: { type: integer, minimum: 0 }
+        events:
+          type: array
+          maxItems: 60
+          description: Events since the last accepted report, continuing its seq numbers. Descriptions are at most 200 characters.
+          items: { $ref: '#/components/schemas/TaskEvent' }
+        checkpoint: { $ref: '#/components/schemas/CartTask/properties/checkpoint' }
+        needs_user_action: { $ref: '#/components/schemas/CartTask/properties/needs_user_action' }
+        failure: { $ref: '#/components/schemas/CartTask/properties/failure' }
+        cart: { $ref: '#/components/schemas/CartTask/properties/cart' }
+        adapter: { $ref: '#/components/schemas/AdapterRef' }

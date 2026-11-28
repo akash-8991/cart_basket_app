@@ -411,6 +411,33 @@ out('dashboard/summary.empty.json', 'DashboardSummary', {
 });
 out('dashboard/monthly.json', 'MonthlyMetrics', { currency: 'INR', months: months.map((m) => ({ month: m, kpis: kpis(monthData[m]), provider_split: m === '2026-11' ? pSplit : pSplit.slice(0, 4), category_split: cSplit })) });
 
+// ---------------------------------------------------------------- CR-005: what the phone reports
+// Request bodies have no HTTP status; they are listed with status 0.
+const adapterRef = { key: 'teststore', version: '1' };
+out('comparison/grocery.device-pending.json', 'ComparisonQuote', quote('qt_grocery_device', 'grocery', 'in_progress',
+  [{ ...notChecked('blinkit', 'not_checked', 'Waiting for prices from your phone'), source: 'device' }, { ...gBigbasket(), source: 'server' }, { ...gInstamart(), source: 'server' }],
+  { selected_provider: 'bigbasket', label: 'none', reason: 'Still checking prices on your phone.', confidence: 'medium', assumptions: assumptionsGrocery }), 201);
+const observed = (line_id, name, rupees, in_stock = true) => ({ line_id, found: true, name, unit_price: INR(rupees), in_stock });
+out('device/observation.read.json', 'PriceObservation', {
+  provider: 'blinkit', captured_at: at(1), outcome: 'read', not_read_reason: null, adapter: adapterRef,
+  offers: [observed('l1', 'Toned milk 1 L', 28), observed('l2', 'Brown bread 400 g', 45, false), observed('l3', 'Eggs 12 pack', 84), { line_id: 'l4', found: false, name: null, unit_price: null, in_stock: false }],
+  fees: { delivery_fee: INR(5), packaging_fee: INR(0), platform_fee: INR(0), small_cart_fee: INR(0), surge_or_booking_fee: null, taxes: INR(0), discounts: null },
+  eta_minutes: null,
+}, 0);
+out('device/observation.not-read.json', 'PriceObservation', {
+  provider: 'blinkit', captured_at: at(1), outcome: 'not_read', not_read_reason: 'login_required', adapter: adapterRef, offers: [], fees: null, eta_minutes: null,
+}, 0);
+const signIn = 'Test Store wants you to sign in. Sign in yourself in Test Store, then come back and resume. I never type passwords or codes.';
+out('device/progress.needs-user.json', 'TaskProgressReport', {
+  report_seq: 2, status: 'NEEDS_USER_ACTION', actions_used: 1, events: [ev(3, 'halt', signIn)],
+  checkpoint: null, needs_user_action: { reason: 'login_required', message: signIn }, failure: null, cart: null, adapter: adapterRef,
+}, 0);
+out('device/progress.cart-ready.json', 'TaskProgressReport', {
+  report_seq: 5, status: 'CART_READY', actions_used: 12, events: [ev(9, 'cart_verified', 'Cart checked: 4 items match'), ev(10, 'state_changed', 'Your cart is ready in Test Store')],
+  checkpoint: null, needs_user_action: null, failure: null,
+  cart: { verified: true, verified_at: at(2), lines: cartLines, total_estimate: gBlinkit().total_estimate, differs_from_quote: false }, adapter: adapterRef,
+}, 0);
+
 // ---------------------------------------------------------------- generic errors
 out('errors/service-unavailable.json', 'ErrorEnvelope', err('service_unavailable', 'Something went wrong on our side. Please try again.'), 503);
 out('errors/ai-unavailable.json', 'ErrorEnvelope', err('ai_unavailable', 'The assistant is temporarily limited.'), 503);

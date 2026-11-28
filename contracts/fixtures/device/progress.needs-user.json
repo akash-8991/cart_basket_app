@@ -1,0 +1,25 @@
+{
+  "report_seq": 2,
+  "status": "NEEDS_USER_ACTION",
+  "actions_used": 1,
+  "events": [
+    {
+      "seq": 3,
+      "at": "2026-11-22T05:00:36Z",
+      "type": "halt",
+      "description": "Test Store wants you to sign in. Sign in yourself in Test Store, then come back and resume. I never type passwords or codes.",
+      "action_id": null
+    }
+  ],
+  "checkpoint": null,
+  "needs_user_action": {
+    "reason": "login_required",
+    "message": "Test Store wants you to sign in. Sign in yourself in Test Store, then come back and resume. I never type passwords or codes."
+  },
+  "failure": null,
+  "cart": null,
+  "adapter": {
+    "key": "teststore",
+    "version": "1"
+  }
+}

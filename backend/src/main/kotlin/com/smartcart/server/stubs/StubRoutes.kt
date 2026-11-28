@@ -37,6 +37,8 @@ import kotlinx.serialization.json.JsonObject
     val chatSessionId: String? = null,
     /** CR-004: label of the user's saved address ("Home"). The address itself stays on the phone. */
     val deliveryLabel: String? = null,
+    /** CR-005: providers whose prices the phone reads itself. */
+    val deviceProviders: List<String>? = null,
 )
 @Serializable data class ConfirmQuoteRequest(val provider: String, val acknowledgedSwitch: Boolean)
 @Serializable data class CreateCartTaskRequest(val quoteId: String, val provider: String, val taskType: String)
@@ -52,8 +54,69 @@ private val CATEGORIES = setOf("travel", "food", "grocery", "shopping")
 private val IMPORT_FIELDS = setOf("order_date", "items", "quantity", "amounts", "status", "location_label")
 private val YEAR_MONTH = Regex("^\\d{4}-(0[1-9]|1[0-2])$")
 
+private val NOT_READ_REASONS = setOf(
+    "service_off", "consent_missing", "app_not_installed", "package_mismatch", "login_required", "otp_required", "captcha",
+    "biometric", "password_prompt", "payment_screen", "unknown_screen", "unexpected_dialog", "timeout", "kill_switch", "stopped",
+)
+private val DEVICE_STATUSES = setOf("RUNNING", "CHECKPOINT", "NEEDS_USER_ACTION", "CART_READY", "FAILED_SAFE", "BLOCKED_POLICY", "CANCELLED")
+private val EVENT_TYPES = setOf("state_changed", "action_started", "action_succeeded", "action_failed", "checkpoint_raised", "checkpoint_answered", "halt", "cart_verified", "handoff_created")
+private val RISKS = setOf("low", "medium", "high", "prohibited")
+private val USER_ACTION_REASONS = setOf("login_required", "otp_required", "captcha", "biometric", "password_prompt", "unexpected_dialog", "location_permission", "app_update_required", "item_unavailable")
+private val FAILURE_CODES = setOf("unknown_screen", "package_mismatch", "max_actions_reached", "runtime_exceeded", "inactivity_timeout", "cart_verification_failed", "provider_kill_switch", "network_lost", "app_not_installed", "policy_blocked")
+private val MATCHES = setOf("exact", "equivalent", "different_pack", "different_class", "unavailable", "uncertain")
+private const val MAX_MINOR = 10_000_000L // ₹1,00,000 for one price or fee
+
 private fun bad(field: String, code: String = "invalid_value"): Nothing = throw ApiException.field(ErrorCode.VALIDATION_FAILED, field, code)
 private fun provider(key: String?, field: String) { if (key != null && ProviderRegistry.find(key) == null) bad(field) }
+
+private fun instant(v: String?, field: String) { if (v != null && runCatching { java.time.Instant.parse(v) }.isFailure) bad(field, "invalid_format") }
+private fun amount(m: MoneyIn?, field: String) { if (m != null && (m.amountMinor !in 0..MAX_MINOR || m.currency.length != 3)) bad(field) }
+private fun text(v: String?, max: Int, field: String) { if (v != null && (v.isBlank() || v.length > max)) bad(field, "invalid_length") }
+private fun adapter(a: AdapterRef) { text(a.key, 40, "adapter.key"); text(a.version, 20, "adapter.version") }
+
+/** CR-005: the shape of a price reading; what depends on the quote is checked against it in [Phase4Stubs]. */
+private fun PriceObservation.validate() {
+    provider(provider, "provider")
+    instant(capturedAt, "captured_at")
+    adapter(adapter)
+    when (outcome) {
+        "read" -> {}
+        "not_read" -> if (notReadReason == null) bad("not_read_reason", "required")
+        else -> bad("outcome")
+    }
+    notReadReason?.let { if (it !in NOT_READ_REASONS) bad("not_read_reason") }
+    if (offers.size > 50 || offers.map { it.lineId }.toSet().size != offers.size) bad("offers")
+    offers.forEach { text(it.name, 120, "offers.name"); amount(it.unitPrice, "offers.unit_price") }
+    fees?.named()?.forEach { (k, v) -> amount(v, "fees.$k") }
+    etaMinutes?.let { if (it !in 0..600) bad("eta_minutes") }
+}
+
+/** CR-005: the shape of a progress report; transitions, limits and the cart are checked in [Phase4Stubs]. */
+private fun TaskProgressReport.validate() {
+    if (reportSeq < 1) bad("report_seq")
+    if (status !in DEVICE_STATUSES) bad("status")
+    if (actionsUsed < 0) bad("actions_used")
+    if (events.size > 60) bad("events")
+    events.forEach { e ->
+        if (e.type !in EVENT_TYPES) bad("events.type")
+        text(e.description, 200, "events.description")
+        instant(e.at, "events.at")
+        text(e.actionId, 40, "events.action_id")
+    }
+    checkpoint?.let { text(it.checkpointId, 64, "checkpoint.checkpoint_id"); text(it.prompt, 200, "checkpoint.prompt"); if (it.risk !in RISKS) bad("checkpoint.risk") }
+    needsUserAction?.let { if (it.reason !in USER_ACTION_REASONS) bad("needs_user_action.reason"); text(it.message, 200, "needs_user_action.message") }
+    failure?.let { if (it.code !in FAILURE_CODES) bad("failure.code"); text(it.message, 200, "failure.message") }
+    cart?.let { c ->
+        if (c.lines.size > 50) bad("cart.lines")
+        c.lines.forEach { l ->
+            if (l.match !in MATCHES || l.quantity !in 0..99) bad("cart.lines")
+            text(l.requestedName, 120, "cart.lines.requested_name"); text(l.matchedName, 120, "cart.lines.matched_name"); text(l.matchedSize, 40, "cart.lines.matched_size")
+            amount(l.unitPrice, "cart.lines.unit_price"); amount(l.lineTotal, "cart.lines.line_total")
+        }
+        amount(c.totalEstimate, "cart.total_estimate")
+    }
+    adapter(adapter)
+}
 
 /** Stubs exist only where enabled (D-020); production answers every Phase 4 operation with service_unavailable. */
 private fun ApplicationCall.stubsOrUnavailable(s: Services) {
@@ -95,8 +158,19 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         req.eligibleProviders.forEach { provider(it, "eligible_providers") }
         provider(req.selectedProvider, "selected_provider")
         req.deliveryLabel?.let { if (it.isBlank() || it.length > 40) bad("delivery_label", "invalid_length") }
+        val device = req.deviceProviders.orEmpty()
+        if (device.size > 3 || device.toSet().size != device.size || device.any { it !in req.eligibleProviders }) bad("device_providers")
         call.onceOnly(s, "quote:${u.userId}", ApiJson.encodeToString(QuoteRequest.serializer(), req), HttpStatusCode.Created) {
-            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective, req.deliveryLabel?.trim()) }
+            io { st.createQuote(u.userId, req.category, req.selectedProvider, req.objective, req.deliveryLabel?.trim(), device) }
+        }
+    }
+    post("/v1/comparison/quotes/{quoteId}/observations") {
+        call.stubsOrUnavailable(s)
+        val u = call.user()
+        val id = call.parameters["quoteId"]!!
+        val req = call.receive<PriceObservation>().also { it.validate() }
+        call.onceOnly(s, "observation:${u.userId}:$id", ApiJson.encodeToString(PriceObservation.serializer(), req), HttpStatusCode.OK) {
+            st.submitObservation(u.userId, id, req)
         }
     }
     get("/v1/comparison/quotes/{quoteId}") {
@@ -136,7 +210,7 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         val req = call.receive<ApproveCartTaskRequest>()
         if (req.approvedActionIds.isEmpty()) bad("approved_action_ids", "required")
         call.onceOnly(s, "approve:${u.userId}:$id", ApiJson.encodeToString(ApproveCartTaskRequest.serializer(), req), HttpStatusCode.OK) {
-            st.approve(u.userId, id, req.approvedActionIds, req.approvalNonce)
+            st.approve(u.userId, id, req.approvedActionIds, req.approvalNonce, u.sessionId)
         }
     }
     post("/v1/cart-tasks/{taskId}/checkpoint") {
@@ -148,6 +222,13 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         call.onceOnly(s, "checkpoint:${u.userId}:$id", ApiJson.encodeToString(CheckpointDecision.serializer(), req), HttpStatusCode.OK) {
             st.checkpoint(u.userId, id, req.checkpointId, req.decision)
         }
+    }
+    post("/v1/cart-tasks/{taskId}/progress") {
+        call.stubsOrUnavailable(s)
+        val u = call.user()
+        val req = call.receive<TaskProgressReport>().also { it.validate() }
+        // Idempotent by report_seq rather than an Idempotency-Key: the phone sends one report per step.
+        call.respondJson(HttpStatusCode.OK, st.reportProgress(u.userId, u.sessionId, call.parameters["taskId"]!!, req).toString())
     }
     post("/v1/cart-tasks/{taskId}/stop") {
         call.stubsOrUnavailable(s)

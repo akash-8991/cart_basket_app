@@ -197,7 +197,7 @@ components:
       additionalProperties: false
       required: [report_seq, status, actions_used, events, adapter]
       properties:
-        report_seq: { type: integer, minimum: 1, description: Increases with every report for the task; a repeat gets the same answer, an older one 409. }
+        report_seq: { type: integer, minimum: 1, description: 'Increases with every report for the task; a repeat gets the same answer, an older one 409.' }
         status:
           type: string
           enum: [RUNNING, CHECKPOINT, NEEDS_USER_ACTION, CART_READY, FAILED_SAFE, BLOCKED_POLICY, CANCELLED]
@@ -236,8 +236,9 @@ components:
 - Reports from another session, illegal transitions, replays and oversize bodies are refused, and tests cover each case.
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-Decision: proposed     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 28 Nov 2026)
+Decision: approved     Decision date: 2026-11-28
 Linked commits / tag:
 ```
 

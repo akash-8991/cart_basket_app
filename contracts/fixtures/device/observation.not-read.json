@@ -1,0 +1,13 @@
+{
+  "provider": "blinkit",
+  "captured_at": "2026-11-22T05:01:00Z",
+  "outcome": "not_read",
+  "not_read_reason": "login_required",
+  "adapter": {
+    "key": "teststore",
+    "version": "1"
+  },
+  "offers": [],
+  "fees": null,
+  "eta_minutes": null
+}

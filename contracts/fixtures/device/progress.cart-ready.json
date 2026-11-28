@@ -1,0 +1,107 @@
+{
+  "report_seq": 5,
+  "status": "CART_READY",
+  "actions_used": 12,
+  "events": [
+    {
+      "seq": 9,
+      "at": "2026-11-22T05:01:48Z",
+      "type": "cart_verified",
+      "description": "Cart checked: 4 items match",
+      "action_id": null
+    },
+    {
+      "seq": 10,
+      "at": "2026-11-22T05:02:00Z",
+      "type": "state_changed",
+      "description": "Your cart is ready in Test Store",
+      "action_id": null
+    }
+  ],
+  "checkpoint": null,
+  "needs_user_action": null,
+  "failure": null,
+  "cart": {
+    "verified": true,
+    "verified_at": "2026-11-22T05:02:00Z",
+    "lines": [
+      {
+        "line_id": "l1",
+        "requested_name": "Toned milk 1 L",
+        "matched_name": "Toned milk",
+        "matched_size": "1 L",
+        "quantity": 2,
+        "unit_price": {
+          "amount_minor": 2800,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 5600,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l2",
+        "requested_name": "Brown bread 400 g",
+        "matched_name": "Brown bread",
+        "matched_size": "400 g",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 4500,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 4500,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l3",
+        "requested_name": "Eggs 12 pack",
+        "matched_name": "Eggs",
+        "matched_size": "12 pack",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 8400,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 8400,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      },
+      {
+        "line_id": "l4",
+        "requested_name": "Bananas 6 pcs",
+        "matched_name": "Bananas",
+        "matched_size": "6 pcs",
+        "quantity": 1,
+        "unit_price": {
+          "amount_minor": 4200,
+          "currency": "INR"
+        },
+        "line_total": {
+          "amount_minor": 4200,
+          "currency": "INR"
+        },
+        "match": "exact",
+        "note": null
+      }
+    ],
+    "total_estimate": {
+      "amount_minor": 22900,
+      "currency": "INR"
+    },
+    "differs_from_quote": false
+  },
+  "adapter": {
+    "key": "teststore",
+    "version": "1"
+  }
+}

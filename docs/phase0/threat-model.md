@@ -37,6 +37,7 @@ User ID, email, password-derived material, refresh tokens and device sessions, o
 | A-13 | Partner UI change triggers unintended action | Critical | Semantic selectors, fingerprints, stop-on-unknown, canary tests | Adapter tests (P4) |
 | A-14 | Malicious dependency / build artifact | High | Lockfiles, version catalog pinning, SBOM, signed builds | CI (P5) |
 | A-15 | IDOR / BOLA across users | Critical | Ownership check on every resource ID | Authorization test suite (P3) |
+| A-16 | Forged device readings or task progress (CR-005) | High | Readings and progress change only that user's own quote and task, never pooled across users; the server computes every figure, checks every transition against D-002, enforces limits and verifies the cart itself; only the session that approved a task may report on it; strict schemas and size limits | `Cr005Test` (P4) |
 
 ## 4. Automation action-safety model (PRD v1.4 §4)
 

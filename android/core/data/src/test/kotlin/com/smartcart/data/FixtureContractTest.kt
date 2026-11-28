@@ -71,6 +71,9 @@ class FixtureContractTest {
         "RecommendationList" to RecommendationList.serializer(),
         "DashboardSummary" to DashboardSummary.serializer(),
         "MonthlyMetrics" to MonthlyMetrics.serializer(),
+        // CR-005 request bodies
+        "PriceObservation" to com.smartcart.model.PriceObservation.serializer(),
+        "TaskProgressReport" to com.smartcart.model.TaskProgressReport.serializer(),
     )
 
     @Test

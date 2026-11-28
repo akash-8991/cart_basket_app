@@ -1,0 +1,74 @@
+{
+  "provider": "blinkit",
+  "captured_at": "2026-11-22T05:01:00Z",
+  "outcome": "read",
+  "not_read_reason": null,
+  "adapter": {
+    "key": "teststore",
+    "version": "1"
+  },
+  "offers": [
+    {
+      "line_id": "l1",
+      "found": true,
+      "name": "Toned milk 1 L",
+      "unit_price": {
+        "amount_minor": 2800,
+        "currency": "INR"
+      },
+      "in_stock": true
+    },
+    {
+      "line_id": "l2",
+      "found": true,
+      "name": "Brown bread 400 g",
+      "unit_price": {
+        "amount_minor": 4500,
+        "currency": "INR"
+      },
+      "in_stock": false
+    },
+    {
+      "line_id": "l3",
+      "found": true,
+      "name": "Eggs 12 pack",
+      "unit_price": {
+        "amount_minor": 8400,
+        "currency": "INR"
+      },
+      "in_stock": true
+    },
+    {
+      "line_id": "l4",
+      "found": false,
+      "name": null,
+      "unit_price": null,
+      "in_stock": false
+    }
+  ],
+  "fees": {
+    "delivery_fee": {
+      "amount_minor": 500,
+      "currency": "INR"
+    },
+    "packaging_fee": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "platform_fee": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "small_cart_fee": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "surge_or_booking_fee": null,
+    "taxes": {
+      "amount_minor": 0,
+      "currency": "INR"
+    },
+    "discounts": null
+  },
+  "eta_minutes": null
+}

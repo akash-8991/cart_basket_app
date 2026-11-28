@@ -16,6 +16,7 @@ India-first (DPDP-aware) baseline. Source: audit §7, §13; PRD v1.4 §11.
 | Raw partner screen text | Sensitive | Device memory during parse only | **No** (default) | Discarded after parse | Anywhere persistent |
 | Addresses / destinations | Sensitive / location | Device only, typed in by the user, encrypted with a Keystore key per user (CR-004); cleared on sign-out of a non-remembered device, on account deletion, or with *Delete all* | Only the chosen label (e.g. "Home", ≤40 chars) with a comparison; street address only to on-device automation in Phase 4 | Until the user deletes it (label: quote lifetime) | Logs, analytics, notifications, Claude, server export |
 | Comparison snapshot | Business / personal | Server (encrypted) | Yes | 90 days | Analytics (except aggregate) |
+| Device readings and task progress (CR-005) | Business / personal | Server, inside that user's comparison snapshot and cart task | Yes: product names as shown, prices, stated fees, stock, fixed-phrase task events (≤200 chars), adapter key and version. No screen text beyond these fields, no address, no credentials | With the snapshot / task (90 days) | Analytics, Claude, logs (event text), any other user's data |
 | Handoff token | Secret bearer | Notification intent extras / app link | Yes | ≤10 min, one-time | Logs |
 | Claude API key | Secret | Backend secret manager | Never reaches device | Rotation schedule | APK, repo, client config, logs |
 | Payment / card / UPI / OTP / biometric | Prohibited | **Not collected** | — | — | Everywhere |

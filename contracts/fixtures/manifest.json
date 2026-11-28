@@ -197,6 +197,11 @@
       "status": 201
     },
     {
+      "file": "comparison/grocery.device-pending.json",
+      "schema": "ComparisonQuote",
+      "status": 201
+    },
+    {
       "file": "comparison/grocery.in-progress.json",
       "schema": "ComparisonQuote",
       "status": 201
@@ -270,6 +275,26 @@
       "file": "deep-links/manual.json",
       "schema": "Handoff",
       "status": 201
+    },
+    {
+      "file": "device/observation.not-read.json",
+      "schema": "PriceObservation",
+      "status": 0
+    },
+    {
+      "file": "device/observation.read.json",
+      "schema": "PriceObservation",
+      "status": 0
+    },
+    {
+      "file": "device/progress.cart-ready.json",
+      "schema": "TaskProgressReport",
+      "status": 0
+    },
+    {
+      "file": "device/progress.needs-user.json",
+      "schema": "TaskProgressReport",
+      "status": 0
     },
     {
       "file": "errors/ai-unavailable.json",
