@@ -10,6 +10,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Approved and implemented 27 Nov 2026 (contract 1.3.0) | — |
 | [CR-005](CR-005-device-reported-prices-and-task-progress.md) | Device-reported prices and task progress (Phase 4) | 2 new operations, 5 new schemas, 2 optional fields; no screen change | Approved and implemented 28 Nov 2026 (contract 1.4.0) | — |
 | [CR-006](CR-006-redeem-handoff-links.md) | Redeem cart handoff links (Phase 4.5) | 1 new operation, 2 new schemas; handoff link and notification behaviour; App Links when a domain exists | Approved and implemented 28 Nov 2026 (contract 1.5.0) | CR-005 |
+| [CR-007](CR-007-upload-imported-order-history.md) | Upload imported order history (Phase 4.6) | 1 new operation, 2 new schemas, 1 optional field, 1 new flag (off until R-05); no screen change | **Proposed 28 Nov 2026** — awaiting approval | CR-005 (`AdapterRef`) |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
