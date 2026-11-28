@@ -59,6 +59,11 @@ object Safety {
     }
 
     /** True for a control that commits money or an order, or for any secret-entry field. */
+    private val CART_CHANGE = Regex("""^\s*(add|increase|decrease|remove|delete|\+|−|-)(\b|\s|$)""", RegexOption.IGNORE_CASE)
+
+    /** Controls that change a cart; a price check never taps them, whatever an adapter asks. */
+    fun changesCart(n: UiNode): Boolean = listOfNotNull(n.desc, n.text).any { CART_CHANGE.containsMatchIn(it) }
+
     fun forbiddenToTap(n: UiNode): Boolean = COMMIT_CONTROL.containsMatchIn(n.words) || COMMIT_CONTROL.containsMatchIn(idWords(n))
 
     /** Never type into passwords, OTP, card or UPI fields. */

@@ -64,9 +64,9 @@ fun DeveloperScreen(onBack: () -> Unit) {
             item { SwitchRow("Offline", cfg.offline, { on -> c.mock.update { it.copy(offline = on) } }) }
             item { SwitchRow("Slow network (2.5 s)", cfg.latencyMs > 1000, { on -> c.mock.update { it.copy(latencyMs = if (on) 2500 else 700) } }) }
             testStoreOn?.let { on ->
-                item { SectionHeader("On-device automation (Phase 4.2)") }
-                item { SwitchRow("Grocery tasks run in SmartCart Test Store", on.value, { v -> c.testStore?.enabled?.value = v }) }
-                item { Text("Needs the Test Store app installed and SmartCart turned on under Settings → Accessibility. Other categories stay simulated.", style = MaterialTheme.typography.bodySmall) }
+                item { SectionHeader("On-device automation (Phase 4.2–4.3)") }
+                item { SwitchRow("Blinkit runs in SmartCart Test Store", on.value, { v -> c.testStore?.enabled?.value = v }) }
+                item { Text("Blinkit's prices are read and its carts built in the Test Store. Needs the Test Store app installed and SmartCart turned on under Settings → Accessibility. Other providers keep their fixture figures and simulated tasks.", style = MaterialTheme.typography.bodySmall) }
             }
             item { SectionHeader("Scenarios") }
             item { Choice("Login", LoginScenario.entries.toTypedArray(), cfg.login) { m, v -> m.copy(login = v) } }

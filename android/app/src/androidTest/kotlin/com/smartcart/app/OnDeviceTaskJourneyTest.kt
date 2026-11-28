@@ -66,10 +66,14 @@ class OnDeviceTaskJourneyTest {
         scenario.close()
     }
 
-    /** Approves the plan the app shows for Blinkit, which in this build runs in the Test Store. */
+    /**
+     * Approves the plan the app shows for Blinkit, which in this build runs in the Test Store. The comparison
+     * reads Blinkit's prices in the store first (4.3); [storeScenario] applies to the cart task after it.
+     */
     private fun approveInTheTestStore(storeScenario: String): String {
-        Automation.scenario(storeScenario)
+        Automation.scenario("normal")
         compose.registerCompareAndPickBlinkit(scenario, shots = false)
+        if (storeScenario != "normal") Automation.scenario(storeScenario)
         compose.waitForText(s(R.string.approve_start))
         // The plan says which app will really be opened, and lists exactly the compared items.
         compose.waitForText("Open Test Store")
@@ -92,6 +96,18 @@ class OnDeviceTaskJourneyTest {
         Device.context.getSystemService(NotificationManager::class.java).activeNotifications.map { it.notification }.firstOrNull { it.channelId == Notifier.CH_TASKS }
 
     private fun timeline(t: CartTask) = t.events.joinToString("\n") { it.description }
+
+    @Test fun theComparisonShowsPricesReadInTheTestStore() = screenshotOnFailure("ondevice-prices") {
+        Automation.scenario("normal")
+        compose.registerAndCompareGroceries(scenario, shots = false)
+        // Back in SmartCart after the check; Blinkit's column holds what the phone read in the Test Store.
+        compose.waitForText("Prices read on this phone from Test Store")
+        // ₹233 of items read in the store plus its stated ₹5 delivery fee; still the cheapest full cart.
+        compose.waitForText(com.smartcart.model.Money(23300L + 500L, "INR").format())
+        compose.waitForText(s(R.string.rec_label_cheapest))
+        assertFalse("SmartCart is in front again", testStoreShows("store_title") || testStoreShows("results_list"))
+        Device.screenshot("ondevice-00-comparison")
+    }
 
     @Test fun approvedCartIsBuiltInTheTestStoreAndShownAsReady() = screenshotOnFailure("ondevice-ready") {
         val id = approveInTheTestStore("normal")

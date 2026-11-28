@@ -46,6 +46,7 @@ import com.smartcart.app.security.DeviceIdentity
 import com.smartcart.app.security.KeystoreAddressStore
 import com.smartcart.data.address.AddressBook
 import com.smartcart.data.device.DeviceCartTaskRepository
+import com.smartcart.data.device.DeviceComparisonRepository
 import com.smartcart.data.device.RoutingCartTaskRepository
 import com.smartcart.data.address.AddressStore
 import com.smartcart.data.address.InMemoryAddressStore
@@ -71,7 +72,7 @@ class AppContainer(
     addressStore: AddressStore? = null,
     /** Phase 3.7: when set, auth, account, providers and chat use the backend; everything else stays on fakes until Phase 4. */
     val backendUrl: String? = null,
-    /** Phase 4.2, debug builds only: lets grocery cart tasks really run in SmartCart Test Store. */
+    /** Phase 4.2–4.3, debug builds only: lets Blinkit's prices and cart tasks really run in SmartCart Test Store. */
     val testStore: TestStoreBinding? = null,
 ) {
     val mock = MockControl(mockConfig)
@@ -107,7 +108,10 @@ class AppContainer(
     // until the Phase 4 device spike; until then the app reports "unknown" (null).
     val providers: ProviderRepository = api?.let { HttpProviderRepository(it, account) } ?: FakeProviderRepository(fixtures, mock)
     val chat: ChatRepository = api?.let { HttpChatRepository(it, providers) } ?: FakeChatRepository(fixtures, mock)
-    val comparisons: ComparisonRepository = FakeComparisonRepository(fixtures, mock)
+    // Phase 4.3: with the debug Test Store binding on, the bound provider's prices are read on the phone.
+    val comparisons: ComparisonRepository = FakeComparisonRepository(fixtures, mock).let { fixtureComparisons ->
+        testStore?.let { DeviceComparisonRepository(fixtureComparisons, it, providers, account, scope) } ?: fixtureComparisons
+    }
     private val simulatedTasks = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
     // A task runs on the phone when an adapter is bound for its provider (only the debug Test Store binding so
     // far); otherwise it is simulated as before.

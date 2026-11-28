@@ -100,8 +100,14 @@ fun hideKeyboard(activity: android.app.Activity) {
     imm.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
 }
 
+/**
+ * Waits for a node. While another app is in front (on-device automation, Phase 4.2–4.3) SmartCart has no
+ * screen to search, which counts as "not yet" rather than an error.
+ */
 fun ComposeTestRule.waitFor(matcher: SemanticsMatcher, timeoutMs: Long = 20_000) =
-    waitUntil(timeoutMs) { onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+    waitUntil(timeoutMs) {
+        try { onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() } catch (_: IllegalStateException) { false }
+    }
 
 fun ComposeTestRule.waitForText(text: String, substring: Boolean = false, timeoutMs: Long = 20_000) =
     waitFor(hasText(text, substring = substring), timeoutMs)
@@ -115,6 +121,12 @@ fun ComposeTestRule.waitForDescription(text: String, timeoutMs: Long = 20_000) =
  * → pick Blinkit (cheapest) and confirm the switch. Ends on the way to the approval screen.
  */
 fun ComposeTestRule.registerCompareAndPickBlinkit(scenario: ActivityScenario<MainActivity>, shots: Boolean) {
+    registerAndCompareGroceries(scenario, shots)
+    pickBlinkit(shots)
+}
+
+/** Register → home → grocery chat → clarification → the full-cart comparison, finished. */
+fun ComposeTestRule.registerAndCompareGroceries(scenario: ActivityScenario<MainActivity>, shots: Boolean) {
     // Welcome → Create account
     waitForText(Device.str(R.string.welcome_create))
     if (shots) Device.screenshot("e2e-01-welcome")
@@ -156,10 +168,14 @@ fun ComposeTestRule.registerCompareAndPickBlinkit(scenario: ActivityScenario<Mai
     // CR-004: no saved address yet, so Compare asks for one first, then carries on.
     addHomeAddress()
 
-    // Comparison: complete coverage → "Cheapest"; user picked BigBasket so switching asks first
-    waitForText(Device.str(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)
+    // Comparison: complete coverage → "Cheapest"
+    waitForText(Device.str(R.string.cmp_use, "Blinkit"), timeoutMs = 60_000)
     waitForText(Device.str(R.string.rec_label_cheapest))
     if (shots) Device.screenshot("e2e-05-comparison")
+}
+
+/** On the finished comparison: use Blinkit; the person had picked BigBasket, so switching asks first. */
+fun ComposeTestRule.pickBlinkit(shots: Boolean) {
     clickable(Device.str(R.string.cmp_use, "Blinkit")).performClick()
     waitForText(Device.str(R.string.cmp_switch_title, "Blinkit"))
     if (shots) Device.screenshot("e2e-06-switch-dialog")

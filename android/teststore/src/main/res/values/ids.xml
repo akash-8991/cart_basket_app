@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="store_title" type="id" />
+    <item name="store_delivery_fee" type="id" />
+    <item name="store_fee_note" type="id" />
     <item name="search_box" type="id" />
     <item name="query_input" type="id" />
     <item name="search_go" type="id" />

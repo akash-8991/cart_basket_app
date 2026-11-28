@@ -21,6 +21,13 @@ import java.security.MessageDigest
  * gestures or coordinates. Nothing it reads is logged.
  */
 class AccessibilityDriver(private val service: AccessibilityService) : Driver {
+    /** Brings SmartCart's existing screen back to the front (after a price check opened another app). */
+    fun openSmartCart(): Boolean {
+        val intent = service.packageManager.getLaunchIntentForPackage(service.packageName) ?: return false
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+        return runCatching { service.startActivity(intent) }.isSuccess
+    }
+
     override suspend fun launch(packageName: String): Boolean = withContext(Dispatchers.Main) {
         val intent = service.packageManager.getLaunchIntentForPackage(packageName) ?: return@withContext false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

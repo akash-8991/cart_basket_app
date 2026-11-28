@@ -15,4 +15,6 @@ interface OnDeviceAutomation {
     val verifier: PackageVerifier
     /** The adapter that automates [provider] on this phone, or null if none is bound. */
     fun adapterFor(provider: ProviderKey): Adapter?
+    /** Brings SmartCart back to the front after a price check opened another app. */
+    fun returnToSmartCart() {}
 }

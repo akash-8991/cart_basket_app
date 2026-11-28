@@ -44,6 +44,9 @@ data class RunState(
     val failure: TaskFailure? = null,
     /** Index in the plan of the step running (or that halted); a resumed run starts from it. */
     val step: Int = 0,
+    /** Price checks (Phase 4.3): what each item's results said, and the fees the app states. */
+    val offers: List<OfferReading> = emptyList(),
+    val fees: FeeReading? = null,
 )
 
 /** Timing knobs. Defaults suit real phones; tests shrink them. */
@@ -124,6 +127,9 @@ class TaskRunner(
         // Full-plan approval only (A-06): every step, and nothing else.
         if (approved != ids) throw Halted(Outcome.Blocked("Only the full plan you saw can be approved"))
         plan.actions.firstOrNull { it.action.risk == ActionRisk.PROHIBITED }?.let { throw Halted(Outcome.Blocked("“${it.action.description}” is never automated")) }
+        if (plan.purpose == ExecutablePlan.Purpose.PRICE_CHECK) {
+            plan.actions.firstOrNull { it.action.type !in PRICE_CHECK_STEPS }?.let { throw Halted(Outcome.Blocked("A price check only opens ${adapter.appName} and searches")) }
+        }
         plan.actions.firstOrNull { it.action.type !in adapter.supported }?.let { throw Halted(Outcome.Blocked("${adapter.appName} can't do “${it.action.description}” automatically")) }
         if (killSwitch()) throw Halted(Outcome.Failed(FailureCode.PROVIDER_KILL_SWITCH, "${adapter.appName} automation is switched off"))
         if (!verifier.isInstalled(adapter.packageName)) throw Halted(Outcome.Failed(FailureCode.APP_NOT_INSTALLED, "${adapter.appName} isn't installed"))
@@ -222,6 +228,7 @@ class TaskRunner(
             val n = screen.first(selector) ?: throw Halted(Outcome.Failed(FailureCode.UNKNOWN_SCREEN, "Expected control not found"))
             // Defence in depth: whatever an adapter asks, commit controls are never touched.
             if (Safety.forbiddenToTap(n)) throw Halted(Outcome.Blocked("Paying or placing the order is always left to you"))
+            if (plan.purpose == ExecutablePlan.Purpose.PRICE_CHECK && Safety.changesCart(n)) throw Halted(Outcome.Blocked("A price check never changes your cart"))
             spend()
             if (!driver.click(n)) throw Halted(Outcome.Failed(FailureCode.UNKNOWN_SCREEN, "A control didn't respond"))
         }
@@ -241,6 +248,10 @@ class TaskRunner(
         override fun needsUser(reason: UserActionReason, message: String): Nothing = throw Halted(Outcome.NeedsUser(reason, message))
 
         override fun cartRead(reading: CartReading) { this@TaskRunner.reading = reading }
+
+        override fun offerRead(reading: OfferReading) = _state.update { s -> s.copy(offers = s.offers.filterNot { it.item == reading.item } + reading) }
+
+        override fun feesRead(reading: FeeReading) = _state.update { it.copy(fees = reading) }
     }
 
     private fun hazardOutcome(h: Hazard): Outcome {
@@ -287,7 +298,11 @@ class TaskRunner(
 
     private fun finish(o: Outcome?) {
         when (o) {
-            null -> status(TaskStatus.CART_READY, "Your cart is ready in ${adapter.appName}")
+            // A finished price check also ends in CART_READY ("done"); PriceCapture reads it as success.
+            null -> status(
+                TaskStatus.CART_READY,
+                if (plan.purpose == ExecutablePlan.Purpose.PRICE_CHECK) "Read prices for ${plan.items.size} items in ${adapter.appName}" else "Your cart is ready in ${adapter.appName}",
+            )
             // A halt is one line in the timeline: the reason, with the status change it causes.
             is Outcome.NeedsUser -> {
                 _state.update { it.copy(needsUserAction = NeedsUserAction(o.reason, o.message)) }
@@ -322,3 +337,5 @@ class TaskRunner(
 
     private fun iso(ms: Long) = Instant.ofEpochMilli(ms).toString()
 }
+
+private val PRICE_CHECK_STEPS = setOf(ActionType.OPEN_APP, ActionType.SEARCH)

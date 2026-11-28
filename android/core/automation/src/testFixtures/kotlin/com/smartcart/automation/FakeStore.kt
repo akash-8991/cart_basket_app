@@ -59,7 +59,11 @@ class FakeStore(
     )
 
     private fun build(): List<UiNode> = when (screen) {
-        "home" -> listOf(n("store_title", text = "SmartCart Test Store")) + searchBar()
+        "home" -> listOf(
+            n("store_title", text = "SmartCart Test Store"),
+            n("store_delivery_fee", text = "Delivery fee ${rupees(DELIVERY_FEE)}"),
+            n("store_fee_note", text = "No packaging, platform or small-cart fees. Prices include taxes."),
+        ) + searchBar()
         "redesign" -> listOf(n("store_title", text = "SmartCart Test Store"), n("query_input", hint = "What are you looking for?", editable = true))
         "results" -> searchBar() + n("results_list") + (if (results.isEmpty()) listOf(n("no_results", text = "No results")) else results.flatMap { row(it) })
         "dialog" -> listOf(UiNode(id = "android:id/alertTitle", text = "Turn on notifications?"), UiNode(id = "android:id/button1", text = "Allow", clickable = true))
@@ -133,6 +137,9 @@ class FakeStore(
         return true
     }
 }
+
+/** The delivery fee both Test Stores state (₹5.00). */
+const val DELIVERY_FEE = 500L
 
 class FakeVerifier(private val installed: Boolean = true, private val signers: Set<String> = setOf(GOOD_SIGNER)) : PackageVerifier {
     override fun isInstalled(packageName: String) = installed

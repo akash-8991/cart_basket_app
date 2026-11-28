@@ -36,6 +36,8 @@ class StoreActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A fresh launch starts at the store's first screen, as most shop apps do; the cart is kept.
+        if (savedInstanceState == null) State.screen = "none"
         onBackPressedDispatcher.addCallback(this, backToHome)
         render()
     }
@@ -71,7 +73,12 @@ class StoreActivity : ComponentActivity() {
         backToHome.isEnabled = State.screen != "home"
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 48, 32, 32) }
         when (State.screen) {
-            "home" -> { col.addView(text(R.id.store_title, "SmartCart Test Store", size = 22f)); searchBar(col) }
+            "home" -> {
+                col.addView(text(R.id.store_title, "SmartCart Test Store", size = 22f))
+                col.addView(text(R.id.store_delivery_fee, "Delivery fee ${rupees(DELIVERY_FEE)}"))
+                col.addView(text(R.id.store_fee_note, "No packaging, platform or small-cart fees. Prices include taxes.", size = 13f))
+                searchBar(col)
+            }
             "redesign" -> {
                 col.addView(text(R.id.store_title, "SmartCart Test Store", size = 22f))
                 col.addView(EditText(this).apply { id = R.id.query_input; hint = "What are you looking for?" })
@@ -177,5 +184,9 @@ class StoreActivity : ComponentActivity() {
         fun reset() { screen = "none"; query = ""; results = emptyList(); cart.clear(); searches = 0 }
     }
 
-    companion object { const val PREFS = "teststore" }
+    companion object {
+        const val PREFS = "teststore"
+        /** Stated on the home screen and read by price capture (Phase 4.3). */
+        const val DELIVERY_FEE = 500L
+    }
 }

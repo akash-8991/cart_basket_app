@@ -5,6 +5,8 @@ import com.smartcart.automation.AdapterContext
 import com.smartcart.automation.CartLineReading
 import com.smartcart.automation.CartReading
 import com.smartcart.automation.ExecutableAction
+import com.smartcart.automation.FeeReading
+import com.smartcart.automation.OfferReading
 import com.smartcart.automation.Hazard
 import com.smartcart.automation.ItemRequest
 import com.smartcart.automation.ScreenSnapshot
@@ -42,8 +44,12 @@ class TestStoreAdapter(override val trustedSigners: Set<String>) : Adapter {
 
     override suspend fun perform(step: ExecutableAction, ctx: AdapterContext) {
         when (step.action.type) {
-            ActionType.OPEN_APP -> { ctx.launch(); ctx.awaitScreen("home") }
-            ActionType.SEARCH -> ctx.awaitScreen("home", "results")
+            ActionType.OPEN_APP -> {
+                ctx.launch()
+                readFees(ctx.awaitScreen("home"))?.let(ctx::feesRead)
+            }
+            // In a cart plan SEARCH only checks the search screen is there; in a price check it looks one item up.
+            ActionType.SEARCH -> step.item?.let { lookUp(it, ctx) } ?: ctx.awaitScreen("home", "results")
             ActionType.SELECT_ITEM -> add(step.item!!, ctx)
             ActionType.VERIFY_CART -> {
                 val s = ctx.awaitScreen("home", "results")
@@ -55,12 +61,47 @@ class TestStoreAdapter(override val trustedSigners: Set<String>) : Adapter {
         }
     }
 
-    private suspend fun add(item: ItemRequest, ctx: AdapterContext) {
+    /** Searches for [item] and returns the results screen once it shows that item or "No results". */
+    private suspend fun search(item: ItemRequest, ctx: AdapterContext): ScreenSnapshot {
         var s = ctx.awaitScreen("home", "results")
         ctx.type(s, id("search_box"), item.name)
         s = ctx.awaitScreen("home", "results") { it.has(idText("search_box", item.name)) }
         ctx.tap(s, id("search_go"))
-        s = ctx.awaitScreen("results") { it.has(idText("item_name", item.name)) || it.has(id("no_results")) }
+        return ctx.awaitScreen("results") { it.has(idText("item_name", item.name)) || it.has(id("no_results")) }
+    }
+
+    private suspend fun lookUp(item: ItemRequest, ctx: AdapterContext) {
+        ctx.offerRead(readOffer(search(item, ctx), item))
+    }
+
+    /** The item's row on a results screen: its name, then its price, then either the Add control or "Out of stock". */
+    fun readOffer(screen: ScreenSnapshot, item: ItemRequest): OfferReading {
+        val nodes = screen.nodes
+        val start = nodes.indexOfFirst { it.id == "$PACKAGE:id/item_name" && it.text.equals(item.name, ignoreCase = true) }
+        if (start < 0) return OfferReading(item, found = false)
+        val row = nodes.drop(start + 1).takeWhile { it.id != "$PACKAGE:id/item_name" }
+        return OfferReading(
+            item = item,
+            found = true,
+            name = nodes[start].text,
+            unitPriceMinor = parseRupeesMinor(row.firstOrNull { it.id == "$PACKAGE:id/item_price" }?.text),
+            inStock = row.none { it.id == "$PACKAGE:id/item_stock" },
+        )
+    }
+
+    /**
+     * The fees the store states on its home screen. It names a delivery fee and says there are no packaging,
+     * platform or small-cart fees and that prices include taxes; without that line those fees stay unknown.
+     */
+    fun readFees(screen: ScreenSnapshot): FeeReading? {
+        val delivery = screen.first(id("store_delivery_fee"))?.let { parseRupeesMinor(it.text) } ?: return null
+        val noOthers = screen.has(id("store_fee_note"))
+        val zero = if (noOthers) 0L else null
+        return FeeReading(deliveryFeeMinor = delivery, packagingFeeMinor = zero, platformFeeMinor = zero, smallCartFeeMinor = zero, taxesMinor = zero)
+    }
+
+    private suspend fun add(item: ItemRequest, ctx: AdapterContext) {
+        var s = search(item, ctx)
         val add = Selector.Desc("Add ${item.name}")
         if (!s.has(add)) ctx.needsUser(UserActionReason.ITEM_UNAVAILABLE, "${item.name} isn't available in $appName")
         ctx.tap(s, add)

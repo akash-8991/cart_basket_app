@@ -27,7 +27,14 @@ data class ItemRequest(val name: String, val quantity: Int)
 data class ExecutableAction(val action: PlannedAction, val item: ItemRequest? = null)
 
 /** The approved plan plus what each step needs to know. Built by code from the comparison, never by a model. */
-data class ExecutablePlan(val actions: List<ExecutableAction>) {
+data class ExecutablePlan(val actions: List<ExecutableAction>, val purpose: Purpose = Purpose.CART) {
+    enum class Purpose {
+        /** Builds a cart the person approved. */
+        CART,
+        /** Only opens the app and looks items up; the cart is never changed (Phase 4.3). */
+        PRICE_CHECK,
+    }
+
     val items: List<ItemRequest> get() = actions.mapNotNull { it.item }
 
     companion object {
@@ -43,12 +50,47 @@ data class ExecutablePlan(val actions: List<ExecutableAction>) {
             }
             return ExecutablePlan(actions)
         }
+
+        /** Price capture: open the app, then look up each item. Read-only by construction. */
+        fun forPriceCheck(appName: String, items: List<ItemRequest>): ExecutablePlan {
+            var n = 0
+            fun id() = "p${++n}"
+            val actions = buildList {
+                add(ExecutableAction(PlannedAction(id(), ActionType.OPEN_APP, "Open $appName", ActionRisk.LOW)))
+                items.forEach { add(ExecutableAction(PlannedAction(id(), ActionType.SEARCH, "Look up ${it.name}", ActionRisk.LOW), it)) }
+            }
+            return ExecutablePlan(actions, Purpose.PRICE_CHECK)
+        }
     }
 }
 
 /** A line as read back from the partner app's cart. Prices in minor units (paise). */
 data class CartLineReading(val name: String, val quantity: Int, val lineTotalMinor: Long?)
 data class CartReading(val lines: List<CartLineReading>, val totalMinor: Long?, val currency: String = "INR")
+
+/** What an app's search results say about one requested item (price capture, Phase 4.3). */
+data class OfferReading(
+    val item: ItemRequest,
+    /** False when the app showed no product with that name. */
+    val found: Boolean,
+    val name: String? = null,
+    val unitPriceMinor: Long? = null,
+    val inStock: Boolean = false,
+    val currency: String = "INR",
+)
+
+/**
+ * The fees an app states for an order. Null means the app didn't say; the comparison then lists that fee as
+ * unavailable instead of assuming zero.
+ */
+data class FeeReading(
+    val deliveryFeeMinor: Long? = null,
+    val packagingFeeMinor: Long? = null,
+    val platformFeeMinor: Long? = null,
+    val smallCartFeeMinor: Long? = null,
+    val taxesMinor: Long? = null,
+    val currency: String = "INR",
+)
 
 /**
  * How to drive one partner app, written from measured facts (provider-matrix.md, spike Q1–Q3): its package,
@@ -81,6 +123,10 @@ interface AdapterContext {
     fun needsUser(reason: com.smartcart.model.UserActionReason, message: String): Nothing
     /** Records what the cart screen shows, for verification. */
     fun cartRead(reading: CartReading)
+    /** Records what the results screen says about an item (price checks). */
+    fun offerRead(reading: OfferReading)
+    /** Records the fees the app states (price checks). */
+    fun feesRead(reading: FeeReading)
 }
 
 /** Parses "₹1,234.50" / "Rs 54" / "54.00" into paise. */
