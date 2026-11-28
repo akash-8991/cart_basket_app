@@ -10,7 +10,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Approved and implemented 27 Nov 2026 (contract 1.3.0) | — |
 | [CR-005](CR-005-device-reported-prices-and-task-progress.md) | Device-reported prices and task progress (Phase 4) | 2 new operations, 5 new schemas, 2 optional fields; no screen change | Approved and implemented 28 Nov 2026 (contract 1.4.0) | — |
 | [CR-006](CR-006-redeem-handoff-links.md) | Redeem cart handoff links (Phase 4.5) | 1 new operation, 2 new schemas; handoff link and notification behaviour; App Links when a domain exists | Approved and implemented 28 Nov 2026 (contract 1.5.0) | CR-005 |
-| [CR-007](CR-007-upload-imported-order-history.md) | Upload imported order history (Phase 4.6) | 1 new operation, 2 new schemas, 1 optional field, 1 new flag (off until R-05); no screen change | **Proposed 28 Nov 2026** — awaiting approval | CR-005 (`AdapterRef`) |
+| [CR-007](CR-007-upload-imported-order-history.md) | Upload imported order history (Phase 4.6) | 1 new operation, 2 new schemas, 1 optional field, 1 new flag (off until R-05); no screen change | Approved and implemented 28 Nov 2026 (contract 1.6.0) | CR-005 (`AdapterRef`) |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -56,6 +56,9 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 - **CR-006, the notification's fallback.** The notification's handoff link carries no task ID; the task travels in the notification intent's extras (not the URL), so an expired or replaced link still opens that cart's screen, where a new link is made.
 - **CR-006 without a backend.** Fixture and debug Test Store tasks use local links with the server's rules (opaque, 10 minutes, newest only, once). The Test Store's own package is the only one ever opened, since it is the adapter's verified app; partner packages wait for the device spike.
 - **CR-006, App Links** are served from `SMARTCART_APP_LINKS` ("package:SHA256[,…]"); unset, `/.well-known/assetlinks.json` is 404. The app's https intent filter is added once the team has a domain.
+- **CR-007, what an order needs to be kept.** The contract's `Order` always has a date and a total, so syncing needs the person to have chosen *order date* and *amounts*; otherwise orders aren't uploaded (409) and the import stays counts-only. An item is kept only with its quantity (an `Order` item always has one). A status that wasn't chosen is stored as `UNKNOWN`.
+- **CR-007, checking totals.** Items may legitimately add up to less than the total (fees); items adding up to *more* than the total can't be right, so that order's confidence becomes `low`. Nothing is recalculated.
+- **CR-007 in development.** Until a person has uploaded orders, `GET /v1/history/orders` keeps showing the sample orders; after that it shows only theirs. The app builds batches with `HistoryReports`; reading the Test Store's order history on the phone is slice 4.6.
 - **Found while implementing:** a token-refresh race in the app's HTTP client (concurrent expired calls could refresh twice), fixed; and the 2×-font layout fix from the device run had made the KPI figures stack at normal size on a standard phone — fixed, with a regression test.
 
 ## Decisions (settled 27 Nov 2026 by the project owner)

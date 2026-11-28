@@ -1,0 +1,37 @@
+{
+  "batch_seq": 1,
+  "provider": "blinkit",
+  "status": "completed",
+  "orders_found": 1,
+  "confidence": "high",
+  "failure_reason": null,
+  "adapter": {
+    "key": "teststore",
+    "version": "1"
+  },
+  "reviewed": true,
+  "import_outcome": "completed",
+  "orders": [
+    {
+      "source_ref": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ordered_at": "2026-11-22T04:00:00Z",
+      "status": null,
+      "total": {
+        "amount_minor": 18200,
+        "currency": "INR"
+      },
+      "items": [
+        {
+          "name": "Toned milk 1 L",
+          "quantity": 2,
+          "amount": {
+            "amount_minor": 5600,
+            "currency": "INR"
+          }
+        }
+      ],
+      "location_label": null,
+      "extraction_confidence": "high"
+    }
+  ]
+}

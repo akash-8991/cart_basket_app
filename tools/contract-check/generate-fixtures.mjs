@@ -444,6 +444,13 @@ out('deep-links/redeemed.json', 'HandoffRedemption', {
   manual_steps: ['Open Blinkit', 'Open the cart', 'Check the items and pay in Blinkit'],
 });
 
+// ---------------------------------------------------------------- CR-007: a history batch from the phone
+out('device/history-batch.json', 'HistoryBatch', {
+  batch_seq: 1, provider: 'blinkit', status: 'completed', orders_found: 1, confidence: 'high', failure_reason: null,
+  adapter: { key: 'teststore', version: '1' }, reviewed: true, import_outcome: 'completed',
+  orders: [{ source_ref: 'a'.repeat(64), ordered_at: at(-60), status: null, total: INR(182), items: [{ name: 'Toned milk 1 L', quantity: 2, amount: INR(56) }], location_label: null, extraction_confidence: 'high' }],
+}, 0);
+
 // ---------------------------------------------------------------- generic errors
 out('errors/service-unavailable.json', 'ErrorEnvelope', err('service_unavailable', 'Something went wrong on our side. Please try again.'), 503);
 out('errors/ai-unavailable.json', 'ErrorEnvelope', err('ai_unavailable', 'The assistant is temporarily limited.'), 503);

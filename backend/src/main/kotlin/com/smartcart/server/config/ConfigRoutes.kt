@@ -21,7 +21,7 @@ object PolicyVersions {
  */
 val CLIENT_FLAGS = listOf(
     "home.category.travel", "home.category.food", "home.category.grocery", "home.category.shopping",
-    "chat.ai.enabled", "comparison.enabled", "history.import.enabled",
+    "chat.ai.enabled", "comparison.enabled", "history.import.enabled", "history.upload.enabled",
 )
 
 @Serializable data class PolicyVersionsWire(val terms: String, val privacy: String, val consent: String)

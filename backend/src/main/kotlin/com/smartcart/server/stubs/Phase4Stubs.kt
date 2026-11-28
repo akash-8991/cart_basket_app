@@ -62,6 +62,7 @@ class Phase4Stubs(
 
     private val quotes = ConcurrentHashMap<String, QuoteState>()          // "<user>:<quote>"
     private val tasks = CartTasks(flags, providers, me, limiter, clock, HandoffTokens(secrets, clock))
+    private val history = com.smartcart.server.history.HistoryImports(flags, me, limiter, clock, secrets)
 
     private fun fixture(path: String): JsonObject =
         json.parseToJsonElement(Phase4Stubs::class.java.getResourceAsStream("/contracts/fixtures/$path")!!.readAllBytes().decodeToString()).jsonObject
@@ -234,28 +235,23 @@ class Phase4Stubs(
 
     // ------------------------------------------------------------------ history
 
-    fun startImport(userId: String, providerKeys: List<String>): JsonObject {
-        if (!flags.isOn("history.import.enabled")) throw ApiException(ErrorCode.PROVIDER_DISABLED)
-        val consents = me.grantedKeys(userId)
-        if (providerKeys.any { "history.$it" !in consents }) throw ApiException(ErrorCode.CONSENT_REQUIRED)
-        limit("stub:imports:$userId", 5, Duration.ofDays(1))
-        val id = newId("imp")
-        return save("import", userId, id, fixture("history/import.running.json").with("session_id", id))
-    }
+    // CR-007 (Phase 4.6): real import sessions; orders arrive only as the phone's reviewed, consented batches.
+    fun startImport(userId: String, providerKeys: List<String>, fields: List<String> = listOf("order_date", "items", "quantity", "amounts", "status"), uploadMode: String = "device_only") =
+        history.start(userId, providerKeys, fields, uploadMode)
 
-    /** Reading a running import moves it to review. */
-    fun importSession(userId: String, sessionId: String): JsonObject {
-        val s = own("import", userId, sessionId)
-        return if (s.str("status") == "running") save("import", userId, sessionId, fixture("history/import.review.json").with("session_id", sessionId)) else s
-    }
+    fun importSession(userId: String, sessionId: String) = history.session(userId, sessionId)
 
+    fun historyBatch(userId: String, sessionId: String, b: com.smartcart.server.history.HistoryBatch) = history.batch(userId, sessionId, b)
+
+    /** The person's uploaded orders; until they have any, the sample orders (development). */
     fun orders(userId: String, provider: String?): JsonObject {
-        val all = fixture("history/orders.json")["orders"]!!.jsonArray.map { it.jsonObject }
+        val all = history.uploaded(userId) ?: fixture("history/orders.json")["orders"]!!.jsonArray.map { it.jsonObject }
         val visible = all.filter { o -> "$userId:${o.str("order_id")}" !in deletedOrders && (provider == null || o.str("provider") == provider) }
         return JsonObject(mapOf("orders" to JsonArray(visible), "next_cursor" to JsonNull))
     }
 
     fun deleteOrder(userId: String, orderId: String) {
+        if (history.delete(userId, orderId)) return
         val exists = fixture("history/orders.json")["orders"]!!.jsonArray.any { it.jsonObject.str("order_id") == orderId }
         if (!exists || !deletedOrders.add("$userId:$orderId")) throw ApiException(ErrorCode.NOT_FOUND)
     }

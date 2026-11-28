@@ -27,7 +27,7 @@ Automation runs on the phone, but the frozen contract has no way for the phone t
 - **Task progress.** `CartTask` has events, `actions_used`, `checkpoint`, `needs_user_action`, `cart` and `failure`, but no operation lets the device report them. Today only the server's own stub writes them.
 - **Captured prices.** `POST /v1/comparison/quotes` builds the comparison on the server, but the prices are read from partner apps on the phone, and nothing carries them to the server.
 
-These need a change request (post-freeze rule) before the server-side engine and tasks (4.4–4.5). Slices 4.1–4.3 don't change the contract. [CR-005](../change-requests/CR-005-device-reported-prices-and-task-progress.md) was approved and implemented on 28 Nov 2026 (contract 1.4.0, D-030): the server accepts both reports in the development stubs, and the app builds both bodies. History upload for 4.6 is a separate gap: drafted as [CR-007](../change-requests/CR-007-upload-imported-order-history.md) (proposed 28 Nov 2026); its upload flag stays off until the privacy review (R-05).
+These need a change request (post-freeze rule) before the server-side engine and tasks (4.4–4.5). Slices 4.1–4.3 don't change the contract. [CR-005](../change-requests/CR-005-device-reported-prices-and-task-progress.md) was approved and implemented on 28 Nov 2026 (contract 1.4.0, D-030): the server accepts both reports in the development stubs, and the app builds both bodies. History upload for 4.6 is a separate gap: [CR-007](../change-requests/CR-007-upload-imported-order-history.md) was approved and implemented on 28 Nov 2026 (contract 1.6.0, D-034); its upload flag stays off until the privacy review (R-05).
 
 ## 3. Slices (each is one commit, pushed)
 

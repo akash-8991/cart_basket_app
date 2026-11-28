@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Smart Shopping Chat Assistant API
-  version: 1.5.0
+  version: 1.6.0
   description: |
     Contract-first API for the Android client (Phase 0 draft, frozen at `frontend-freeze-v1.4`).
 
@@ -965,6 +965,37 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        default: { $ref: '#/components/responses/Error' }
+  /v1/history/import/{sessionId}/batches:
+    post:
+      tags: [history]
+      operationId: uploadHistoryBatch
+      summary: Report one app's import result and, with consent, its normalised orders.
+      description: "One batch per app, in order. Orders only for a normalized_upload session the person has reviewed on the phone, with that app's history consent and history.upload.enabled on; only the fields the session lists. In device_only mode a batch carries counts only.\n"
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HistoryBatch' }
+      responses:
+        '200':
+          description: The import as the server now holds it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportSession' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
         default: { $ref: '#/components/responses/Error' }
 
@@ -1941,6 +1972,9 @@ components:
         review_sample:
           type: array
           items: { $ref: '#/components/schemas/Order' }
+        dedup_salt:
+          type: [string, 'null']
+          description: "Upload sessions only (CR-007): the phone sends source_ref = SHA-256(dedup_salt + provider + \":\" + provider order ID), so duplicates are found without the provider's order ID leaving the phone.\n"
     OrderStatus:
       type: string
       enum: [PLACED, CONFIRMED, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, REFUNDED, PARTIALLY_REFUNDED, UNKNOWN]
@@ -2017,7 +2051,7 @@ components:
       properties:
         flags:
           type: object
-          description: "Allow-listed flags only: home.category.travel, home.category.food, home.category.grocery, home.category.shopping, chat.ai.enabled, comparison.enabled, history.import.enabled.\n"
+          description: "Allow-listed flags only: home.category.travel, home.category.food, home.category.grocery, home.category.shopping, chat.ai.enabled, comparison.enabled, history.import.enabled, history.upload.enabled (CR-007).\n"
           additionalProperties: { type: boolean }
         policy_versions:
           type: object
@@ -2189,3 +2223,82 @@ components:
         manual_steps:
           type: array
           items: { type: string }
+    HistoryBatch:
+      type: object
+      additionalProperties: false
+      required: [batch_seq, provider, status, orders_found, adapter, reviewed]
+      properties:
+        batch_seq: { type: integer, minimum: 1 }
+        provider: { $ref: '#/components/schemas/ProviderKey' }
+        status:
+          type: string
+          enum: [running, completed, failed, skipped]
+        orders_found:
+          type: integer
+          minimum: 0
+          maximum: 5000
+        confidence:
+          oneOf:
+            - { $ref: '#/components/schemas/Confidence' }
+            - { type: 'null' }
+        failure_reason:
+          type: [string, 'null']
+          enum:
+            - login_required
+            - unknown_screen
+            - package_mismatch
+            - app_not_installed
+            - timeout
+            - stopped
+            - 
+        adapter: { $ref: '#/components/schemas/AdapterRef' }
+        reviewed: { type: boolean, description: True once the person confirmed on the review screen; orders need it. }
+        orders:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/UploadedOrder' }
+        import_outcome:
+          type: [string, 'null']
+          enum:
+            - completed
+            - cancelled
+            - 
+          description: Set on the batch that ends the whole import.
+    UploadedOrder:
+      type: object
+      additionalProperties: false
+      required: [source_ref, extraction_confidence]
+      properties:
+        source_ref: { type: string, pattern: '^[0-9a-f]{64}$' }
+        ordered_at:
+          type: [string, 'null']
+          format: date-time
+        status:
+          oneOf:
+            - { $ref: '#/components/schemas/OrderStatus' }
+            - { type: 'null' }
+        total:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        items:
+          type: [array, 'null']
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [name]
+            properties:
+              name: { type: string, maxLength: 120 }
+              quantity:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 999
+              amount:
+                oneOf:
+                  - { $ref: '#/components/schemas/Money' }
+                  - { type: 'null' }
+        location_label:
+          type: [string, 'null']
+          maxLength: 40
+        extraction_confidence: { $ref: '#/components/schemas/Confidence' }

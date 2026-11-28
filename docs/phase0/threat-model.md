@@ -31,12 +31,13 @@ User ID, email, password-derived material, refresh tokens and device sessions, o
 | A-07 | Wrong provider / wrong cart | High | Comparison snapshot linked to task, explicit switch confirmation, cart verification | UI tests (P1), E2E (P4), `TaskThreatsTest` a07_* (P4.5) |
 | A-08 | Handoff link replay | High | One-time nonce, ≤10 min TTL, package binding | Contract + integration (P3), `TaskThreatsTest` a08_* (P4.5), `Cr006Test` and `Cr006UiTest` (single use end to end, uniform refusals) |
 | A-09 | Accessibility service used on unrelated apps | Critical | Package allowlist, stop on package change, kill switch | Runtime tests (P4) |
-| A-10 | Exfiltration of order-history screens | Critical | On-device parsing, field allowlist, no raw screenshots, explicit upload consent | Privacy tests (P4) |
+| A-10 | Exfiltration of order-history screens | Critical | On-device parsing, field allowlist, no raw screenshots, explicit upload consent | Privacy tests (P4): `Cr007Test`, `HistoryReportsTest` |
 | A-11 | Notification leaks order details | Medium | Generic lock-screen text | UI test (P1) |
 | A-12 | Claude / automation cost abuse | High | Per-user budgets, concurrency caps, circuit breakers | Load tests (P5) |
 | A-13 | Partner UI change triggers unintended action | Critical | Semantic selectors, fingerprints, stop-on-unknown, canary tests | Adapter tests (P4) |
 | A-14 | Malicious dependency / build artifact | High | Lockfiles, version catalog pinning, SBOM, signed builds | CI (P5) |
 | A-15 | IDOR / BOLA across users | Critical | Ownership check on every resource ID | Authorization test suite (P3) |
+| A-17 | Forged or poisoned order history (CR-007) | Medium | Uploaded history changes only that user's own dashboard and recommendations, never pooled; totals checked by code (impossible totals flagged low-confidence); strict schema, field allowlist, size limits; only with consent, after review, behind `history.upload.enabled` | `Cr007Test` |
 | A-16 | Forged device readings or task progress (CR-005) | High | Readings and progress change only that user's own quote and task, never pooled across users; the server computes every figure, checks every transition against D-002, enforces limits and verifies the cart itself; only the session that approved a task may report on it; strict schemas and size limits | `Cr005Test` (P4) |
 
 ## 4. Automation action-safety model (PRD v1.4 §4)

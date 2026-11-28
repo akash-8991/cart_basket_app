@@ -198,8 +198,9 @@ class Phase4StubsTest {
         client.putJson("/v1/me/consents/history.blinkit", """{"granted":true,"version":"2026-11"}""", t)
         val started = client.postJson("/v1/history/import", body, key, t).assertContract("POST", "/v1/history/import")
         assertEquals(201, started.status.value)
-        val review = client.getAuthed("/v1/history/import/${started.field("session_id")}", t).assertContract("GET", "/v1/history/import/{sessionId}")
-        assertTrue("\"status\":\"awaiting_review\"" in review.bodyAsText(), review.bodyAsText())
+        // CR-007: a real session; it moves on only as the phone reports each app (Cr007Test).
+        val session = client.getAuthed("/v1/history/import/${started.field("session_id")}", t).assertContract("GET", "/v1/history/import/{sessionId}")
+        assertTrue("\"status\":\"running\"" in session.bodyAsText(), session.bodyAsText())
     }
 
     @Test fun ordersCanBeListedFilteredAndDeleted() = withApp {

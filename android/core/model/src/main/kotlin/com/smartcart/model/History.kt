@@ -39,6 +39,8 @@ data class ImportSession(
     val uploadMode: PrivacyMode,
     val providers: List<ProviderImportProgress>,
     val reviewSample: List<Order> = emptyList(),
+    /** CR-007: upload sessions only; salts the hash that finds duplicates without the provider's order ID. */
+    val dedupSalt: String? = null,
 )
 
 @Serializable
@@ -82,3 +84,51 @@ enum class ImportField(val key: String) {
     STATUS("status"),
     LOCATION_LABEL("location_label"),
 }
+
+// ---------------------------------------------------------------- CR-007: what the phone reports from an import
+
+@Serializable
+enum class ImportFailureReason {
+    @SerialName("login_required") LOGIN_REQUIRED,
+    @SerialName("unknown_screen") UNKNOWN_SCREEN,
+    @SerialName("package_mismatch") PACKAGE_MISMATCH,
+    @SerialName("app_not_installed") APP_NOT_INSTALLED,
+    @SerialName("timeout") TIMEOUT,
+    @SerialName("stopped") STOPPED,
+}
+
+@Serializable
+enum class ImportOutcome {
+    @SerialName("completed") COMPLETED,
+    @SerialName("cancelled") CANCELLED,
+}
+
+@Serializable
+data class UploadedItem(val name: String, val quantity: Int? = null, val amount: Money? = null)
+
+/** One normalised order, carrying only the fields the person chose. */
+@Serializable
+data class UploadedOrder(
+    val sourceRef: String,
+    val orderedAt: String? = null,
+    val status: OrderStatus? = null,
+    val total: Money? = null,
+    val items: List<UploadedItem>? = null,
+    val locationLabel: String? = null,
+    val extractionConfidence: Confidence,
+)
+
+/** Body of `POST /v1/history/import/{sessionId}/batches`. */
+@Serializable
+data class HistoryBatch(
+    val batchSeq: Int,
+    val provider: ProviderKey,
+    val status: ProviderImportStatus,
+    val ordersFound: Int,
+    val confidence: Confidence? = null,
+    val failureReason: ImportFailureReason? = null,
+    val adapter: AdapterRef,
+    val reviewed: Boolean,
+    val orders: List<UploadedOrder> = emptyList(),
+    val importOutcome: ImportOutcome? = null,
+)

@@ -10,6 +10,8 @@ object FlagKeys {
     const val HOME_SHOPPING = "home.category.shopping"
     const val AUTOMATION_GLOBAL = "automation.global.enabled"
     const val HISTORY_IMPORT = "history.import.enabled"
+    /** CR-007: normalised order upload; off until the privacy review (R-05). */
+    const val HISTORY_UPLOAD = "history.upload.enabled"
     const val COMPARISON = "comparison.enabled"
     const val CHAT_AI = "chat.ai.enabled"
 
@@ -25,6 +27,7 @@ class FeatureFlags(overrides: Map<String, Boolean> = emptyMap()) {
         // Production default is off; mock builds enable it so flows can be exercised.
         FlagKeys.AUTOMATION_GLOBAL to false,
         FlagKeys.HISTORY_IMPORT to false,
+        FlagKeys.HISTORY_UPLOAD to false,
         FlagKeys.COMPARISON to true,
         FlagKeys.CHAT_AI to true,
     )

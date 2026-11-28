@@ -75,6 +75,7 @@ class FixtureContractTest {
         "PriceObservation" to com.smartcart.model.PriceObservation.serializer(),
         "TaskProgressReport" to com.smartcart.model.TaskProgressReport.serializer(),
         "HandoffRedemption" to com.smartcart.model.HandoffRedemption.serializer(),
+        "HistoryBatch" to com.smartcart.model.HistoryBatch.serializer(),
     )
 
     @Test

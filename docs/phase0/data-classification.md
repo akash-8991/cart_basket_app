@@ -12,7 +12,7 @@ India-first (DPDP-aware) baseline. Source: audit §7, §13; PRD v1.4 §11.
 | Email | Personal | Server DB (encrypted / access-controlled) | Yes, at registration/recovery | Account lifetime | Logs, analytics, Claude |
 | Device model (CR-002) | Personal (low) | Server DB, per session | Yes, at sign-in | Session lifetime, then with the account | Logs, analytics, Claude |
 | Chat content | Personal / sensitive | Server (redacted), client memory | Yes | 30 days after last activity (D-025) | Logs (raw), analytics |
-| Order history (normalized) | Sensitive personal | Device; server only with upload consent | Only with consent | Until user deletes | Claude (raw), logs |
+| Order history (normalized) | Sensitive personal | Device; server only with upload consent, after review on the phone, with `history.upload.enabled` on (CR-007) | Only with consent, only the fields the person chose; the provider's order ID never (a salted hash instead) | Until user deletes | Claude (raw), logs, analytics (counts only) |
 | Raw partner screen text | Sensitive | Device memory during parse only | **No** (default) | Discarded after parse | Anywhere persistent |
 | Addresses / destinations | Sensitive / location | Device only, typed in by the user, encrypted with a Keystore key per user (CR-004); cleared on sign-out of a non-remembered device, on account deletion, or with *Delete all* | Only the chosen label (e.g. "Home", ≤40 chars) with a comparison; street address only to on-device automation in Phase 4 | Until the user deletes it (label: quote lifetime) | Logs, analytics, notifications, Claude, server export |
 | Comparison snapshot | Business / personal | Server (encrypted) | Yes | 90 days | Analytics (except aggregate) |

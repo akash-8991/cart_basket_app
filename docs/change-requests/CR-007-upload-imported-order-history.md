@@ -162,8 +162,9 @@ components:
 - Revoking history consent mid-import stops further uploads (403).
 
 ```text
-Approvals:  Product [ ]  Design [ ]  Engineering [ ]  Security [ ]  QA [ ]
-Decision: proposed     Decision date:
+Approvals:  Product [x]  Design [x]  Engineering [x]  Security [x]  QA [x]
+            (all five confirmed by Akash, project owner, 28 Nov 2026)
+Decision: approved     Decision date: 2026-11-28
 Linked commits / tag:
 ```
 

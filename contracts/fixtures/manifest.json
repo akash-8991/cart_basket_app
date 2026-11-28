@@ -282,6 +282,11 @@
       "status": 200
     },
     {
+      "file": "device/history-batch.json",
+      "schema": "HistoryBatch",
+      "status": 0
+    },
+    {
       "file": "device/observation.not-read.json",
       "schema": "PriceObservation",
       "status": 0

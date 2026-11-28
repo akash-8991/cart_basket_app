@@ -287,7 +287,26 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         if (req.fields.any { it !in IMPORT_FIELDS }) bad("fields")
         if (req.uploadMode !in setOf("device_only", "normalized_upload")) bad("upload_mode")
         call.onceOnly(s, "import:${u.userId}", ApiJson.encodeToString(ImportRequest.serializer(), req), HttpStatusCode.Created) {
-            io { st.startImport(u.userId, req.providers) }
+            io { st.startImport(u.userId, req.providers, req.fields, req.uploadMode) }
+        }
+    }
+    // CR-007: the phone's result for one app and, only with consent after review, its normalised orders.
+    post("/v1/history/import/{sessionId}/batches") {
+        call.stubsOrUnavailable(s)
+        val u = call.user()
+        val id = call.parameters["sessionId"]!!
+        val req = call.receive<com.smartcart.server.history.HistoryBatch>()
+        provider(req.provider, "provider")
+        if (req.batchSeq < 1) bad("batch_seq")
+        if (req.status !in setOf("running", "completed", "failed", "skipped")) bad("status")
+        if (req.ordersFound !in 0..5000) bad("orders_found")
+        req.confidence?.let { if (it !in setOf("high", "medium", "low")) bad("confidence") }
+        req.failureReason?.let { if (it !in setOf("login_required", "unknown_screen", "package_mismatch", "app_not_installed", "timeout", "stopped")) bad("failure_reason") }
+        req.importOutcome?.let { if (it !in setOf("completed", "cancelled")) bad("import_outcome") }
+        if (req.orders.size > 200 || req.orders.any { (it.items?.size ?: 0) > 100 }) bad("orders")
+        if (req.adapter.key.isBlank() || req.adapter.key.length > 40 || req.adapter.version.isBlank() || req.adapter.version.length > 20) bad("adapter")
+        call.onceOnly(s, "history-batch:${u.userId}:$id", ApiJson.encodeToString(com.smartcart.server.history.HistoryBatch.serializer(), req), HttpStatusCode.OK) {
+            st.historyBatch(u.userId, id, req)
         }
     }
     get("/v1/history/import/{sessionId}") {
