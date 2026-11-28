@@ -27,7 +27,7 @@ Automation runs on the phone, but the frozen contract has no way for the phone t
 - **Task progress.** `CartTask` has events, `actions_used`, `checkpoint`, `needs_user_action`, `cart` and `failure`, but no operation lets the device report them. Today only the server's own stub writes them.
 - **Captured prices.** `POST /v1/comparison/quotes` builds the comparison on the server, but the prices are read from partner apps on the phone, and nothing carries them to the server.
 
-These need a change request (post-freeze rule) before the server-side engine and tasks (4.4–4.5). Slices 4.1–4.3 don't change the contract.
+These need a change request (post-freeze rule) before the server-side engine and tasks (4.4–4.5). Slices 4.1–4.3 don't change the contract. Drafted as [CR-005](../change-requests/CR-005-device-reported-prices-and-task-progress.md) on 28 Nov 2026 (proposed; contract 1.4.0 once approved). History upload for 4.6 is a separate gap, likely CR-006 with the privacy review.
 
 ## 3. Slices (each is one commit, pushed)
 
