@@ -2,6 +2,7 @@ package com.smartcart.data.device
 
 import com.smartcart.automation.Adapter
 import com.smartcart.automation.Driver
+import com.smartcart.automation.ExecutableAction
 import com.smartcart.automation.ExecutablePlan
 import com.smartcart.automation.ItemRequest
 import com.smartcart.automation.RunState
@@ -12,6 +13,7 @@ import com.smartcart.data.ApiResult
 import com.smartcart.data.CartTaskRepository
 import com.smartcart.data.ComparisonRepository
 import com.smartcart.data.ProviderRepository
+import com.smartcart.data.automation.TaskStateMachine
 import com.smartcart.data.clientError
 import com.smartcart.model.CartTask
 import com.smartcart.model.ErrorCode
@@ -32,7 +34,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -59,12 +63,26 @@ class DeviceCartTaskRepository(
     private val timing: RunnerTiming = RunnerTiming(),
     /** How a plan is built from the items; code, never a model. Tests swap it to exercise checkpoints. */
     private val planFor: (appName: String, items: List<ItemRequest>) -> ExecutablePlan = ExecutablePlan::forCart,
+    /**
+     * Phase 4.5: with a backend, the server holds the task. It issues the plan and the single-use nonce, the
+     * phone reports every step (CR-005), and the server's answer has the last word: if it has stopped or failed
+     * the task, the phone halts, and its check of the cart replaces the phone's.
+     */
+    private val server: TaskServer? = null,
+    private val retryMillis: Long = 1_000,
 ) : CartTaskRepository {
 
     private class Run(val adapter: Adapter, val plan: ExecutablePlan) {
         @Volatile var runner: TaskRunner? = null
         @Volatile var job: Job? = null
         @Volatile var step: Int = 0
+        // Reporting to the server (Phase 4.5)
+        val changed = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
+        @Volatile var reporter: Job? = null
+        var reportSeq = 0
+        var reportedEventSeq = 0
+        /** The task's status as the server last confirmed it. */
+        val onServer = MutableStateFlow<TaskStatus?>(null)
     }
 
     private val tasks = MutableStateFlow<Map<String, CartTask>>(emptyMap())
@@ -95,6 +113,7 @@ class DeviceCartTaskRepository(
     private fun serviceOff() = clientError(ErrorCode.CONSENT_REQUIRED, "Turn on SmartCart under Settings → Accessibility, then try again.")
 
     override suspend fun create(quoteId: String, provider: ProviderKey): ApiResult<CartTask> {
+        server?.let { return createOnServer(it, quoteId, provider) }
         if (account.automationPaused.value) return clientError(ErrorCode.POLICY_BLOCKED, "Automation is paused. Resume it in Settings → Help.")
         val p = providers.providers.value.firstOrNull { it.key == provider }
         if (p == null || p.status != ProviderStatus.ENABLED || !p.automationAvailable) {
@@ -129,6 +148,26 @@ class DeviceCartTaskRepository(
         return ApiResult.Success(task)
     }
 
+    /** The server's task, with a plan the runner can carry out: its item steps matched to the snapshot's lines. */
+    private suspend fun createOnServer(server: TaskServer, quoteId: String, provider: ProviderKey): ApiResult<CartTask> {
+        val adapter = device.adapterFor(provider) ?: return clientError(ErrorCode.PROVIDER_DISABLED, "${provider.displayName} can't be automated on this phone.")
+        val r = server.createTask(quoteId, provider)
+        if (r !is ApiResult.Success) return r
+        val t = r.value
+        val items = comparisons.cached(quoteId)?.providerResults?.firstOrNull { it.provider == provider }?.lines.orEmpty()
+            .filter { it.match != LineMatch.UNAVAILABLE && it.quantity > 0 }
+            .map { ItemRequest(listOfNotNull(it.matchedName ?: it.requestedName, it.matchedSize).joinToString(" "), it.quantity) }
+        val selects = t.plannedActions.count { it.type == com.smartcart.model.ActionType.SELECT_ITEM }
+        if (selects != items.size) return clientError(ErrorCode.TASK_STATE_CONFLICT, "This task has moved on. Refresh and try again.")
+        var next = 0
+        val plan = ExecutablePlan(t.plannedActions.map { a -> ExecutableAction(a, if (a.type == com.smartcart.model.ActionType.SELECT_ITEM) items[next++] else null) })
+        synchronized(lock) {
+            runs[t.taskId] = Run(adapter, plan)
+            tasks.value = tasks.value + (t.taskId to t)
+        }
+        return ApiResult.Success(t)
+    }
+
     override fun observe(taskId: String): Flow<CartTask?> = tasks.map { it[taskId] }.distinctUntilChanged()
 
     override suspend fun approve(taskId: String, actionIds: List<String>): ApiResult<CartTask> {
@@ -146,6 +185,16 @@ class DeviceCartTaskRepository(
             return clientError(ErrorCode.VALIDATION_FAILED, "Every planned step must be approved.")
         }
         val driver = device.driver() ?: return serviceOff()
+        server?.let { srv ->
+            // The server checks the full plan and its nonce; only then does the phone touch anything.
+            val ok = srv.approveTask(taskId, actionIds, t.approvalNonce ?: return conflict())
+            if (ok !is ApiResult.Success) return ok
+            edit(taskId) { ok.value }
+            run.reportedEventSeq = ok.value.events.maxOfOrNull { it.seq } ?: 0
+            startReporting(srv, taskId, run)
+            start(taskId, run, driver, resumeFrom = 0)
+            return ok
+        }
         var won = false
         val approved = edit(taskId) {
             if (it.status != TaskStatus.AWAITING_APPROVAL) null
@@ -167,6 +216,65 @@ class DeviceCartTaskRepository(
         }
     }
 
+    /**
+     * Sends the phone's state to the server after each change, in order, one report at a time; a failed send is
+     * retried with the same number (the server answers a repeat the same way). The server's answer wins when it
+     * has ended the task or checked the cart.
+     */
+    private fun startReporting(server: TaskServer, taskId: String, run: Run) {
+        run.reporter = scope.launch {
+            for (unit in run.changed) {
+                while (true) {
+                    val t = tasks.value[taskId] ?: return@launch
+                    val full = DeviceReports.progress(t, run.reportSeq + 1, run.reportedEventSeq, run.adapter) ?: break
+                    val last = lastReported[taskId] ?: TaskStatus.APPROVED
+                    if (full.events.isEmpty() && run.reportSeq > 0 && full.status == last) break
+                    // Reports may lag the phone; D-002 has no shortcut such as APPROVED → CART_READY, so pass through
+                    // RUNNING first (with the events), then send where the phone is now.
+                    val bridge = full.status != last && full.status != TaskStatus.RUNNING &&
+                        !TaskStateMachine.canTransition(last, full.status) && TaskStateMachine.canTransition(last, TaskStatus.RUNNING)
+                    val report = if (bridge) full.copy(status = TaskStatus.RUNNING, checkpoint = null, needsUserAction = null, failure = null, cart = null) else full
+                    when (val r = server.reportProgress(taskId, report)) {
+                        is ApiResult.Success -> {
+                            run.reportSeq = report.reportSeq
+                            run.reportedEventSeq = maxOf(run.reportedEventSeq, report.events.maxOfOrNull { it.seq } ?: 0)
+                            lastReported[taskId] = report.status
+                            run.onServer.value = r.value.status
+                            adopt(taskId, run, r.value)
+                            break
+                        }
+                        is ApiResult.Failure -> {
+                            if (r.error.code == ErrorCode.TASK_STATE_CONFLICT || r.error.code == ErrorCode.FORBIDDEN) {
+                                // The server won't take this task's reports any more: read where it stands and follow it.
+                                (server.getTask(taskId) as? ApiResult.Success)?.let { adopt(taskId, run, it.value) }
+                                break
+                            }
+                            kotlinx.coroutines.delay(retryMillis)
+                        }
+                    }
+                }
+                if (tasks.value[taskId]?.let { it.status.isTerminal || it.status == TaskStatus.CART_READY } == true && run.runner == null) break
+            }
+        }
+    }
+
+    private val lastReported = ConcurrentHashMap<String, TaskStatus>()
+
+    /** The server ended the task or checked the cart: its view replaces the phone's, and the runner stops. */
+    private fun adopt(taskId: String, run: Run, server: CartTask) {
+        val local = tasks.value[taskId] ?: return
+        val ended = server.status.isTerminal && !local.status.isTerminal
+        // Only a server that has ended the task or checked the cart is ahead of the phone; anything else is behind.
+        val checked = server.status == TaskStatus.CART_READY && local.status == TaskStatus.CART_READY
+        if (!ended && !checked) return
+        if (ended) {
+            run.runner?.stop()
+            run.runner = null
+            run.job?.cancel()
+        }
+        edit(taskId) { server }
+    }
+
     /** Copies the runner's view into the task. Late updates from a stopped or replaced runner are dropped. */
     private fun mirror(taskId: String, run: Run, runner: TaskRunner, base: CartTask, s: RunState) {
         if (s.events.isEmpty()) return // not started yet
@@ -184,6 +292,7 @@ class DeviceCartTaskRepository(
                 failure = s.failure,
             )
         }
+        run.changed.trySend(Unit)
     }
 
     private fun killed(provider: ProviderKey) =
@@ -206,7 +315,10 @@ class DeviceCartTaskRepository(
             if (it.status != TaskStatus.NEEDS_USER_ACTION) null
             else it.copy(status = TaskStatus.RUNNING, needsUserAction = null, events = it.events + event(it, TaskEventType.STATE_CHANGED, "Resumed by you")).also { won = true }
         }!!
-        if (won) start(taskId, run, driver, resumeFrom = run.step)
+        if (won) {
+            run.changed.trySend(Unit)
+            start(taskId, run, driver, resumeFrom = run.step)
+        }
         return ApiResult.Success(resumed)
     }
 
@@ -221,10 +333,13 @@ class DeviceCartTaskRepository(
             StopReason.USER_CANCEL -> "Cancelled by you"
             StopReason.PAUSE_ALL -> "Stopped: all automation paused"
         }
-        return edit(taskId) { t ->
+        val stopped = edit(taskId) { t ->
             if (t.status.isTerminal || t.status == TaskStatus.CART_READY) null
             else t.copy(status = TaskStatus.CANCELLED, checkpoint = null, needsUserAction = null, events = t.events + event(t, TaskEventType.HALT, text))
         }
+        // The server is told straight after; stopping never waits for the network.
+        server?.let { srv -> if (run != null) scope.launch { srv.stopTask(taskId, reason); run.reporter?.cancel() } }
+        return stopped
     }
 
     override suspend fun stopAll(reason: StopReason) {
@@ -236,6 +351,13 @@ class DeviceCartTaskRepository(
      * (slice 4.5); until then the handoff simply names the app and the steps.
      */
     override suspend fun createHandoff(taskId: String): ApiResult<Handoff> {
+        server?.let { srv ->
+            // The server issues the link only for a cart it has checked; wait for the phone's last report to land.
+            runs[taskId]?.let { run -> withTimeoutOrNull(15_000) { run.onServer.first { it == TaskStatus.CART_READY || it?.isTerminal == true } } }
+            val h = srv.handoff(taskId)
+            if (h is ApiResult.Success) (srv.getTask(taskId) as? ApiResult.Success)?.let { got -> edit(taskId) { got.value } }
+            return h
+        }
         val t = tasks.value[taskId] ?: return notFound()
         if (t.status != TaskStatus.CART_READY && t.status != TaskStatus.HANDED_OFF) return conflict()
         val app = runs.getValue(taskId).adapter
@@ -251,6 +373,7 @@ class DeviceCartTaskRepository(
     }
 
     override suspend fun markHandedOff(taskId: String) {
+        if (server != null) return // the server marks it when it issues the link
         val app = runs[taskId]?.adapter ?: return
         edit(taskId) { t ->
             if (t.status != TaskStatus.CART_READY) null

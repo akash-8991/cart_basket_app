@@ -27,9 +27,9 @@ User ID, email, password-derived material, refresh tokens and device sessions, o
 | A-03 | Refresh-token replay on another device | Critical | Rotation + family revocation on reuse, device binding | Integration test (P3) |
 | A-04 | Claude key extracted from APK | Critical | Key never in client; CI secret scan of APK and repo | APK string scan in CI (P1 onward) |
 | A-05 | Prompt injection in product/order text | High | Untrusted-data delimiting, output schema, deterministic authority | Red-team eval set (P5) |
-| A-06 | Silent cart mutation | Critical | Per-task approval, risk-levelled checkpoints, visible timeline, emergency stop | UI tests (P1), runtime tests (P4) |
-| A-07 | Wrong provider / wrong cart | High | Comparison snapshot linked to task, explicit switch confirmation, cart verification | UI tests (P1), E2E (P4) |
-| A-08 | Handoff link replay | High | One-time nonce, ≤10 min TTL, package binding | Contract + integration (P3) |
+| A-06 | Silent cart mutation | Critical | Per-task approval, risk-levelled checkpoints, visible timeline, emergency stop | UI tests (P1), runtime tests (P4), `TaskThreatsTest` a06_* (P4.5) |
+| A-07 | Wrong provider / wrong cart | High | Comparison snapshot linked to task, explicit switch confirmation, cart verification | UI tests (P1), E2E (P4), `TaskThreatsTest` a07_* (P4.5) |
+| A-08 | Handoff link replay | High | One-time nonce, ≤10 min TTL, package binding | Contract + integration (P3), `TaskThreatsTest` a08_* (P4.5); redeeming a link end to end needs CR-006 |
 | A-09 | Accessibility service used on unrelated apps | Critical | Package allowlist, stop on package change, kill switch | Runtime tests (P4) |
 | A-10 | Exfiltration of order-history screens | Critical | On-device parsing, field allowlist, no raw screenshots, explicit upload consent | Privacy tests (P4) |
 | A-11 | Notification leaks order details | Medium | Generic lock-screen text | UI test (P1) |

@@ -21,6 +21,7 @@ import com.smartcart.data.ApiResult
 import com.smartcart.model.AccountState
 import com.smartcart.model.ProviderKey
 import com.smartcart.model.ProviderStatus
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -72,9 +73,25 @@ class BackendEndToEndTest {
 
         registerChatAndCompare(c)
 
-        // The comparison comes from the server's engine (4.4); the cart task still runs on the phone until 4.5.
+        // The comparison comes from the server's engine (4.4); the task is held by the server (4.5), which runs it
+        // itself here because the phone doesn't automate Blinkit in this journey.
         compose.waitForText(s(R.string.cmp_use, "Blinkit"), timeoutMs = 30_000)
         Device.screenshot("backend-e2e-04-comparison")
+        useBlinkitAndApprove()
+        compose.waitForText(s(R.string.ready_open_cart, "Blinkit"), timeoutMs = 30_000)
+        Device.screenshot("backend-e2e-05-cart-ready")
+
+        // The backend holds the account and the consents the journey used.
+        runBlocking {
+            assertEquals(userId, (c.account.profile() as ApiResult.Success).value.userId)
+            val consents = (c.account.consents() as ApiResult.Success).value.filter { it.granted }.map { it.key }
+            assertTrue(consents.containsAll(listOf("ai_processing", "automation.blinkit")))
+            c.auth.logout()
+        }
+    }
+
+    /** On the comparison: use Blinkit (confirming the switch if the person had picked another app) and approve the plan. */
+    private fun useBlinkitAndApprove() {
         compose.clickable(s(R.string.cmp_use, "Blinkit")).performClick()
         compose.waitUntil(20_000) {
             compose.onAllNodes(hasText(s(R.string.approve_start)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() ||
@@ -87,16 +104,6 @@ class BackendEndToEndTest {
         compose.waitForText(s(R.string.approve_steps))
         compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(s(R.string.approve_start)))
         compose.clickable(s(R.string.approve_start)).performClick()
-        compose.waitForText(s(R.string.ready_open_cart, "Blinkit"), timeoutMs = 30_000)
-        Device.screenshot("backend-e2e-05-cart-ready")
-
-        // The backend holds the account and the consents the journey used.
-        runBlocking {
-            assertEquals(userId, (c.account.profile() as ApiResult.Success).value.userId)
-            val consents = (c.account.consents() as ApiResult.Success).value.filter { it.granted }.map { it.key }
-            assertTrue(consents.containsAll(listOf("ai_processing", "automation.blinkit")))
-            c.auth.logout()
-        }
     }
 
     /** Register → verify-email banner → grocery chat with AI consent → clarification → cart → compare (with an address). */
@@ -163,6 +170,36 @@ class BackendEndToEndTest {
             compose.waitForText(com.smartcart.model.Money(2800L + 4500 + 8400 + 4800 + 500, "INR").format())
             compose.waitForText(s(R.string.rec_label_cheapest))
             Device.screenshot("backend-e2e-06-phone-reading")
+
+            // Phase 4.5: the server holds the task; the phone builds the cart in the Test Store and reports each step.
+            val seen = java.util.concurrent.CopyOnWriteArrayList<String>()
+            val watch = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch { c.tasks.activeTask.collect { t -> t?.let { seen += it.taskId } } }
+            useBlinkitAndApprove()
+            compose.waitUntil(30_000) { seen.isNotEmpty() }
+            compose.waitUntil(90_000) { c.tasks.activeTask.value == null }
+            watch.cancel()
+            Automation.backToSmartCart()
+            compose.waitForText(s(R.string.ready_open_cart, "Blinkit"), timeoutMs = 30_000)
+            Device.screenshot("backend-e2e-07-device-cart-ready")
+            // The server's record: every step the phone reported, and the cart it checked against the approved plan.
+            val api = com.smartcart.data.http.ApiClient(backendUrl!!).apply { tokens = object : com.smartcart.data.http.SessionTokens {
+                override val accessToken = (c.auth as com.smartcart.data.http.HttpAuthRepository).accessToken
+                override suspend fun refresh() = false
+            } }
+            val onServer = runBlocking {
+                var got = (api.call("GET", "/v1/cart-tasks/${seen.first()}", com.smartcart.model.CartTask.serializer()) as ApiResult.Success).value
+                kotlinx.coroutines.withTimeoutOrNull(20_000) {
+                    // The cart-ready screen asks for the handoff link as it opens, which moves the task on to HANDED_OFF.
+                    while (got.status != com.smartcart.model.TaskStatus.CART_READY && got.status != com.smartcart.model.TaskStatus.HANDED_OFF) {
+                        kotlinx.coroutines.delay(300)
+                        got = (api.call("GET", "/v1/cart-tasks/${seen.first()}", com.smartcart.model.CartTask.serializer()) as ApiResult.Success).value
+                    }
+                }
+                got
+            }
+            assertTrue("${onServer.status} ${onServer.failure} ${onServer.events.takeLast(4).map { it.description }}", onServer.status in setOf(com.smartcart.model.TaskStatus.CART_READY, com.smartcart.model.TaskStatus.HANDED_OFF))
+            assertTrue(onServer.cart!!.verified)
+            assertTrue("the phone's steps are on the server", onServer.events.any { it.type == com.smartcart.model.TaskEventType.CART_VERIFIED })
         } finally {
             Automation.turnOff()
         }

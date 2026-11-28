@@ -23,3 +23,17 @@ interface OnDeviceAutomation {
 interface DeviceReadingSink {
     suspend fun submitObservation(quoteId: String, observation: com.smartcart.model.PriceObservation): com.smartcart.data.ApiResult<com.smartcart.model.ComparisonQuote>
 }
+
+/**
+ * Phase 4.5: what a task the phone runs needs from the server. The server holds the task (plan, approval
+ * nonce, state) and checks every report against its state machine; its answer is the task as it holds it.
+ */
+interface TaskServer {
+    suspend fun createTask(quoteId: String, provider: com.smartcart.model.ProviderKey): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+    suspend fun approveTask(taskId: String, actionIds: List<String>, nonce: String): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+    suspend fun reportProgress(taskId: String, report: com.smartcart.model.TaskProgressReport): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+    suspend fun answerCheckpoint(taskId: String, checkpointId: String, approve: Boolean): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+    suspend fun stopTask(taskId: String, reason: com.smartcart.model.StopReason): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+    suspend fun handoff(taskId: String): com.smartcart.data.ApiResult<com.smartcart.model.Handoff>
+    suspend fun getTask(taskId: String): com.smartcart.data.ApiResult<com.smartcart.model.CartTask>
+}

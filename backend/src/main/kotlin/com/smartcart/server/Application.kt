@@ -100,7 +100,7 @@ class Services(
     val chat = ChatService(ChatRepository(db), gateway, me, flags, limiter, clock).also { c ->
         dataRequests.onErase("chat") { userId -> c.deleteAll(userId) }
     }
-    val phase4 = Phase4Stubs(flags, providers, me, limiter, clock)
+    val phase4 = Phase4Stubs(flags, providers, me, limiter, clock, secrets)
 }
 
 fun main() {

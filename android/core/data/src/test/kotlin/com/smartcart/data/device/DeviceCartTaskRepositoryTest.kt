@@ -263,4 +263,105 @@ class DeviceCartTaskRepositoryTest {
         assertEquals(TaskStatus.CANCELLED, router.observe(simulatedTask.taskId).first()!!.status)
         assertEquals("a ready cart isn't cancelled", TaskStatus.CART_READY, router.observe(onPhone.taskId).first()!!.status)
     }
+
+    // ---------------------------------------------------------------- Phase 4.5: the server holds the task
+
+    /** Stands in for the server: issues the plan and nonce, insists reports continue the timeline, can stop the task. */
+    private class FakeTaskServer(private val comparisons: FakeComparisonRepository) : TaskServer {
+        val reports = java.util.concurrent.CopyOnWriteArrayList<com.smartcart.model.TaskProgressReport>()
+        var approvals = 0
+        @Volatile var stopNow = false
+        @Volatile var task: CartTask? = null
+
+        override suspend fun createTask(quoteId: String, provider: ProviderKey): ApiResult<CartTask> {
+            val lines = comparisons.cached(quoteId)!!.providerResults.first { it.provider == provider }.lines
+            var n = 0
+            fun a(type: ActionType, d: String, r: ActionRisk) = com.smartcart.model.PlannedAction("a${++n}", type, d, r)
+            val plan = listOf(a(ActionType.OPEN_APP, "Open Blinkit", ActionRisk.LOW), a(ActionType.SEARCH, "Search for each item", ActionRisk.LOW)) +
+                lines.map { a(ActionType.SELECT_ITEM, "Add ${it.matchedName} ${it.matchedSize} × ${it.quantity}", ActionRisk.MEDIUM) } +
+                a(ActionType.VERIFY_CART, "Check the cart", ActionRisk.LOW)
+            val now = java.time.Instant.now()
+            task = CartTask("tsk_srv", provider, quoteId, TaskStatus.AWAITING_APPROVAL, now.toString(), now.plusSeconds(1800).toString(),
+                DeviceCartTaskRepository.DEFAULT_LIMITS, 0, plan, emptyList(), approvalNonce = "apn_1")
+            return ApiResult.Success(task!!)
+        }
+        override suspend fun approveTask(taskId: String, actionIds: List<String>, nonce: String): ApiResult<CartTask> {
+            approvals++
+            if (nonce != "apn_1") return com.smartcart.data.clientError(ErrorCode.TASK_STATE_CONFLICT, "nonce")
+            task = task!!.copy(status = TaskStatus.APPROVED, approvalNonce = null, events = listOf(com.smartcart.model.TaskEvent(1, "2026-11-28T10:00:01Z", TaskEventType.STATE_CHANGED, "Approved by you")))
+            return ApiResult.Success(task!!)
+        }
+        override suspend fun reportProgress(taskId: String, report: com.smartcart.model.TaskProgressReport): ApiResult<CartTask> {
+            val t = task!!
+            if (t.status.isTerminal) return ApiResult.Success(t)
+            val next = (t.events.maxOfOrNull { it.seq } ?: 0) + 1
+            if (report.events.withIndex().any { (i, e) -> e.seq != next + i }) return com.smartcart.data.clientError(ErrorCode.VALIDATION_FAILED, "events")
+            reports += report
+            task = if (stopNow) t.copy(status = TaskStatus.CANCELLED, events = t.events + report.events)
+            else t.copy(status = report.status, actionsUsed = report.actionsUsed, events = t.events + report.events, needsUserAction = report.needsUserAction,
+                cart = report.cart?.copy(verifiedAt = "server"), failure = report.failure)
+            return ApiResult.Success(task!!)
+        }
+        override suspend fun answerCheckpoint(taskId: String, checkpointId: String, approve: Boolean) = ApiResult.Success(task!!)
+        override suspend fun stopTask(taskId: String, reason: StopReason): ApiResult<CartTask> { task = task!!.copy(status = TaskStatus.CANCELLED); return ApiResult.Success(task!!) }
+        override suspend fun handoff(taskId: String) = ApiResult.Success(com.smartcart.model.Handoff("smartcart://handoff/x", com.smartcart.model.HandoffStrategy.MANUAL, null, "t", emptyList()))
+        override suspend fun getTask(taskId: String) = ApiResult.Success(task!!)
+    }
+
+    private fun serverEnv(scenario: String = "normal", latencyMs: Long = 0): Pair<Env, FakeTaskServer> {
+        val e = env(scenario, latencyMs)
+        val srv = FakeTaskServer(e.comparisons)
+        return Env(e.phone, e.mock, e.providers, e.account, e.comparisons,
+            DeviceCartTaskRepository(e.phone, e.comparisons, e.providers, e.account, scope, timing = timing, server = srv, retryMillis = 20)) to srv
+    }
+
+    @Test fun withAServerEveryStepIsReportedInOrderAndTheServersCartCheckStands() = runBlocking {
+        val (e, srv) = serverEnv()
+        val t = e.newTask()
+        assertEquals("the server's task and plan", "tsk_srv", t.taskId)
+        assertEquals("Open Blinkit", t.plannedActions.first().description)
+        e.approveAll(t)
+        val done = e.until(t.taskId) { it.cart?.verifiedAt == "server" || it.status.isTerminal }
+        assertEquals(done.timeline(), TaskStatus.CART_READY, done.status)
+        assertEquals("the server's view is adopted", "server", done.cart!!.verifiedAt)
+        assertEquals(listOf(2, 1, 1, 1), done.cart!!.lines.map { it.quantity })
+        assertEquals("reports are numbered", (1..srv.reports.size).toList(), srv.reports.map { it.reportSeq })
+        assertEquals("every event sent once, in order", (2..done.events.last().seq).toList(), srv.reports.flatMap { r -> r.events.map { it.seq } })
+        assertEquals(TaskStatus.CART_READY, srv.reports.last().status)
+    }
+
+    @Test fun withAServerAStopThereHaltsThePhone() = runBlocking {
+        val (e, srv) = serverEnv(latencyMs = 40)
+        val t = e.newTask()
+        e.approveAll(t)
+        e.until(t.taskId) { it.actionsUsed >= 2 }
+        srv.stopNow = true // e.g. Settings → Pause all on another device, or a provider kill switch
+        val halted = e.until(t.taskId) { it.status.isTerminal }
+        assertEquals(TaskStatus.CANCELLED, halted.status)
+        val clicks = e.store.clicks.size
+        delay(500)
+        assertTrue("the runner stopped", e.store.clicks.size <= clicks + 1)
+    }
+
+    @Test fun withAServerNothingIsApprovedWhileTheServiceIsOff() = runBlocking {
+        val (e, srv) = serverEnv()
+        e.phone.connected = false
+        val t = e.newTask()
+        val r = e.approveAll(t)
+        assertTrue(r is ApiResult.Failure && r.error.code == ErrorCode.CONSENT_REQUIRED)
+        assertEquals("the single-use nonce isn't spent", 0, srv.approvals)
+    }
+
+    @Test fun withAServerALoginResumesAndReportsContinue() = runBlocking {
+        val (e, srv) = serverEnv("login")
+        val t = e.newTask()
+        e.approveAll(t)
+        e.until(t.taskId) { it.status == TaskStatus.NEEDS_USER_ACTION }
+        e.until(t.taskId) { srv.reports.any { r -> r.status == TaskStatus.NEEDS_USER_ACTION } }
+        e.store.userSignsIn()
+        e.tasks.resume(t.taskId)
+        val done = e.until(t.taskId) { it.cart?.verifiedAt == "server" || it.status.isTerminal }
+        assertEquals(done.timeline(), TaskStatus.CART_READY, done.status)
+        assertTrue(srv.reports.flatMap { it.events }.any { it.description == "Resumed by you" })
+    }
 }

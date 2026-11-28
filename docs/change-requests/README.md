@@ -9,6 +9,7 @@ Raised from the contract gaps found while building Phase 3 (`docs/phase3/PLAN.md
 | [CR-003](CR-003-ai-consent-email-verification-reconsent.md) | AI-processing consent, email verification, re-consent | New screen states, 1 new screen, 2 new operations | Approved and implemented 26 Nov 2026 (contract 1.2.0) | CR-002 (`GET /v1/config`) |
 | [CR-004](CR-004-user-entered-delivery-addresses.md) | User-entered delivery addresses (from D1) | New settings screen, cart-card picker, 1 optional request field | Approved and implemented 27 Nov 2026 (contract 1.3.0) | — |
 | [CR-005](CR-005-device-reported-prices-and-task-progress.md) | Device-reported prices and task progress (Phase 4) | 2 new operations, 5 new schemas, 2 optional fields; no screen change | Approved and implemented 28 Nov 2026 (contract 1.4.0) | — |
+| [CR-006](CR-006-redeem-handoff-links.md) | Redeem cart handoff links (Phase 4.5) | 1 new operation, 2 new schemas; handoff link and notification behaviour; App Links when a domain exists | **Proposed 28 Nov 2026** — awaiting approval | CR-005 |
 
 Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. All three are proposed for before Phase 4: Phase 4 turns on live Claude calls (which need users who have consented) and HTTP task approval (which needs the server-issued nonce).
 
@@ -49,6 +50,7 @@ Suggested order: CR-001 and CR-002 together (no visible change), then CR-003. Al
 - **CR-005 in the development stubs.** A task whose provider the phone read (`device_providers`) is run by the phone: approval leaves it APPROVED, and only the phone's reports move it; checkpoint answers, stop and handoff keep its timeline. Every other task keeps the canned run. Fees an app doesn't state stay unavailable, except surge and discounts, which mean none when unstated (as in the fixtures).
 - **CR-005 fixtures.** Request bodies (`device/observation.*.json`, `device/progress.*.json`) are listed in the manifest with status 0; the app decodes them strictly like every other fixture. One unquoted description in the patch split into a stray schema key when applied; fixed in the contract and the CR text, and the contract is now scanned for unexpected keywords.
 - **CR-005, totals with a missing fee (corrected in 4.4).** The CR text first said a total needs every fee known and called that the existing rule; it isn't. The PRD and the frozen fixtures give a total from the known fees and list the missing one, which rules out "cheapest". The CR text, the server and the app's no-backend merge now follow the PRD (D-031).
+- **CR-005, a phone that finishes before its first report.** D-002 has no APPROVED → CART_READY, so the phone reports RUNNING first, then where it is (4.5).
 - **Found while implementing:** a token-refresh race in the app's HTTP client (concurrent expired calls could refresh twice), fixed; and the 2×-font layout fix from the device run had made the KPI figures stack at normal size on a standard phone — fixed, with a regression test.
 
 ## Decisions (settled 27 Nov 2026 by the project owner)

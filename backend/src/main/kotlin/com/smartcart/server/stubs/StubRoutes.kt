@@ -251,7 +251,7 @@ fun Route.stubRoutes(s: Services) = authenticate(AUTH_USER) {
         call.stubsOrUnavailable(s)
         val req = call.receive<StopCartTaskRequest>()
         if (req.reason !in setOf("emergency_stop", "user_cancel", "pause_all")) bad("reason")
-        call.respondJson(HttpStatusCode.OK, st.stop(call.user().userId, call.parameters["taskId"]!!).toString())
+        call.respondJson(HttpStatusCode.OK, st.stop(call.user().userId, call.parameters["taskId"]!!, req.reason).toString())
     }
 
     // ---------------------------------------------------------------- handoff

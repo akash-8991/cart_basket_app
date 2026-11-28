@@ -35,6 +35,7 @@ import com.smartcart.data.mock.MockControl
 import com.smartcart.data.http.ApiClient
 import com.smartcart.data.http.HttpAccountRepository
 import com.smartcart.data.http.HttpAuthRepository
+import com.smartcart.data.http.HttpCartTaskRepository
 import com.smartcart.data.http.HttpChatRepository
 import com.smartcart.data.http.HttpComparisonRepository
 import com.smartcart.data.http.HttpProviderRepository
@@ -71,7 +72,7 @@ class AppContainer(
     tokenStore: TokenStore? = null,
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     addressStore: AddressStore? = null,
-    /** Phase 3.7: when set, auth, account, providers and chat use the backend; comparisons too since 4.4. */
+    /** Phase 3.7: when set, auth, account, providers and chat use the backend; comparisons since 4.4, cart tasks since 4.5. */
     val backendUrl: String? = null,
     /** Phase 4.2–4.3, debug builds only: lets Blinkit's prices and cart tasks really run in SmartCart Test Store. */
     val testStore: TestStoreBinding? = null,
@@ -115,11 +116,13 @@ class AppContainer(
     val comparisons: ComparisonRepository = (api?.let { HttpComparisonRepository(it) } ?: FakeComparisonRepository(fixtures, mock)).let { base ->
         testStore?.let { DeviceComparisonRepository(base, it, providers, account, scope) } ?: base
     }
-    private val simulatedTasks = FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
+    // Phase 4.5: with a backend, the server holds every task; without one they are simulated on the phone.
+    private val serverTasks: HttpCartTaskRepository? = api?.let { HttpCartTaskRepository(it, comparisons, scope) }
+    private val simulatedTasks: CartTaskRepository = serverTasks ?: FakeCartTaskRepository(fixtures, mock, comparisons, providers, account, scope)
     // A task runs on the phone when an adapter is bound for its provider (only the debug Test Store binding so
-    // far); otherwise it is simulated as before.
+    // far), reporting to the server when there is one; otherwise it goes to the server or the simulation.
     val tasks: CartTaskRepository = testStore?.let { binding ->
-        RoutingCartTaskRepository(simulatedTasks, DeviceCartTaskRepository(binding, comparisons, providers, account, scope), { binding.adapterFor(it) != null }, scope)
+        RoutingCartTaskRepository(simulatedTasks, DeviceCartTaskRepository(binding, comparisons, providers, account, scope, server = serverTasks), { binding.adapterFor(it) != null }, scope)
     } ?: simulatedTasks
     val history: HistoryRepository = FakeHistoryRepository(fixtures, mock, providers, scope)
     val recommendations: RecommendationRepository = FakeRecommendationRepository(fixtures, mock)

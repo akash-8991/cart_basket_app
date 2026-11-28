@@ -8,6 +8,7 @@ import com.smartcart.model.ErrorCode
 import com.smartcart.model.NextStep
 import com.smartcart.model.ProviderKey
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
@@ -149,6 +150,66 @@ class BackendIntegrationTest {
         assertEquals(com.smartcart.model.ResultSource.SERVER, q.of(ProviderKey.BIGBASKET).source)
         assertEquals(ProviderKey.BLINKIT, q.recommendation.provider)
         assertEquals("₹264 at BigBasket (the person's pick) minus ₹238", 2600L, q.recommendation.savingsVsSelected!!.amountMinor)
+        scope.cancel()
+    }
+
+    // ---------------------------------------------------------------- Phase 4.5: tasks on the server
+
+    @Test fun aTaskTheServerRunsGoesFromApprovalToAHandoffLink() = runBlocking {
+        auth.register(userId, "$userId@example.com", password).ok()
+        providers.refresh().ok()
+        providers.setAutomationConsent(ProviderKey.BLINKIT, true).ok()
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        val comparisons = HttpComparisonRepository(api, pollMillis = 200)
+        val tasks = HttpCartTaskRepository(api, comparisons, scope, pollMillis = 200)
+        val id = comparisons.create(request()).ok()
+        withTimeout(20_000) { comparisons.observe(id).toList() }
+        comparisons.confirm(id, ProviderKey.BLINKIT, acknowledgedSwitch = true).ok()
+        val t = tasks.create(id, ProviderKey.BLINKIT).ok()
+        assertEquals(com.smartcart.model.TaskStatus.AWAITING_APPROVAL, t.status)
+        assertTrue("the server issued the single-use nonce", t.approvalNonce != null)
+        tasks.approve(t.taskId, t.plannedActions.map { it.actionId }).ok()
+        val ready = withTimeout(20_000) { tasks.observe(t.taskId).first { it?.status == com.smartcart.model.TaskStatus.CART_READY } }!!
+        assertTrue(ready.cart!!.verified)
+        val h = tasks.createHandoff(t.taskId).ok()
+        assertTrue(Regex("^smartcart://handoff/[A-Za-z0-9_-]{16,128}$").matches(h.handoffUrl) && t.taskId !in h.handoffUrl)
+        assertEquals(com.smartcart.model.TaskStatus.HANDED_OFF, withTimeout(10_000) { tasks.observe(t.taskId).first { it?.status == com.smartcart.model.TaskStatus.HANDED_OFF } }!!.status)
+        scope.cancel()
+    }
+
+    @Test fun aTaskThePhoneRunsIsReportedToTheServerWhichChecksTheCart() = runBlocking {
+        auth.register(userId, "$userId@example.com", password).ok()
+        providers.refresh().ok()
+        providers.setAutomationConsent(ProviderKey.BLINKIT, true).ok()
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        val store = com.smartcart.automation.FakeStore("normal", System::currentTimeMillis)
+        val phone = object : com.smartcart.data.device.OnDeviceAutomation {
+            override fun driver() = store
+            override val verifier = com.smartcart.automation.FakeVerifier()
+            override fun adapterFor(provider: ProviderKey) =
+                if (provider == ProviderKey.BLINKIT) com.smartcart.automation.teststore.TestStoreAdapter(setOf(com.smartcart.automation.FakeVerifier.GOOD_SIGNER)) else null
+        }
+        val timing = com.smartcart.automation.RunnerTiming(pollMillis = 5, stepWaitMillis = 400, foreignPackageGraceMillis = 100)
+        val comparisons = com.smartcart.data.device.DeviceComparisonRepository(HttpComparisonRepository(api, pollMillis = 200), phone, providers, account, scope, timing = timing)
+        val server = HttpCartTaskRepository(api, comparisons, scope)
+        val tasks = com.smartcart.data.device.DeviceCartTaskRepository(phone, comparisons, providers, account, scope, timing = timing, server = server, retryMillis = 200)
+        val id = comparisons.create(request()).ok()
+        withTimeout(30_000) { comparisons.observe(id).toList() }
+        comparisons.confirm(id, ProviderKey.BLINKIT, acknowledgedSwitch = true).ok()
+        val t = tasks.create(id, ProviderKey.BLINKIT).ok()
+        tasks.approve(t.taskId, t.plannedActions.map { it.actionId }).ok()
+        val done = withTimeout(30_000) { tasks.observe(t.taskId).first { it != null && (it.status.isTerminal || it.cart?.verified == true) } }!!
+        assertEquals(done.events.joinToString("\n") { it.description }, com.smartcart.model.TaskStatus.CART_READY, done.status)
+        // The server's own record agrees: it took every report and checked the cart against the approved plan.
+        // Reports are sent as the phone goes; wait for the last one to land.
+        val onServer = withTimeout(15_000) {
+            var got = server.getTask(t.taskId).ok()
+            while (got.status != com.smartcart.model.TaskStatus.CART_READY) { kotlinx.coroutines.delay(200); got = server.getTask(t.taskId).ok() }
+            got
+        }
+        assertTrue(onServer.cart!!.verified)
+        assertEquals(done.events.map { it.seq }, onServer.events.map { it.seq })
+        assertTrue(tasks.createHandoff(t.taskId).ok().handoffUrl.startsWith("smartcart://handoff/"))
         scope.cancel()
     }
 }

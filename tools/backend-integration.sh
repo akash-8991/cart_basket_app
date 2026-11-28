@@ -6,7 +6,7 @@
 #
 # Needs: PostgreSQL with the `smartcart` role and database (backend/README.md), JDK 21, and for `device`
 # the API 36 system image. The backend runs in development mode with in-memory rate limits, so every
-# run starts clean. Blinkit is enabled through the operator API for the device journey.
+# run starts clean. Blinkit is enabled (with automation on and a test approval record) through the operator API.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,6 +27,9 @@ curl -sf "localhost:$PORT/readyz" >/dev/null || { log "backend did not start; se
 
 admin() { curl -sf -X PUT "localhost:$PORT/admin/$1" -H "Authorization: Bearer $ADMIN" -H "X-Operator: integration" -H "Content-Type: application/json" -d "$2" >/dev/null; }
 admin flags/provider.blinkit.enabled '{"enabled":true,"reason":"integration run"}'
+# Phase 4.5: tasks need automation switched on and an approval record for the provider (a test record here).
+admin flags/automation.global.enabled '{"enabled":true,"reason":"integration run"}'
+admin providers/blinkit/approval '{"adapter_version":"teststore-1","approved_by":"integration","record_url":"https://example.invalid/approvals/integration","reason":"integration run against SmartCart Test Store"}'
 
 log "JVM: BackendIntegrationTest"
 (cd "$ROOT/android" && ./gradlew :core:data:test --console=plain -q -PbackendUrl="http://127.0.0.1:$PORT" --tests "com.smartcart.data.http.BackendIntegrationTest") >"$OUT/jvm.log" 2>&1

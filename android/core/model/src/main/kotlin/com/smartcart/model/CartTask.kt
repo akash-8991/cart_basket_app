@@ -168,3 +168,32 @@ data class Handoff(
     val expiresAt: String,
     val manualSteps: List<String>,
 )
+
+// ---------------------------------------------------------------- request bodies (Phase 4.5: tasks over HTTP)
+
+@Serializable
+enum class TaskType {
+    @SerialName("add_to_cart") ADD_TO_CART,
+    @SerialName("ride_setup") RIDE_SETUP,
+}
+
+@Serializable
+data class CreateCartTaskRequest(val quoteId: String, val provider: ProviderKey, val taskType: TaskType)
+
+@Serializable
+data class ApproveCartTaskRequest(val approvedActionIds: List<String>, val approvalNonce: String)
+
+@Serializable
+enum class CheckpointChoice {
+    @SerialName("approve") APPROVE,
+    @SerialName("reject") REJECT,
+}
+
+@Serializable
+data class CheckpointDecision(val checkpointId: String, val decision: CheckpointChoice)
+
+@Serializable
+data class StopCartTaskRequest(val reason: StopReason)
+
+@Serializable
+data class HandoffRequest(val taskId: String)
